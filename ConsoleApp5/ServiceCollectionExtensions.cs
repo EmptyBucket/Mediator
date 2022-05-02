@@ -21,45 +21,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-﻿// See https://aka.ms/new-console-template for more information
-
-using ConsoleApp5;
 using ConsoleApp5.Pipes;
-using EasyNetQ;
+using ConsoleApp5.Registries;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-var serviceCollection = new ServiceCollection();
-var bus = RabbitHutch.CreateBus("host=localhost");
-serviceCollection.AddMediator(
-    t => t.AddTopology<Event, EventHandler>("rabbit"),
-    t => t.AddTransport<RabbitMqPipe>("rabbit"));
+namespace ConsoleApp5;
 
-var task = Task.Run(async () =>
+public static class ServiceCollectionExtensions
 {
-    while (true)
+    public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
+        Action<ITopologyRegistry>? topologyRegistryBuilder = null,
+        Action<ITransportRegistry>? transportRegistryBuilder = null,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        await Task.Delay(1_000);
-    }
-});
+        var serviceDescriptor = new ServiceDescriptor(typeof(IMediator), p =>
+        {
+            var transportRegistry = new TransportRegistry(p.GetRequiredService);
+            transportRegistryBuilder?.Invoke(transportRegistry);
 
+            var topologyRegistry = new TopologyRegistry(p.GetRequiredService, transportRegistry);
+            topologyRegistryBuilder?.Invoke(topologyRegistry);
 
-await task;
+            transportRegistry.AddTransport<HandlingPipe>("default");
 
-public record Event(string Name);
+            var forkingPipe = new ForkingPipe(topologyRegistry);
+            var logger = p.GetRequiredService<ILogger<LoggingPipe>>();
+            var loggingPipe = new LoggingPipe(forkingPipe, logger);
+            var mediator = new Mediator(loggingPipe, topologyRegistry);
+            return mediator;
+        }, lifetime);
+        serviceCollection.Add(serviceDescriptor);
 
-public class EventHandler : IHandler<Event>
-{
-    private readonly ILogger<EventHandler> _logger;
-
-    public EventHandler(ILogger<EventHandler> logger)
-    {
-        _logger = logger;
-    }
-
-    public Task Handle(Event message, MessageOptions options, CancellationToken token)
-    {
-        _logger.LogInformation("Handle event");
-        return Task.CompletedTask;
+        return serviceCollection;
     }
 }

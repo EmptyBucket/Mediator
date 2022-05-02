@@ -21,11 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Pipes;
+namespace ConsoleApp5;
 
-namespace ConsoleApp5.Registries;
-
-public interface IPipeProvider
+public record MessageOptions(string RoutingKey = "")
 {
-    IReadOnlyCollection<IPipe> GetPipes<TMessage>(string routingKey = "");
 }

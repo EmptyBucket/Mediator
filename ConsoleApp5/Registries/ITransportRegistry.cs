@@ -25,13 +25,9 @@ using ConsoleApp5.Pipes;
 
 namespace ConsoleApp5.Registries;
 
-public interface IPipeRegistry
+public interface ITransportRegistry
 {
-    void AddPipe(IPipe pipe, string? routingKey = null);
+    void AddTransport<TPipe>(string name) where TPipe : IPipe;
     
-    void AddPipe<TMessage>(IPipe pipe, string? routingKey = null);
-
-    void RemovePipe(IPipe pipe, string? routingKey = null);
-    
-    void RemovePipe<TMessage>(IPipe pipe, string? routingKey = null);
+    void RemoveTransport(string name);
 }

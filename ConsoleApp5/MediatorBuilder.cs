@@ -21,15 +21,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Registries;
+using ConsoleApp5.Pipes;
+using ConsoleApp5.Registries;
+using Microsoft.Extensions.Logging;
 
-public interface IHandlerRegistry
+namespace ConsoleApp5;
+
+internal class MediatorBuilder
 {
-    void AddHandler<TMessage>(IHandler handler, string? routingKey = null);
+    private IPipe _pipe;
 
-    void AddHandler<TMessage, THandler>(string? routingKey = null) where THandler : IHandler;
+    public MediatorBuilder(TopologyRegistry topologyRegistry, ITransportRegistry transportRegistry)
+    {
+        Topology = topologyRegistry;
+        Transport = transportRegistry;
+        _pipe = new ForkingPipe(topologyRegistry);
+    }
 
-    void RemoveHandler<TMessage>(IHandler handler, string? routingKey = null);
+    public ITopologyRegistry Topology { get; }
 
-    void RemoveHandler<TMessage, THandler>(string? routingKey = null) where THandler : IHandler;
+    public ITransportRegistry Transport { get; }
+
+    public IMediator Build()
+    {
+        var mediator = new Mediator(_pipe, Topology);
+        return mediator;
+    }
 }
