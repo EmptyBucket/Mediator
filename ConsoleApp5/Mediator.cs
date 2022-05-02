@@ -64,13 +64,11 @@ internal class Mediator : IMediator
     public void AddTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
         where THandler : IHandler
     {
-        _topologyRegistry.AddTopology<TMessage, THandler>(transportName, routingKey);
     }
 
     public void RemoveTopology<TMessage>(IHandler handler, string transportName = "default",
         string routingKey = "")
     {
-        _topologyRegistry.RemoveTopology<TMessage>(handler, transportName, routingKey);
     }
 
     public void RemoveTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")

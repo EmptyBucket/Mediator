@@ -21,17 +21,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using ConsoleApp5.Pipes;
+
 namespace ConsoleApp5.Topologies;
 
 public interface ITopologyRegistry
 {
-    void AddTopology<TMessage>(IHandler handler, string transportName = "default", string routingKey = "");
+    Task AddTopology<TMessage>(IPipe pipe, string routingKey = "");
 
-    void AddTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
-        where THandler : IHandler;
+    Task RemoveTopology<TMessage>(IPipe pipe, string routingKey = "");
+}
 
-    void RemoveTopology<TMessage>(IHandler handler, string transportName = "default", string routingKey = "");
-
-    void RemoveTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
-        where THandler : IHandler;
+public interface ITopologyProvider
+{
+    IEnumerable<Topology> GetTopology<TMessage>(string routingKey = "");
 }

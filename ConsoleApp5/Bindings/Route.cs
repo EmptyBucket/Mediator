@@ -21,9 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Topologies;
+namespace ConsoleApp5.Bindings;
 
-public interface ITopologyProvider
-{
-    IEnumerable<(string PipeName, IHandler Handler)> GetTopologies<TMessage>(string routingKey = "");
-}
+public readonly record struct Route(Type MessageType, string RoutingKey = "");
