@@ -1,17 +1,15 @@
 using System.Data;
-using ConsoleApp5.Registries;
+using ConsoleApp5.Topologies;
 
 namespace ConsoleApp5.Pipes;
 
 public class TopologyPipe : IPipe
 {
     private readonly ITopologyProvider _topologyProvider;
-    private readonly IPipeProvider _pipeProvider;
 
-    public TopologyPipe(ITopologyProvider topologyProvider, IPipeProvider pipeProvider)
+    public TopologyPipe(ITopologyProvider topologyProvider)
     {
         _topologyProvider = topologyProvider;
-        _pipeProvider = pipeProvider;
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)

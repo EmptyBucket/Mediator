@@ -1,4 +1,4 @@
-namespace ConsoleApp5.Registries;
+namespace ConsoleApp5.Topologies;
 
 public interface ITopologyProvider
 {

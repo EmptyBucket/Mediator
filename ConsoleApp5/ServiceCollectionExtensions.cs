@@ -1,4 +1,4 @@
-using ConsoleApp5.Registries;
+using ConsoleApp5.Topologies;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ConsoleApp5;
@@ -10,7 +10,7 @@ public static class ServiceCollectionExtensions
     {
         var serviceDescriptor = new ServiceDescriptor(typeof(IMediator), p =>
         {
-            var topologyRegistry = new TopologyRegistry(p);
+            var topologyRegistry = new TopologyRegistry();
             var pipeRegistry = new TransportRegistry(p);
             var mediator = new Mediator(topologyRegistry, pipeRegistry);
             mediator.AddDefaultTransport();

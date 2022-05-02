@@ -1,19 +1,19 @@
-using Microsoft.Extensions.DependencyInjection;
+using ConsoleApp5.Transports;
 
-namespace ConsoleApp5.Registries;
+namespace ConsoleApp5.Topologies;
 
 internal class TopologyRegistry : ITopologyRegistry, ITopologyProvider
 {
-    private readonly IServiceProvider _serviceProvider;
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<(Type, string), HashSet<RegistryEntry>> _topologies = new();
+    private readonly Dictionary<string, Transport> _transports;
 
-    public TopologyRegistry(IServiceProvider serviceProvider)
+    public TopologyRegistry(IEnumerable<Transport> transports)
     {
-        _serviceProvider = serviceProvider;
+        _transports = transports.ToDictionary(t => t.Name);
     }
 
-    public void AddTopology<TMessage>(IHandler handler, string pipeName = "default", string routingKey = "")
+    public void AddTopology<TMessage>(IHandler handler, string transportName = "default", string routingKey = "")
     {
         var key = (typeof(TMessage), routingKey);
 
@@ -22,7 +22,7 @@ internal class TopologyRegistry : ITopologyRegistry, ITopologyProvider
         try
         {
             _topologies.TryAdd(key, new HashSet<RegistryEntry>());
-            _topologies[key].Add(new RegistryEntry(pipeName, Handler: handler));
+            _topologies[key].Add(new RegistryEntry(transportName, Handler: handler));
         }
         finally
         {
@@ -30,7 +30,7 @@ internal class TopologyRegistry : ITopologyRegistry, ITopologyProvider
         }
     }
 
-    public void AddTopology<TMessage, THandler>(string pipeName = "default", string routingKey = "")
+    public void AddTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
         where THandler : IHandler
     {
         var key = (typeof(TMessage), routingKey);
@@ -40,7 +40,7 @@ internal class TopologyRegistry : ITopologyRegistry, ITopologyProvider
         try
         {
             _topologies.TryAdd(key, new HashSet<RegistryEntry>());
-            _topologies[key].Add(new RegistryEntry(pipeName, HandlerType: typeof(THandler)));
+            _topologies[key].Add(new RegistryEntry(transportName, HandlerType: typeof(THandler)));
         }
         finally
         {
@@ -48,7 +48,7 @@ internal class TopologyRegistry : ITopologyRegistry, ITopologyProvider
         }
     }
 
-    public void RemoveTopology<TMessage>(IHandler handler, string pipeName = "default", string routingKey = "")
+    public void RemoveTopology<TMessage>(IHandler handler, string transportName = "default", string routingKey = "")
     {
         var key = (typeof(TMessage), routingKey);
 
@@ -58,7 +58,7 @@ internal class TopologyRegistry : ITopologyRegistry, ITopologyProvider
         {
             if (_topologies.TryGetValue(key, out var set))
             {
-                set.Remove(new RegistryEntry(pipeName, Handler: handler));
+                set.Remove(new RegistryEntry(transportName, Handler: handler));
 
                 if (!set.Any()) _topologies.Remove(key);
             }
@@ -69,7 +69,7 @@ internal class TopologyRegistry : ITopologyRegistry, ITopologyProvider
         }
     }
 
-    public void RemoveTopology<TMessage, THandler>(string pipeName = "default", string routingKey = "")
+    public void RemoveTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
         where THandler : IHandler
     {
         var key = (typeof(TMessage), routingKey);
@@ -80,7 +80,7 @@ internal class TopologyRegistry : ITopologyRegistry, ITopologyProvider
         {
             if (_topologies.TryGetValue(key, out var set))
             {
-                set.Remove(new RegistryEntry(pipeName, HandlerType: typeof(THandler)));
+                set.Remove(new RegistryEntry(transportName, HandlerType: typeof(THandler)));
 
                 if (!set.Any()) _topologies.Remove(key);
             }

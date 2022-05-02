@@ -1,24 +1,24 @@
 using EasyNetQ;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ConsoleApp5.Registries;
+namespace ConsoleApp5.Bindings;
 
-internal class RabbitMqHandlerRegistry : IHandlerRegistry
+internal class RabbitMqBindingRegistry : IBindingRegistry
 {
-    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly IBus _bus;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<RegistryKey, IDisposable> _subscriptions = new();
+    private readonly Dictionary<Binding, IDisposable> _subscriptions = new();
 
-    public RabbitMqHandlerRegistry(IServiceScopeFactory serviceScopeFactory, IBus bus)
+    public RabbitMqBindingRegistry(IBus bus, IServiceScopeFactory serviceScopeFactory)
     {
-        _serviceScopeFactory = serviceScopeFactory;
         _bus = bus;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
-    public async Task AddHandler<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public async Task Add<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey, Handler: handler);
+        var key = new Binding<TMessage>(routingKey, handler: handler);
 
         _lock.EnterWriteLock();
 
@@ -27,7 +27,7 @@ internal class RabbitMqHandlerRegistry : IHandlerRegistry
             if (!_subscriptions.ContainsKey(key))
             {
                 var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(routingKey,
-                    (m, c) => handler.Handle(m!, new MessageOptions(routingKey), c),
+                    (m, c) => handler.HandleAsync(m!, new MessageOptions(routingKey), c),
                     c => c.WithDurable(false).WithAutoDelete());
                 _subscriptions[key] = subscription;
             }
@@ -38,9 +38,9 @@ internal class RabbitMqHandlerRegistry : IHandlerRegistry
         }
     }
 
-    public async Task AddHandler<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
+    public async Task Add<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey, Handler: handler);
+        var key = new Binding<TMessage>(routingKey, handler: handler);
 
         _lock.EnterWriteLock();
 
@@ -49,7 +49,7 @@ internal class RabbitMqHandlerRegistry : IHandlerRegistry
             if (!_subscriptions.ContainsKey(key))
             {
                 var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(
-                    (m, c) => handler.Handle(m!, new MessageOptions(routingKey), c),
+                    (m, c) => handler.HandleAsync(m!, new MessageOptions(routingKey), c),
                     c => c.WithDurable(false));
                 _subscriptions[key] = subscription;
             }
@@ -60,10 +60,10 @@ internal class RabbitMqHandlerRegistry : IHandlerRegistry
         }
     }
 
-    public async Task AddHandler<TMessage, THandler>(string routingKey = "")
+    public async Task Add<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey, HandlerType: typeof(THandler));
+        var key = new Binding<TMessage>(routingKey, handlerType: typeof(THandler));
 
         _lock.EnterWriteLock();
 
@@ -75,7 +75,7 @@ internal class RabbitMqHandlerRegistry : IHandlerRegistry
                     {
                         using var serviceScope = _serviceScopeFactory.CreateScope();
                         var handler = serviceScope.ServiceProvider.GetRequiredService<THandler>();
-                        await handler.Handle(m!, new MessageOptions(routingKey), c);
+                        await handler.HandleAsync(m!, new MessageOptions(routingKey), c);
                     },
                     c => c.WithDurable(false).WithAutoDelete());
                 _subscriptions[key] = subscription;
@@ -87,10 +87,10 @@ internal class RabbitMqHandlerRegistry : IHandlerRegistry
         }
     }
 
-    public async Task AddHandler<TMessage, THandler, TResult>(string routingKey = "")
+    public async Task Add<TMessage, THandler, TResult>(string routingKey = "")
         where THandler : IHandler<TMessage, TResult>
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey, HandlerType: typeof(THandler));
+        var key = new Binding<TMessage>(routingKey, handlerType: typeof(THandler));
 
         _lock.EnterWriteLock();
 
@@ -102,7 +102,7 @@ internal class RabbitMqHandlerRegistry : IHandlerRegistry
                     {
                         using var serviceScope = _serviceScopeFactory.CreateScope();
                         var handler = serviceScope.ServiceProvider.GetRequiredService<THandler>();
-                        return await handler.Handle(m!, new MessageOptions(routingKey), c);
+                        return await handler.HandleAsync(m!, new MessageOptions(routingKey), c);
                     },
                     c => c.WithDurable(false));
                 _subscriptions[key] = subscription;
@@ -114,9 +114,9 @@ internal class RabbitMqHandlerRegistry : IHandlerRegistry
         }
     }
 
-    public Task RemoveHandler<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public Task Remove<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey, Handler: handler);
+        var key = new Binding<TMessage>(routingKey, handler: handler);
 
         _lock.EnterWriteLock();
 
@@ -132,10 +132,10 @@ internal class RabbitMqHandlerRegistry : IHandlerRegistry
         return Task.CompletedTask;
     }
 
-    public Task RemoveHandler<TMessage, THandler>(string routingKey = "")
+    public Task Remove<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey, HandlerType: typeof(THandler));
+        var key = new Binding<TMessage>(routingKey, handlerType: typeof(THandler));
 
         _lock.EnterWriteLock();
 
@@ -150,6 +150,4 @@ internal class RabbitMqHandlerRegistry : IHandlerRegistry
 
         return Task.CompletedTask;
     }
-
-    private record RegistryKey(Type MessageType, string RoutingKey, IHandler? Handler = null, Type? HandlerType = null);
 }

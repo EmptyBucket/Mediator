@@ -2,12 +2,12 @@ using Microsoft.Extensions.Logging;
 
 namespace ConsoleApp5.Pipes;
 
-public class LoggPipe : IPipe
+public class LoggingPipe : IPipe
 {
     private readonly IPipe _nextPipe;
-    private readonly ILogger<LoggPipe> _logger;
+    private readonly ILogger<LoggingPipe> _logger;
 
-    public LoggPipe(IPipe nextPipe, ILogger<LoggPipe> logger)
+    public LoggingPipe(IPipe nextPipe, ILogger<LoggingPipe> logger)
     {
         _nextPipe = nextPipe;
         _logger = logger;
