@@ -23,7 +23,21 @@
 
 namespace ConsoleApp5.Registries;
 
-public interface IHandlerProvider
+public interface IHandlerRegistry
 {
-    IReadOnlyCollection<IHandler> GetHandlers<TMessage>(string routingKey = "");
+    Task AddHandler<TMessage>(IHandler<TMessage> handler, string routingKey = "");
+
+    Task AddHandler<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
+
+    Task AddHandler<TMessage, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage>;
+
+    Task AddHandler<TMessage, THandler, TResult>(string routingKey = "")
+        where THandler : IHandler<TMessage, TResult>;
+
+    Task RemoveHandler<TMessage>(IHandler<TMessage> handler, string routingKey = "");
+
+    Task RemoveHandler<TMessage, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage>;
 }
+

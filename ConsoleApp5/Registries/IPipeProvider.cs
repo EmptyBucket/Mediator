@@ -27,5 +27,5 @@ namespace ConsoleApp5.Registries;
 
 public interface IPipeProvider
 {
-    IReadOnlyCollection<IPipe> GetPipes<TMessage>(string routingKey = "");
+    (IPipe, IHandlerRegistry) GetTransport(string transportName);
 }

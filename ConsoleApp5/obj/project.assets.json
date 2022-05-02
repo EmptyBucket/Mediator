@@ -15,6 +15,19 @@
           "lib/netstandard2.0/EasyNetQ.dll": {}
         }
       },
+      "EasyNetQ.DI.Microsoft/6.3.1": {
+        "type": "package",
+        "dependencies": {
+          "EasyNetQ": "6.3.1",
+          "Microsoft.Extensions.DependencyInjection": "2.0.0"
+        },
+        "compile": {
+          "lib/netstandard2.0/EasyNetQ.DI.Microsoft.dll": {}
+        },
+        "runtime": {
+          "lib/netstandard2.0/EasyNetQ.DI.Microsoft.dll": {}
+        }
+      },
       "Microsoft.Extensions.DependencyInjection/6.0.0": {
         "type": "package",
         "dependencies": {
@@ -346,6 +359,20 @@
         "lib/netstandard2.0/EasyNetQ.dll",
         "lib/netstandard2.0/EasyNetQ.pdb",
         "lib/netstandard2.0/EasyNetQ.xml"
+      ]
+    },
+    "EasyNetQ.DI.Microsoft/6.3.1": {
+      "sha512": "+q5tDphYs2B9KmdPFqFR4Ym8CkVAjVmMPRHsyPDyz9Ix2k4dq4bVL2COTGubKHGVMN6Avtt95TuyH2m38hI9Zg==",
+      "type": "package",
+      "path": "easynetq.di.microsoft/6.3.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "easynetq.di.microsoft.6.3.1.nupkg.sha512",
+        "easynetq.di.microsoft.nuspec",
+        "lib/netstandard2.0/EasyNetQ.DI.Microsoft.dll",
+        "lib/netstandard2.0/EasyNetQ.DI.Microsoft.pdb",
+        "lib/netstandard2.0/EasyNetQ.DI.Microsoft.xml"
       ]
     },
     "Microsoft.Extensions.DependencyInjection/6.0.0": {
@@ -1042,6 +1069,7 @@
   "projectFileDependencyGroups": {
     "net6.0": [
       "EasyNetQ >= 6.3.1",
+      "EasyNetQ.DI.Microsoft >= 6.3.1",
       "Microsoft.Extensions.DependencyInjection >= 6.0.0",
       "Microsoft.Extensions.Logging.Abstractions >= 6.0.1",
       "StackExchange.Redis >= 2.5.61"
@@ -1085,6 +1113,10 @@
         "targetAlias": "net6.0",
         "dependencies": {
           "EasyNetQ": {
+            "target": "Package",
+            "version": "[6.3.1, )"
+          },
+          "EasyNetQ.DI.Microsoft": {
             "target": "Package",
             "version": "[6.3.1, )"
           },

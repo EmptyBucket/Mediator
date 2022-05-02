@@ -21,34 +21,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Microsoft.Extensions.Logging;
+using System.Data;
+using ConsoleApp5.Registries;
 
 namespace ConsoleApp5.Pipes;
 
-public class LoggingPipe : IPipe
+public class TopologyPipe : IPipe
 {
-    private readonly IPipe _nextPipe;
-    private readonly ILogger<LoggingPipe> _logger;
+    private readonly ITopologyProvider _topologyProvider;
+    private readonly IPipeProvider _pipeProvider;
 
-    public LoggingPipe(IPipe nextPipe, ILogger<LoggingPipe> logger)
+    public TopologyPipe(ITopologyProvider topologyProvider, IPipeProvider pipeProvider)
     {
-        _nextPipe = nextPipe;
-        _logger = logger;
+        _topologyProvider = topologyProvider;
+        _pipeProvider = pipeProvider;
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        _logger.LogInformation($"Publishing message {message}");
-        await _nextPipe.Handle(message, options, token);
-        _logger.LogInformation($"Published message {message}");
+        var topologies = _topologyProvider.GetTopologies<TMessage>(options.RoutingKey);
+        var pipes = topologies.Select(t => _pipeProvider.GetTransport(t.PipeName));
+        await Task.WhenAll(pipes.Select(p => p.Handle(message, options, token)));
     }
 
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
-        _logger.LogInformation($"Sending message {message}");
-        var result = await _nextPipe.Handle<TMessage, TResult>(message, options, token);
-        _logger.LogInformation($"Sent message {message}");
-        return result;
+        var topologies = _topologyProvider.GetTopologies<TMessage>(options.RoutingKey);
+        var pipes = topologies.Select(t => _pipeProvider.GetTransport(t.PipeName)).ToArray();
+
+        if (pipes.Length != 1) throw new InvalidConstraintException("Must be single pipe");
+
+        return await pipes.Single().Handle<TMessage, TResult>(message, options, token);
     }
 }

@@ -21,11 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Pipes;
-
 namespace ConsoleApp5.Registries;
 
-public interface ITransportProvider
+public interface ITopologyProvider
 {
-    IPipe GetTransport(string name);
+    IEnumerable<(string PipeName, IHandler Handler)> GetTopologies<TMessage>(string routingKey = "");
 }

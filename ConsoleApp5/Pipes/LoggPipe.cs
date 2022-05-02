@@ -21,33 +21,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System.Data;
-using ConsoleApp5.Registries;
+using Microsoft.Extensions.Logging;
 
 namespace ConsoleApp5.Pipes;
 
-public class HandlingPipe : IPipe
+public class LoggPipe : IPipe
 {
-    private readonly IHandlerProvider _handlerProvider;
+    private readonly IPipe _nextPipe;
+    private readonly ILogger<LoggPipe> _logger;
 
-    public HandlingPipe(IHandlerProvider handlerProvider)
+    public LoggPipe(IPipe nextPipe, ILogger<LoggPipe> logger)
     {
-        _handlerProvider = handlerProvider;
+        _nextPipe = nextPipe;
+        _logger = logger;
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        var handlers = _handlerProvider.GetHandlers<TMessage>(options.RoutingKey);
-        await Task.WhenAll(handlers.Cast<IHandler<TMessage>>().Select(h => h.Handle(message, options, token)));
+        _logger.LogInformation($"Publishing message {message}");
+        await _nextPipe.Handle(message, options, token);
+        _logger.LogInformation($"Published message {message}");
     }
 
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
-        var handlers = _handlerProvider.GetHandlers<TMessage>(options.RoutingKey);
-
-        if (handlers.Count != 1) throw new InvalidConstraintException("Must be single handler");
-
-        return await handlers.Cast<IHandler<TMessage, TResult>>().Single().Handle(message, options, token);
+        _logger.LogInformation($"Sending message {message}");
+        var result = await _nextPipe.Handle<TMessage, TResult>(message, options, token);
+        _logger.LogInformation($"Sent message {message}");
+        return result;
     }
 }

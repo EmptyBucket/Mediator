@@ -21,8 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using ConsoleApp5.Registries;
+
 namespace ConsoleApp5;
 
-public interface IMediator : ISender, IPublisher
+public interface IMediator : ISender, IPublisher, ITopologyRegistry, ITopologyProvider, ITransportRegistry, IPipeProvider
 {
 }

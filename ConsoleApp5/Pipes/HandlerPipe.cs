@@ -21,30 +21,35 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Pipes;
+using System.Data;
 using ConsoleApp5.Registries;
-using Microsoft.Extensions.Logging;
 
-namespace ConsoleApp5;
+namespace ConsoleApp5.Pipes;
 
-internal class MediatorBuilder
+public class HandlerPipe : IPipe
 {
-    private IPipe _pipe;
+    private readonly ITopologyProvider _topologyProvider;
 
-    public MediatorBuilder(TopologyRegistry topologyRegistry, ITransportRegistry transportRegistry)
+    public HandlerPipe(ITopologyProvider topologyProvider)
     {
-        Topology = topologyRegistry;
-        Transport = transportRegistry;
-        _pipe = new ForkingPipe(topologyRegistry);
+        _topologyProvider = topologyProvider;
     }
 
-    public ITopologyRegistry Topology { get; }
-
-    public ITransportRegistry Transport { get; }
-
-    public IMediator Build()
+    public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        var mediator = new Mediator(_pipe, Topology);
-        return mediator;
+        var topologies = _topologyProvider.GetTopologies<TMessage>(options.RoutingKey);
+        var handlers = topologies.Select(t => t.Handler);
+        await Task.WhenAll(handlers.Cast<IHandler<TMessage>>().Select(h => h.Handle(message, options, token)));
+    }
+
+    public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
+        CancellationToken token)
+    {
+        var topologies = _topologyProvider.GetTopologies<TMessage>(options.RoutingKey);
+        var handlers = topologies.Select(t => t.Handler).ToArray();
+
+        if (handlers.Length != 1) throw new InvalidConstraintException("Must be single handler");
+
+        return await handlers.Cast<IHandler<TMessage, TResult>>().Single().Handle(message, options, token);
     }
 }
