@@ -25,7 +25,7 @@ using ConsoleApp5.Models;
 
 namespace ConsoleApp5.Bindings;
 
-internal class MemoryBindingRegistry : IBindingRegistry, IBindingProvider
+internal class BindingRegistry : IBindingRegistry, IBindingProvider
 {
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, HashSet<Binding>> _bindings = new();

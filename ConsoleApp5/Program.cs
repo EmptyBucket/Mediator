@@ -28,36 +28,19 @@ using EasyNetQ;
 using Microsoft.Extensions.DependencyInjection;
 
 var bus = RabbitHutch.CreateBus("host=localhost");
-RabbitHutch.RegisterBus();
 
 var serviceCollection = new ServiceCollection();
-serviceCollection.AddMediator(m =>
-{
-    m.AddTopology<Event>("rabbit");
-});
 var serviceProvider = serviceCollection.BuildServiceProvider();
 var mediator = serviceProvider.GetRequiredService<IMediator>();
 await mediator.Publish(new Event("qwe"));
 
-namespace ConsoleApp5
+public record Event(string Name);
+
+public class EventHandler : IHandler<Event>
 {
-    // var task = Task.Run(async () =>
-// {
-//     while (true)
-//     {
-//         await Task.Delay(1_000);
-//     }
-// });
-// await task;
-
-    public record Event(string Name);
-
-    public class EventHandler : IHandler<Event>
+    public Task HandleAsync(Event message, MessageOptions options, CancellationToken token)
     {
-        public Task HandleAsync(Event message, MessageOptions options, CancellationToken token)
-        {
-            Console.WriteLine(message.Name);
-            return Task.CompletedTask;
-        }
+        Console.WriteLine(message.Name);
+        return Task.CompletedTask;
     }
 }

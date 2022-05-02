@@ -21,28 +21,49 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System.Collections.Concurrent;
+using ConsoleApp5.Models;
 using ConsoleApp5.Pipes;
-using ConsoleApp5.Topologies;
-using EasyNetQ;
 
-namespace ConsoleApp5.Transports;
+namespace ConsoleApp5.Topologies;
 
-public class RabbitMqTransportFactory : ITransportFactory
+internal class DirectTopologyRegistry : ITopologyRegistry, ITopologyProvider
 {
-    private readonly IBus _bus;
-    private readonly ITransportFactory _receiveTransportFactory;
+    private readonly IPipe _pipe;
+    private readonly ConcurrentDictionary<Route, Topology> _topologies = new();
 
-    public RabbitMqTransportFactory(IBus bus, ITransportFactory receiveTransportFactory)
+    public DirectTopologyRegistry(IPipe pipe)
     {
-        _bus = bus;
-        _receiveTransportFactory = receiveTransportFactory;
+        _pipe = pipe;
     }
 
-    public Transport Create()
+    public Task AddTopology<TMessage>(string routingKey = "")
     {
-        var pipe = new RabbitMqPipe(_bus);
-        var receiveTransport = _receiveTransportFactory.Create();
-        var bindings = new RabbitMqTopologyRegistry(_bus, receiveTransport);
-        return new Transport("rabbitmq", pipe, bindings);
+        var route = new Route(typeof(TMessage), routingKey);
+
+        _topologies[route] = new Topology(route, _pipe);
+
+        return Task.CompletedTask;
+    }
+
+    public Task AddTopology<TMessage, TResult>(string routingKey = "")
+    {
+        return AddTopology<TMessage>(routingKey);
+    }
+
+    public Task RemoveTopology<TMessage>(string routingKey = "")
+    {
+        var route = new Route(typeof(TMessage), routingKey);
+
+        _topologies.Remove(route, out _);
+
+        return Task.CompletedTask;
+    }
+
+    public Topology? GetTopology<TMessage>(string routingKey = "")
+    {
+        var route = new Route(typeof(TMessage), routingKey);
+
+        return _topologies.TryGetValue(route, out var topology) ? topology : null;
     }
 }

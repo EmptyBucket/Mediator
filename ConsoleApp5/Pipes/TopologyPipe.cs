@@ -28,25 +28,28 @@ namespace ConsoleApp5.Pipes;
 
 public class TopologyPipe : IPipe
 {
-    private readonly ITopologyProvider _topologyProvider;
+    private readonly IEnumerable<ITopologyProvider> _topologyProviders;
 
-    public TopologyPipe(ITopologyProvider topologyProvider)
+    public TopologyPipe(IEnumerable<ITopologyProvider> topologyProviders)
     {
-        _topologyProvider = topologyProvider;
+        _topologyProviders = topologyProviders;
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        var topologies = _topologyProvider.GetTopologies<TMessage>(options.RoutingKey);
-        var pipes = topologies.Select(t => _pipeProvider.GetTransport(t.PipeName));
+        var topologies =
+            _topologyProviders.Select(p => p.GetTopology<TMessage>(options.RoutingKey)).Where(t => t.HasValue);
+        var pipes = topologies.Select(t => t!.Value.Pipe);
+
         await Task.WhenAll(pipes.Select(p => p.Handle(message, options, token)));
     }
 
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
-        var topologies = _topologyProvider.GetTopologies<TMessage>(options.RoutingKey);
-        var pipes = topologies.Select(t => _pipeProvider.GetTransport(t.PipeName)).ToArray();
+        var topologies =
+            _topologyProviders.Select(p => p.GetTopology<TMessage>(options.RoutingKey)).Where(t => t.HasValue);
+        var pipes = topologies.Select(t => t!.Value.Pipe).ToArray();
 
         if (pipes.Length != 1) throw new InvalidConstraintException("Must be single pipe");
 
