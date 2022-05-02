@@ -10,9 +10,9 @@ public static class ServiceCollectionExtensions
     {
         var serviceDescriptor = new ServiceDescriptor(typeof(IMediator), p =>
         {
-            var topologyRegistry = new TopologyRegistry();
+            var topologyRegistry = new DirectTopologyRegistry();
             var pipeRegistry = new TransportRegistry(p);
-            var mediator = new Mediator(topologyRegistry, pipeRegistry);
+            var mediator = new Mediator();
             mediator.AddDefaultTransport();
             mediatorBuilder?.Invoke(mediator);
             return mediator;

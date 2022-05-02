@@ -4,12 +4,12 @@ using ConsoleApp5.Pipes;
 
 namespace ConsoleApp5.Topologies;
 
-internal class TopologyRegistry : ITopologyRegistry, ITopologyProvider
+internal class DirectTopologyRegistry : ITopologyRegistry, ITopologyProvider
 {
     private readonly IPipe _pipe;
     private readonly ConcurrentDictionary<Route, Topology> _topologies = new();
 
-    public TopologyRegistry(IPipe pipe)
+    public DirectTopologyRegistry(IPipe pipe)
     {
         _pipe = pipe;
     }
