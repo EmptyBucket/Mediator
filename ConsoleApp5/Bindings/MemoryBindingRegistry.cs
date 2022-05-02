@@ -86,7 +86,7 @@ internal class MemoryBindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public Task Add<TMessage, THandler, TResult>(string routingKey = "")
+    public Task Add<TMessage, TResult, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage, TResult>
     {
         var key = new Route(typeof(TMessage), routingKey);
