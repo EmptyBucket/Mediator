@@ -21,6 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Bindings;
+namespace ConsoleApp5.Models;
 
 public readonly record struct Route(Type MessageType, string RoutingKey = "");

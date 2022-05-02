@@ -21,9 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using ConsoleApp5.Models;
+
 namespace ConsoleApp5.Bindings;
 
 public interface IBindingProvider
 {
-    IEnumerable<Binding> Get<TMessage>(string routingKey = "");
+    IEnumerable<Binding> GetBindings<TMessage>(string routingKey = "");
 }

@@ -21,23 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Bindings;
+using ConsoleApp5.Models;
 
-public readonly record struct Binding
+namespace ConsoleApp5.Topologies;
+
+public interface ITopologyProvider
 {
-    public Binding(Route route, IHandler? handler = null, Type? handlerType = null)
-    {
-        if (handler is null && handlerType is null)
-            throw new ArgumentException($"{nameof(handler)} or {nameof(handlerType)} must be not-null");
-
-        Route = route;
-        Handler = handler;
-        HandlerType = handlerType;
-    }
-
-    public Route Route { get; }
-
-    public IHandler? Handler { get; }
-
-    public Type? HandlerType { get; }
+    Topology? GetTopology<TMessage>(string routingKey = "");
 }

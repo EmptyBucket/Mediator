@@ -26,7 +26,6 @@
 using ConsoleApp5;
 using EasyNetQ;
 using Microsoft.Extensions.DependencyInjection;
-using EventHandler = ConsoleApp5.EventHandler;
 
 var bus = RabbitHutch.CreateBus("host=localhost");
 RabbitHutch.RegisterBus();
@@ -34,7 +33,7 @@ RabbitHutch.RegisterBus();
 var serviceCollection = new ServiceCollection();
 serviceCollection.AddMediator(m =>
 {
-    m.AddTopology<Event>(new EventHandler(), "rabbit");
+    m.AddTopology<Event>("rabbit");
 });
 var serviceProvider = serviceCollection.BuildServiceProvider();
 var mediator = serviceProvider.GetRequiredService<IMediator>();
