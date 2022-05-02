@@ -4,7 +4,5 @@ namespace ConsoleApp5.Registries;
 
 public interface ITransportRegistry
 {
-    void AddTransport<TPipe>(string name) where TPipe : IPipe;
-    
-    void RemoveTransport(string name);
+    void AddPipe(string name, IPipe pipe, IHandlerRegistry handlerRegistry);
 }

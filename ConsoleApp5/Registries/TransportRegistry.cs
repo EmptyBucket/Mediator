@@ -3,28 +3,20 @@ using ConsoleApp5.Pipes;
 
 namespace ConsoleApp5.Registries;
 
-public class TransportRegistry : ITransportRegistry, ITransportProvider
+public class TransportRegistry : ITransportRegistry, IPipeProvider
 {
-    private readonly ServiceFactory _serviceFactory;
-    private readonly ConcurrentDictionary<string, Type> _transportTypes = new();
+    private readonly ConcurrentDictionary<string, RegistryEntry> _pipes = new();
 
-    public TransportRegistry(ServiceFactory serviceFactory)
+    public void AddPipe(string name, IPipe pipe, IHandlerRegistry handlerRegistry)
     {
-        _serviceFactory = serviceFactory;
+        _pipes.TryAdd(name, new RegistryEntry(Pipe: pipe, HandlerRegistry: handlerRegistry));
     }
 
-    public void AddTransport<TPipe>(string name) where TPipe : IPipe
+    public (IPipe, IHandlerRegistry) GetTransport(string transportName)
     {
-        _transportTypes.TryAdd(name, typeof(TPipe));
+        var (pipe, handlerRegistry) = _pipes[transportName];
+        return (pipe, handlerRegistry);
     }
 
-    public void RemoveTransport(string name)
-    {
-        _transportTypes.TryRemove(name, out _);
-    }
-
-    public IPipe GetTransport(string name)
-    {
-        return (IPipe)_serviceFactory(_transportTypes[name]);
-    }
+    private record RegistryEntry(IPipe Pipe, IHandlerRegistry HandlerRegistry);
 }

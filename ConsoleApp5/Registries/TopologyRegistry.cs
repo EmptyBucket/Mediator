@@ -1,163 +1,117 @@
-using ConsoleApp5.Pipes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ConsoleApp5.Registries;
 
-internal class TopologyRegistry : ITopologyRegistry, IHandlerProvider, IPipeProvider
+internal class TopologyRegistry : ITopologyRegistry, ITopologyProvider
 {
-    private readonly ServiceFactory _serviceFactory;
-    private readonly ITransportProvider _transportProvider;
+    private readonly IServiceProvider _serviceProvider;
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<(Type, string), HashSet<IHandler>> _handlers = new();
-    private readonly Dictionary<(Type, string), HashSet<Type>> _handlerTypes = new();
-    private readonly Dictionary<(Type, string), HashSet<IPipe>> _pipes = new();
-    private readonly Dictionary<(Type, string), HashSet<string>> _pipeNames = new();
+    private readonly Dictionary<(Type, string), HashSet<RegistryEntry>> _topologies = new();
 
-    public TopologyRegistry(ServiceFactory serviceFactory, ITransportProvider transportProvider)
+    public TopologyRegistry(IServiceProvider serviceProvider)
     {
-        _serviceFactory = serviceFactory;
-        _transportProvider = transportProvider;
+        _serviceProvider = serviceProvider;
     }
 
-    public void AddTopology<TMessage>(IHandler handler, string transportName = "default", string routingKey = "")
+    public void AddTopology<TMessage>(IHandler handler, string pipeName = "default", string routingKey = "")
     {
         var key = (typeof(TMessage), routingKey);
 
         _lock.EnterWriteLock();
 
-        if (_handlers.TryAdd(key, new HashSet<IHandler>()))
+        try
         {
-            _pipeNames.TryAdd(key, new HashSet<string>());
-            _pipeNames[key].Add(transportName);
+            _topologies.TryAdd(key, new HashSet<RegistryEntry>());
+            _topologies[key].Add(new RegistryEntry(pipeName, Handler: handler));
         }
-
-        _handlers[key].Add(handler);
-
-        _lock.ExitWriteLock();
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
     }
 
-    public void AddTopology<TMessage>(IHandler handler, IPipe pipe, string routingKey = "")
-    {
-        var key = (typeof(TMessage), routingKey);
-
-        _lock.EnterWriteLock();
-
-        if (_handlers.TryAdd(key, new HashSet<IHandler>()))
-        {
-            _pipes.TryAdd(key, new HashSet<IPipe>());
-            _pipes[key].Add(pipe);
-        }
-
-        _handlers[key].Add(handler);
-
-        _lock.ExitWriteLock();
-    }
-
-    public void AddTopology<TMessage, THandler>(IPipe pipe, string routingKey = "") where THandler : IHandler
-    {
-        var key = (typeof(TMessage), routingKey);
-
-        _lock.EnterWriteLock();
-
-        if (_handlerTypes.TryAdd(key, new HashSet<Type>()))
-        {
-            _pipes.TryAdd(key, new HashSet<IPipe>());
-            _pipes[key].Add(pipe);
-        }
-
-        _handlerTypes[key].Add(typeof(THandler));
-
-        _lock.ExitWriteLock();
-    }
-
-    public void AddTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
+    public void AddTopology<TMessage, THandler>(string pipeName = "default", string routingKey = "")
         where THandler : IHandler
     {
         var key = (typeof(TMessage), routingKey);
 
         _lock.EnterWriteLock();
 
-        if (_handlerTypes.TryAdd(key, new HashSet<Type>()))
+        try
         {
-            _pipeNames.TryAdd(key, new HashSet<string>());
-            _pipeNames[key].Add(transportName);
+            _topologies.TryAdd(key, new HashSet<RegistryEntry>());
+            _topologies[key].Add(new RegistryEntry(pipeName, HandlerType: typeof(THandler)));
         }
-
-        _handlerTypes[key].Add(typeof(THandler));
-
-        _lock.ExitWriteLock();
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
     }
 
-    public void RemoveTopology<TMessage>(IHandler handler, string routingKey = "")
+    public void RemoveTopology<TMessage>(IHandler handler, string pipeName = "default", string routingKey = "")
     {
         var key = (typeof(TMessage), routingKey);
 
         _lock.EnterWriteLock();
 
-        if (_handlers.TryGetValue(key, out var list))
+        try
         {
-            list.Remove(handler);
-
-            if (!list.Any())
+            if (_topologies.TryGetValue(key, out var set))
             {
-                _handlers.Remove(key);
-                _pipes.Remove(key);
-                _pipeNames.Remove(key);
+                set.Remove(new RegistryEntry(pipeName, Handler: handler));
+
+                if (!set.Any()) _topologies.Remove(key);
             }
         }
-
-        _lock.ExitWriteLock();
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
     }
 
-    public void RemoveTopology<TMessage, THandler>(string routingKey = "")
+    public void RemoveTopology<TMessage, THandler>(string pipeName = "default", string routingKey = "")
         where THandler : IHandler
     {
         var key = (typeof(TMessage), routingKey);
 
         _lock.EnterWriteLock();
 
-        if (_handlerTypes.TryGetValue(key, out var list))
+        try
         {
-            list.Remove(typeof(THandler));
-
-            if (!list.Any())
+            if (_topologies.TryGetValue(key, out var set))
             {
-                _handlers.Remove(key);
-                _pipes.Remove(key);
-                _pipeNames.Remove(key);
+                set.Remove(new RegistryEntry(pipeName, HandlerType: typeof(THandler)));
+
+                if (!set.Any()) _topologies.Remove(key);
             }
         }
-
-        _lock.ExitWriteLock();
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
     }
 
-    public IReadOnlyCollection<IHandler> GetHandlers<TMessage>(string routingKey = "")
+    public IEnumerable<(string PipeName, IHandler Handler)> GetTopologies<TMessage>(string routingKey = "")
     {
         var key = (typeof(TMessage), routingKey);
 
         _lock.EnterReadLock();
 
-        if (_handlers.TryGetValue(key, out var handlers))
-            return handlers.ToArray();
+        try
+        {
+            if (_topologies.TryGetValue(key, out var topologies))
+                return topologies
+                    .Select(t =>
+                        (t.PipeName, t.Handler ?? (IHandler)_serviceProvider.GetRequiredService(t.HandlerType!)))
+                    .ToArray();
+        }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
 
-        if (_handlerTypes.TryGetValue(key, out var handlerTypes))
-            return handlerTypes.Select(h => _serviceFactory(h)).Cast<IHandler>().ToArray();
-
-        _lock.ExitReadLock();
-
-        return Array.Empty<IHandler>();
+        return Array.Empty<(string PipeName, IHandler Handler)>();
     }
 
-    public IReadOnlyCollection<IPipe> GetPipes<TMessage>(string routingKey = "")
-    {
-        var key = (typeof(TMessage), routingKey);
-
-        _lock.EnterReadLock();
-
-        if (_pipeNames.TryGetValue(key, out var pipeNames))
-            return pipeNames.Select(t => _transportProvider.GetTransport(t)).ToArray();
-
-        _lock.ExitReadLock();
-
-        return Array.Empty<IPipe>();
-    }
+    private record RegistryEntry(string PipeName, IHandler? Handler = null, Type? HandlerType = null);
 }
