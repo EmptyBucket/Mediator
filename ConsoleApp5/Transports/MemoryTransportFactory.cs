@@ -21,35 +21,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System.Data;
-using ConsoleApp5.Registries;
+using ConsoleApp5.Bindings;
+using ConsoleApp5.Pipes;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace ConsoleApp5.Pipes;
+namespace ConsoleApp5.Transports;
 
-public class HandlerPipe : IPipe
+public class MemoryTransportFactory : ITransportFactory
 {
-    private readonly ITopologyProvider _topologyProvider;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public HandlerPipe(ITopologyProvider topologyProvider)
+    public MemoryTransportFactory(IServiceScopeFactory serviceScopeFactory)
     {
-        _topologyProvider = topologyProvider;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
-    public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
+    public Transport Create()
     {
-        var topologies = _topologyProvider.GetTopologies<TMessage>(options.RoutingKey);
-        var handlers = topologies.Select(t => t.Handler);
-        await Task.WhenAll(handlers.Cast<IHandler<TMessage>>().Select(h => h.Handle(message, options, token)));
-    }
-
-    public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
-        CancellationToken token)
-    {
-        var topologies = _topologyProvider.GetTopologies<TMessage>(options.RoutingKey);
-        var handlers = topologies.Select(t => t.Handler).ToArray();
-
-        if (handlers.Length != 1) throw new InvalidConstraintException("Must be single handler");
-
-        return await handlers.Cast<IHandler<TMessage, TResult>>().Single().Handle(message, options, token);
+        var bindings = new MemoryBindingRegistry();
+        var pipe = new MemoryPipe(bindings, _serviceScopeFactory);
+        return new Transport("memory", pipe, bindings);
     }
 }

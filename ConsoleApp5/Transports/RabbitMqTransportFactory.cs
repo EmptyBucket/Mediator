@@ -21,27 +21,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Topologies;
+using ConsoleApp5.Bindings;
+using ConsoleApp5.Pipes;
+using EasyNetQ;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ConsoleApp5;
+namespace ConsoleApp5.Transports;
 
-public static class ServiceCollectionExtensions
+public class RabbitMqTransportFactory : ITransportFactory
 {
-    public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
-        Action<IMediator>? mediatorBuilder = null, ServiceLifetime lifetime = ServiceLifetime.Singleton)
-    {
-        var serviceDescriptor = new ServiceDescriptor(typeof(IMediator), p =>
-        {
-            var topologyRegistry = new TopologyRegistry();
-            var pipeRegistry = new TransportRegistry(p);
-            var mediator = new Mediator(topologyRegistry, pipeRegistry);
-            mediator.AddDefaultTransport();
-            mediatorBuilder?.Invoke(mediator);
-            return mediator;
-        }, lifetime);
-        serviceCollection.Add(serviceDescriptor);
+    private readonly IBus _bus;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
-        return serviceCollection;
+    public RabbitMqTransportFactory(IBus bus, IServiceScopeFactory serviceScopeFactory)
+    {
+        _bus = bus;
+        _serviceScopeFactory = serviceScopeFactory;
+    }
+
+    public Transport Create()
+    {
+        var pipe = new RabbitMqPipe(_bus);
+        var bindings = new RabbitMqBindingRegistry(_bus, _serviceScopeFactory);
+        return new Transport("rabbitmq", pipe, bindings);
     }
 }

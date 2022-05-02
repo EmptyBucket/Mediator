@@ -21,23 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Registries;
+namespace ConsoleApp5.Topologies;
 
-public interface IHandlerRegistry
+public interface ITopologyProvider
 {
-    Task AddHandler<TMessage>(IHandler<TMessage> handler, string routingKey = "");
-
-    Task AddHandler<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
-
-    Task AddHandler<TMessage, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage>;
-
-    Task AddHandler<TMessage, THandler, TResult>(string routingKey = "")
-        where THandler : IHandler<TMessage, TResult>;
-
-    Task RemoveHandler<TMessage>(IHandler<TMessage> handler, string routingKey = "");
-
-    Task RemoveHandler<TMessage, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage>;
+    IEnumerable<(string PipeName, IHandler Handler)> GetTopologies<TMessage>(string routingKey = "");
 }
-

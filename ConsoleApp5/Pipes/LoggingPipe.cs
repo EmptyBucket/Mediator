@@ -21,25 +21,34 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System.Collections.Concurrent;
-using ConsoleApp5.Pipes;
+using Microsoft.Extensions.Logging;
 
-namespace ConsoleApp5.Registries;
+namespace ConsoleApp5.Pipes;
 
-public class TransportRegistry : ITransportRegistry, IPipeProvider
+public class LoggingPipe : IPipe
 {
-    private readonly ConcurrentDictionary<string, RegistryEntry> _pipes = new();
+    private readonly IPipe _nextPipe;
+    private readonly ILogger<LoggingPipe> _logger;
 
-    public void AddPipe(string name, IPipe pipe, IHandlerRegistry handlerRegistry)
+    public LoggingPipe(IPipe nextPipe, ILogger<LoggingPipe> logger)
     {
-        _pipes.TryAdd(name, new RegistryEntry(Pipe: pipe, HandlerRegistry: handlerRegistry));
+        _nextPipe = nextPipe;
+        _logger = logger;
     }
 
-    public (IPipe, IHandlerRegistry) GetTransport(string transportName)
+    public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        var (pipe, handlerRegistry) = _pipes[transportName];
-        return (pipe, handlerRegistry);
+        _logger.LogInformation($"Publishing message {message}");
+        await _nextPipe.Handle(message, options, token);
+        _logger.LogInformation($"Published message {message}");
     }
 
-    private record RegistryEntry(IPipe Pipe, IHandlerRegistry HandlerRegistry);
+    public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
+        CancellationToken token)
+    {
+        _logger.LogInformation($"Sending message {message}");
+        var result = await _nextPipe.Handle<TMessage, TResult>(message, options, token);
+        _logger.LogInformation($"Sent message {message}");
+        return result;
+    }
 }

@@ -21,20 +21,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using ConsoleApp5.Bindings;
 using ConsoleApp5.Pipes;
-using EasyNetQ;
 
-namespace ConsoleApp5;
+namespace ConsoleApp5.Transports;
 
-public static class MediatorRegistryExtensions
+public class Transport
 {
-    public static void AddDefaultTransport(this IMediator mediator)
+    public Transport(string name, IPipe pipe, IBindingRegistry bindings)
     {
-        mediator.AddPipe("default", new HandlerPipe(mediator));
+        Name = name;
+        Pipe = pipe;
+        Bindings = bindings;
     }
 
-    public static void AddRabbitMqTransport(this IMediator mediator, IBus bus)
-    {
-        mediator.AddPipe("rabbit", new RabbitMqPipe(bus));
-    }
+    public string Name { get; }
+
+    public IPipe Pipe { get; }
+
+    public IBindingRegistry Bindings { get; }
 }

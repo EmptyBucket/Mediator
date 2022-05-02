@@ -21,11 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Pipes;
+namespace ConsoleApp5.Transports;
 
-namespace ConsoleApp5.Registries;
-
-public interface IPipeProvider
+public interface ITransportFactory
 {
-    (IPipe, IHandlerRegistry) GetTransport(string transportName);
+    public Transport Create();
 }

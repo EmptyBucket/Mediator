@@ -21,17 +21,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Registries;
+namespace ConsoleApp5.Bindings;
 
-public interface ITopologyRegistry
+public interface IBindingRegistry
 {
-    void AddTopology<TMessage>(IHandler handler, string pipeName = "default", string routingKey = "");
+    Task Add<TMessage>(IHandler<TMessage> handler, string routingKey = "");
 
-    void AddTopology<TMessage, THandler>(string pipeName = "default", string routingKey = "")
-        where THandler : IHandler;
+    Task Add<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
 
-    void RemoveTopology<TMessage>(IHandler handler, string pipeName = "default", string routingKey = "");
+    Task Add<TMessage, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage>;
 
-    void RemoveTopology<TMessage, THandler>(string pipeName = "default", string routingKey = "")
-        where THandler : IHandler;
+    Task Add<TMessage, THandler, TResult>(string routingKey = "")
+        where THandler : IHandler<TMessage, TResult>;
+
+    Task Remove<TMessage>(IHandler<TMessage> handler, string routingKey = "");
+
+    Task Remove<TMessage, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage>;
 }

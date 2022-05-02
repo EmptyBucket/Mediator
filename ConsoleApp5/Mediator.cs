@@ -21,8 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using ConsoleApp5.Bindings;
 using ConsoleApp5.Pipes;
-using ConsoleApp5.Registries;
+using ConsoleApp5.Topologies;
 
 namespace ConsoleApp5;
 
@@ -36,7 +37,7 @@ internal class Mediator : IMediator
     {
         _topologyRegistry = topologyRegistry;
         _transportRegistry = transportRegistry;
-        _pipe = new TopologyPipe(topologyRegistry, transportRegistry);
+        _pipe = new TopologyPipe(topologyRegistry);
     }
 
     public async Task Publish<TMessage>(TMessage message, Action<MessageOptions>? optionsBuilder = null,
@@ -55,27 +56,27 @@ internal class Mediator : IMediator
         return await _pipe.Handle<TMessage, TResult>(message, messageOptions, token);
     }
 
-    public void AddTopology<TMessage>(IHandler handler, string pipeName = "default", string routingKey = "")
+    public void AddTopology<TMessage>(IHandler handler, string transportName = "default", string routingKey = "")
     {
-        _topologyRegistry.AddTopology<TMessage>(handler, pipeName, routingKey);
+        _topologyRegistry.AddTopology<TMessage>(handler, transportName, routingKey);
     }
 
-    public void AddTopology<TMessage, THandler>(string pipeName = "default", string routingKey = "")
+    public void AddTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
         where THandler : IHandler
     {
-        _topologyRegistry.AddTopology<TMessage, THandler>(pipeName, routingKey);
+        _topologyRegistry.AddTopology<TMessage, THandler>(transportName, routingKey);
     }
 
-    public void RemoveTopology<TMessage>(IHandler handler, string pipeName = "default",
+    public void RemoveTopology<TMessage>(IHandler handler, string transportName = "default",
         string routingKey = "")
     {
-        _topologyRegistry.RemoveTopology<TMessage>(handler, pipeName, routingKey);
+        _topologyRegistry.RemoveTopology<TMessage>(handler, transportName, routingKey);
     }
 
-    public void RemoveTopology<TMessage, THandler>(string pipeName = "default", string routingKey = "")
+    public void RemoveTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
         where THandler : IHandler
     {
-        _topologyRegistry.RemoveTopology<TMessage, THandler>(pipeName, routingKey);
+        _topologyRegistry.RemoveTopology<TMessage, THandler>(transportName, routingKey);
     }
 
     public void AddPipe(string name, IPipe pipe)
@@ -93,7 +94,7 @@ internal class Mediator : IMediator
         return _topologyRegistry.GetTopologies<TMessage>(routingKey);
     }
 
-    public (IPipe, IHandlerRegistry) GetTransport(string transportName)
+    public (IPipe, IBindingRegistry) GetTransport(string transportName)
     {
         return _transportRegistry.GetTransport(transportName);
     }

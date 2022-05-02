@@ -21,34 +21,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Microsoft.Extensions.Logging;
+using ConsoleApp5.Bindings;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ConsoleApp5.Pipes;
 
-public class LoggPipe : IPipe
+public class MemoryPipe : IPipe
 {
-    private readonly IPipe _nextPipe;
-    private readonly ILogger<LoggPipe> _logger;
+    private readonly IBindingProvider _bindingProvider;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public LoggPipe(IPipe nextPipe, ILogger<LoggPipe> logger)
+    public MemoryPipe(IBindingProvider bindingProvider, IServiceScopeFactory serviceScopeFactory)
     {
-        _nextPipe = nextPipe;
-        _logger = logger;
+        _bindingProvider = bindingProvider;
+        _serviceScopeFactory = serviceScopeFactory;
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        _logger.LogInformation($"Publishing message {message}");
-        await _nextPipe.Handle(message, options, token);
-        _logger.LogInformation($"Published message {message}");
+        var bindings = _bindingProvider.Get<TMessage>(options.RoutingKey);
+
+        using var serviceScope = _serviceScopeFactory.CreateScope();
+        var serviceProvider = serviceScope.ServiceProvider;
+        var handlers = bindings
+            .Select(t => t.Handler ?? serviceProvider.GetRequiredService(t.HandlerType!))
+            .Cast<IHandler<TMessage>>();
+        await Task.WhenAll(handlers.Select(h => h.HandleAsync(message, options, token)));
     }
 
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
-        _logger.LogInformation($"Sending message {message}");
-        var result = await _nextPipe.Handle<TMessage, TResult>(message, options, token);
-        _logger.LogInformation($"Sent message {message}");
-        return result;
+        var bindings = _bindingProvider.Get<TMessage>(options.RoutingKey);
+
+        using var serviceScope = _serviceScopeFactory.CreateScope();
+        var serviceProvider = serviceScope.ServiceProvider;
+        var handlers = bindings
+            .Select(t => t.Handler ?? serviceProvider.GetRequiredService(t.HandlerType!))
+            .Cast<IHandler<TMessage, TResult>>();
+        return await handlers.Single().HandleAsync(message, options, token);
     }
 }

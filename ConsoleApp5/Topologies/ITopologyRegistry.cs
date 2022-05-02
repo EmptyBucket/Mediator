@@ -21,27 +21,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Topologies;
-using Microsoft.Extensions.DependencyInjection;
+namespace ConsoleApp5.Topologies;
 
-namespace ConsoleApp5;
-
-public static class ServiceCollectionExtensions
+public interface ITopologyRegistry
 {
-    public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
-        Action<IMediator>? mediatorBuilder = null, ServiceLifetime lifetime = ServiceLifetime.Singleton)
-    {
-        var serviceDescriptor = new ServiceDescriptor(typeof(IMediator), p =>
-        {
-            var topologyRegistry = new TopologyRegistry();
-            var pipeRegistry = new TransportRegistry(p);
-            var mediator = new Mediator(topologyRegistry, pipeRegistry);
-            mediator.AddDefaultTransport();
-            mediatorBuilder?.Invoke(mediator);
-            return mediator;
-        }, lifetime);
-        serviceCollection.Add(serviceDescriptor);
+    void AddTopology<TMessage>(IHandler handler, string transportName = "default", string routingKey = "");
 
-        return serviceCollection;
-    }
+    void AddTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
+        where THandler : IHandler;
+
+    void RemoveTopology<TMessage>(IHandler handler, string transportName = "default", string routingKey = "");
+
+    void RemoveTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
+        where THandler : IHandler;
 }

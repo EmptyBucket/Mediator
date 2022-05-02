@@ -21,23 +21,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Registries;
+namespace ConsoleApp5.Bindings;
 
-internal class MemoryHandlerRegistry : IHandlerRegistry
+internal class MemoryBindingRegistry : IBindingRegistry, IBindingProvider
 {
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<RegistryKey, HashSet<RegistryEntry>> _handlers = new();
+    private readonly Dictionary<Route, HashSet<Binding>> _bindings = new();
 
-    public Task AddHandler<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public Task Add<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey);
+        var key = new Route(typeof(TMessage), routingKey);
 
         _lock.EnterWriteLock();
 
         try
         {
-            _handlers.TryAdd(key, new HashSet<RegistryEntry>());
-            _handlers[key].Add(new RegistryEntry(Handler: handler));
+            _bindings.TryAdd(key, new HashSet<Binding>());
+            _bindings[key].Add(new Binding<TMessage>(routingKey, handler: handler));
         }
         finally
         {
@@ -47,16 +47,16 @@ internal class MemoryHandlerRegistry : IHandlerRegistry
         return Task.CompletedTask;
     }
 
-    public Task AddHandler<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
+    public Task Add<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey);
+        var key = new Route(typeof(TMessage), routingKey);
 
         _lock.EnterWriteLock();
 
         try
         {
-            _handlers.TryAdd(key, new HashSet<RegistryEntry>());
-            _handlers[key].Add(new RegistryEntry(Handler: handler));
+            _bindings.TryAdd(key, new HashSet<Binding>());
+            _bindings[key].Add(new Binding<TMessage>(routingKey, handler: handler));
         }
         finally
         {
@@ -66,17 +66,17 @@ internal class MemoryHandlerRegistry : IHandlerRegistry
         return Task.CompletedTask;
     }
 
-    public Task AddHandler<TMessage, THandler>(string routingKey = "")
+    public Task Add<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey);
+        var key = new Route(typeof(TMessage), routingKey);
 
         _lock.EnterWriteLock();
 
         try
         {
-            _handlers.TryAdd(key, new HashSet<RegistryEntry>());
-            _handlers[key].Add(new RegistryEntry(HandlerType: typeof(THandler)));
+            _bindings.TryAdd(key, new HashSet<Binding>());
+            _bindings[key].Add(new Binding<TMessage>(routingKey, handlerType: typeof(THandler)));
         }
         finally
         {
@@ -86,17 +86,17 @@ internal class MemoryHandlerRegistry : IHandlerRegistry
         return Task.CompletedTask;
     }
 
-    public Task AddHandler<TMessage, THandler, TResult>(string routingKey = "")
+    public Task Add<TMessage, THandler, TResult>(string routingKey = "")
         where THandler : IHandler<TMessage, TResult>
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey);
+        var key = new Route(typeof(TMessage), routingKey);
 
         _lock.EnterWriteLock();
 
         try
         {
-            _handlers.TryAdd(key, new HashSet<RegistryEntry>());
-            _handlers[key].Add(new RegistryEntry(HandlerType: typeof(THandler)));
+            _bindings.TryAdd(key, new HashSet<Binding>());
+            _bindings[key].Add(new Binding<TMessage>(routingKey, handlerType: typeof(THandler)));
         }
         finally
         {
@@ -106,19 +106,19 @@ internal class MemoryHandlerRegistry : IHandlerRegistry
         return Task.CompletedTask;
     }
 
-    public Task RemoveHandler<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public Task Remove<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey);
+        var key = new Route(typeof(TMessage), routingKey);
 
         _lock.EnterWriteLock();
 
         try
         {
-            if (_handlers.TryGetValue(key, out var set))
+            if (_bindings.TryGetValue(key, out var set))
             {
-                set.Remove(new RegistryEntry(Handler: handler));
+                set.Remove(new Binding<TMessage>(routingKey, handler: handler));
 
-                if (!set.Any()) _handlers.Remove(key);
+                if (!set.Any()) _bindings.Remove(key);
             }
         }
         finally
@@ -129,20 +129,20 @@ internal class MemoryHandlerRegistry : IHandlerRegistry
         return Task.CompletedTask;
     }
 
-    public Task RemoveHandler<TMessage, THandler>(string routingKey = "")
+    public Task Remove<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
-        var key = new RegistryKey(typeof(TMessage), routingKey);
+        var key = new Route(typeof(TMessage), routingKey);
 
         _lock.EnterWriteLock();
 
         try
         {
-            if (_handlers.TryGetValue(key, out var set))
+            if (_bindings.TryGetValue(key, out var set))
             {
-                set.Remove(new RegistryEntry(HandlerType: typeof(THandler)));
+                set.Remove(new Binding<TMessage>(routingKey, handlerType: typeof(THandler)));
 
-                if (!set.Any()) _handlers.Remove(key);
+                if (!set.Any()) _bindings.Remove(key);
             }
         }
         finally
@@ -153,7 +153,12 @@ internal class MemoryHandlerRegistry : IHandlerRegistry
         return Task.CompletedTask;
     }
 
-    private record RegistryKey(Type MessageType, string RoutingKey = "");
+    public IEnumerable<Binding<TMessage>> Get<TMessage>(string routingKey = "")
+    {
+        var key = new Route(typeof(TMessage), routingKey);
+        
+        return _bindings[key].Cast<Binding<TMessage>>();
+    }
 
-    private record RegistryEntry(IHandler? Handler = null, Type? HandlerType = null);
+    private record Route(Type MessageType, string RoutingKey = "");
 }

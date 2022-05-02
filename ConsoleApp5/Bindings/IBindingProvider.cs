@@ -21,9 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Registries;
+namespace ConsoleApp5.Bindings;
 
-public interface ITopologyProvider
+public interface IBindingProvider
 {
-    IEnumerable<(string PipeName, IHandler Handler)> GetTopologies<TMessage>(string routingKey = "");
+    IEnumerable<Binding<TMessage>> Get<TMessage>(string routingKey = "");
 }
