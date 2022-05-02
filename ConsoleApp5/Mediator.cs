@@ -35,7 +35,7 @@ internal class Mediator : IMediator
 
     public void AddTopology<TMessage>(IHandler handler, string transportName = "default", string routingKey = "")
     {
-        _topologyRegistry.AddTopology<TMessage>(handler, transportName, routingKey);
+        _topologyRegistry.AddTopology<TMessage>(transportName, routingKey);
     }
 
     public void AddTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
@@ -51,7 +51,7 @@ internal class Mediator : IMediator
     public void RemoveTopology<TMessage, THandler>(string transportName = "default", string routingKey = "")
         where THandler : IHandler
     {
-        _topologyRegistry.RemoveTopology<TMessage, THandler>(transportName, routingKey);
+        _topologyRegistry.RemoveTopology<TMessage, THandler>(routingKey);
     }
 
     public void AddPipe(string name, IPipe pipe)

@@ -16,7 +16,7 @@ public class MemoryTransportFactory : ITransportFactory
     public Transport Create()
     {
         var bindings = new MemoryBindingRegistry();
-        var pipe = new MemoryPipe(bindings, _serviceScopeFactory);
+        var pipe = new BindingPipe(bindings, _serviceScopeFactory);
         return new Transport("memory", pipe, bindings);
     }
 }

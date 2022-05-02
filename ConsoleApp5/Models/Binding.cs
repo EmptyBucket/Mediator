@@ -1,4 +1,4 @@
-namespace ConsoleApp5.Bindings;
+namespace ConsoleApp5.Models;
 
 public readonly record struct Binding
 {

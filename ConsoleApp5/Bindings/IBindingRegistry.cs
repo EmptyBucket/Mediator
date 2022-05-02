@@ -2,18 +2,18 @@ namespace ConsoleApp5.Bindings;
 
 public interface IBindingRegistry
 {
-    Task Add<TMessage>(IHandler<TMessage> handler, string routingKey = "");
+    Task AddBinding<TMessage>(IHandler<TMessage> handler, string routingKey = "");
 
-    Task Add<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
+    Task AddBinding<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
 
-    Task Add<TMessage, THandler>(string routingKey = "")
+    Task AddBinding<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>;
 
-    Task Add<TMessage, TResult, THandler>(string routingKey = "")
+    Task AddBinding<TMessage, TResult, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage, TResult>;
 
-    Task Remove<TMessage>(IHandler<TMessage> handler, string routingKey = "");
+    Task RemoveBinding<TMessage>(IHandler<TMessage> handler, string routingKey = "");
 
-    Task Remove<TMessage, THandler>(string routingKey = "")
+    Task RemoveBinding<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>;
 }

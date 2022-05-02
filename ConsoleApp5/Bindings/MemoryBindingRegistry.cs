@@ -1,3 +1,5 @@
+using ConsoleApp5.Models;
+
 namespace ConsoleApp5.Bindings;
 
 internal class MemoryBindingRegistry : IBindingRegistry, IBindingProvider
@@ -5,7 +7,7 @@ internal class MemoryBindingRegistry : IBindingRegistry, IBindingProvider
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, HashSet<Binding>> _bindings = new();
 
-    public Task Add<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public Task AddBinding<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -24,7 +26,7 @@ internal class MemoryBindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public Task Add<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
+    public Task AddBinding<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -43,7 +45,7 @@ internal class MemoryBindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public Task Add<TMessage, THandler>(string routingKey = "")
+    public Task AddBinding<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
         var route = new Route(typeof(TMessage), routingKey);
@@ -63,7 +65,7 @@ internal class MemoryBindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public Task Add<TMessage, TResult, THandler>(string routingKey = "")
+    public Task AddBinding<TMessage, TResult, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage, TResult>
     {
         var route = new Route(typeof(TMessage), routingKey);
@@ -83,7 +85,7 @@ internal class MemoryBindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public Task Remove<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public Task RemoveBinding<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -106,7 +108,7 @@ internal class MemoryBindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public Task Remove<TMessage, THandler>(string routingKey = "")
+    public Task RemoveBinding<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
         var route = new Route(typeof(TMessage), routingKey);
@@ -130,7 +132,7 @@ internal class MemoryBindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public IEnumerable<Binding> Get<TMessage>(string routingKey = "")
+    public IEnumerable<Binding> GetBindings<TMessage>(string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 

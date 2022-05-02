@@ -1,6 +1,8 @@
+using ConsoleApp5.Models;
+
 namespace ConsoleApp5.Bindings;
 
 public interface IBindingProvider
 {
-    IEnumerable<Binding> Get<TMessage>(string routingKey = "");
+    IEnumerable<Binding> GetBindings<TMessage>(string routingKey = "");
 }
