@@ -1,19 +1,19 @@
+using ConsoleApp5.Transports;
 using EasyNetQ;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace ConsoleApp5.Bindings;
 
 internal class RabbitMqBindingRegistry : IBindingRegistry
 {
     private readonly IBus _bus;
-    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly Transport _transport;
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Binding, IDisposable> _subscriptions = new();
 
-    public RabbitMqBindingRegistry(IBus bus, IServiceScopeFactory serviceScopeFactory)
+    public RabbitMqBindingRegistry(IBus bus, Transport transport)
     {
         _bus = bus;
-        _serviceScopeFactory = serviceScopeFactory;
+        _transport = transport;
     }
 
     public async Task Add<TMessage>(IHandler<TMessage> handler, string routingKey = "")
@@ -24,10 +24,12 @@ internal class RabbitMqBindingRegistry : IBindingRegistry
 
         try
         {
+            await _transport.Bindings.Add(handler, routingKey);
+
             if (!_subscriptions.ContainsKey(key))
             {
                 var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(routingKey,
-                    (m, c) => handler.HandleAsync(m!, new MessageOptions(routingKey), c),
+                    (m, c) => _transport.Pipe.Handle(m, new MessageOptions(routingKey), c),
                     c => c.WithDurable(false).WithAutoDelete());
                 _subscriptions[key] = subscription;
             }
@@ -46,10 +48,12 @@ internal class RabbitMqBindingRegistry : IBindingRegistry
 
         try
         {
+            await _transport.Bindings.Add(handler, routingKey);
+
             if (!_subscriptions.ContainsKey(key))
             {
                 var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(
-                    (m, c) => handler.HandleAsync(m!, new MessageOptions(routingKey), c),
+                    (m, c) => _transport.Pipe.Handle<TMessage, TResult>(m, new MessageOptions(routingKey), c),
                     c => c.WithDurable(false));
                 _subscriptions[key] = subscription;
             }
@@ -69,14 +73,12 @@ internal class RabbitMqBindingRegistry : IBindingRegistry
 
         try
         {
+            await _transport.Bindings.Add<TMessage, THandler>(routingKey);
+
             if (!_subscriptions.ContainsKey(key))
             {
-                var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(routingKey, async (m, c) =>
-                    {
-                        using var serviceScope = _serviceScopeFactory.CreateScope();
-                        var handler = serviceScope.ServiceProvider.GetRequiredService<THandler>();
-                        await handler.HandleAsync(m!, new MessageOptions(routingKey), c);
-                    },
+                var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(routingKey,
+                    (m, c) => _transport.Pipe.Handle(m, new MessageOptions(routingKey), c),
                     c => c.WithDurable(false).WithAutoDelete());
                 _subscriptions[key] = subscription;
             }
@@ -87,7 +89,7 @@ internal class RabbitMqBindingRegistry : IBindingRegistry
         }
     }
 
-    public async Task Add<TMessage, THandler, TResult>(string routingKey = "")
+    public async Task Add<TMessage, TResult, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage, TResult>
     {
         var key = new Binding<TMessage>(routingKey, handlerType: typeof(THandler));
@@ -96,14 +98,12 @@ internal class RabbitMqBindingRegistry : IBindingRegistry
 
         try
         {
+            await _transport.Bindings.Add<TMessage, TResult, THandler>(routingKey);
+
             if (!_subscriptions.ContainsKey(key))
             {
-                var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(async (m, c) =>
-                    {
-                        using var serviceScope = _serviceScopeFactory.CreateScope();
-                        var handler = serviceScope.ServiceProvider.GetRequiredService<THandler>();
-                        return await handler.HandleAsync(m!, new MessageOptions(routingKey), c);
-                    },
+                var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(
+                    (m, c) => _transport.Pipe.Handle<TMessage, TResult>(m, new MessageOptions(routingKey), c),
                     c => c.WithDurable(false));
                 _subscriptions[key] = subscription;
             }
@@ -114,7 +114,7 @@ internal class RabbitMqBindingRegistry : IBindingRegistry
         }
     }
 
-    public Task Remove<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public async Task Remove<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
         var key = new Binding<TMessage>(routingKey, handler: handler);
 
@@ -122,17 +122,17 @@ internal class RabbitMqBindingRegistry : IBindingRegistry
 
         try
         {
+            await _transport.Bindings.Remove(handler, routingKey);
+
             if (_subscriptions.Remove(key, out var subscription)) subscription.Dispose();
         }
         finally
         {
             _lock.ExitWriteLock();
         }
-
-        return Task.CompletedTask;
     }
 
-    public Task Remove<TMessage, THandler>(string routingKey = "")
+    public async Task Remove<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
         var key = new Binding<TMessage>(routingKey, handlerType: typeof(THandler));
@@ -141,13 +141,13 @@ internal class RabbitMqBindingRegistry : IBindingRegistry
 
         try
         {
+            await _transport.Bindings.Remove<TMessage, THandler>(routingKey);
+
             if (_subscriptions.Remove(key, out var subscription)) subscription.Dispose();
         }
         finally
         {
             _lock.ExitWriteLock();
         }
-
-        return Task.CompletedTask;
     }
 }
