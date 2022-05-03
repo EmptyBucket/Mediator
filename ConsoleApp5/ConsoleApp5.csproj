@@ -11,8 +11,12 @@
       <PackageReference Include="EasyNetQ" Version="6.3.1" />
       <PackageReference Include="EasyNetQ.DI.Microsoft" Version="6.3.1" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.0" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
       <PackageReference Include="StackExchange.Redis" Version="2.5.61" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\FlexMediator.RabbitMq\FlexMediator.RabbitMq.csproj" />
+      <ProjectReference Include="..\FlexMediator\FlexMediator.csproj" />
     </ItemGroup>
 
 </Project>

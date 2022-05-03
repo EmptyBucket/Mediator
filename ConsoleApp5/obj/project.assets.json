@@ -65,7 +65,6 @@
           "lib/net6.0/Microsoft.Extensions.Logging.Abstractions.dll": {}
         },
         "build": {
-          "build/Microsoft.Extensions.Logging.Abstractions.targets": {},
           "buildTransitive/netcoreapp3.1/_._": {}
         }
       },
@@ -339,6 +338,34 @@
             "assetType": "runtime",
             "rid": "win"
           }
+        }
+      },
+      "FlexMediator/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v6.0",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "6.0.0",
+          "Microsoft.Extensions.Logging.Abstractions": "6.0.1"
+        },
+        "compile": {
+          "bin/placeholder/FlexMediator.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/FlexMediator.dll": {}
+        }
+      },
+      "FlexMediator.RabbitMq/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v6.0",
+        "dependencies": {
+          "EasyNetQ": "6.3.1",
+          "FlexMediator": "1.0.0"
+        },
+        "compile": {
+          "bin/placeholder/FlexMediator.RabbitMq.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/FlexMediator.RabbitMq.dll": {}
         }
       }
     }
@@ -1064,14 +1091,25 @@
         "useSharedDesignerContext.txt",
         "version.txt"
       ]
+    },
+    "FlexMediator/1.0.0": {
+      "type": "project",
+      "path": "../FlexMediator/FlexMediator.csproj",
+      "msbuildProject": "../FlexMediator/FlexMediator.csproj"
+    },
+    "FlexMediator.RabbitMq/1.0.0": {
+      "type": "project",
+      "path": "../FlexMediator.RabbitMq/FlexMediator.RabbitMq.csproj",
+      "msbuildProject": "../FlexMediator.RabbitMq/FlexMediator.RabbitMq.csproj"
     }
   },
   "projectFileDependencyGroups": {
     "net6.0": [
       "EasyNetQ >= 6.3.1",
       "EasyNetQ.DI.Microsoft >= 6.3.1",
+      "FlexMediator >= 1.0.0",
+      "FlexMediator.RabbitMq >= 1.0.0",
       "Microsoft.Extensions.DependencyInjection >= 6.0.0",
-      "Microsoft.Extensions.Logging.Abstractions >= 6.0.1",
       "StackExchange.Redis >= 2.5.61"
     ]
   },
@@ -1099,7 +1137,14 @@
       "frameworks": {
         "net6.0": {
           "targetAlias": "net6.0",
-          "projectReferences": {}
+          "projectReferences": {
+            "/home/strix/RiderProjects/ConsoleApp5/FlexMediator.RabbitMq/FlexMediator.RabbitMq.csproj": {
+              "projectPath": "/home/strix/RiderProjects/ConsoleApp5/FlexMediator.RabbitMq/FlexMediator.RabbitMq.csproj"
+            },
+            "/home/strix/RiderProjects/ConsoleApp5/FlexMediator/FlexMediator.csproj": {
+              "projectPath": "/home/strix/RiderProjects/ConsoleApp5/FlexMediator/FlexMediator.csproj"
+            }
+          }
         }
       },
       "warningProperties": {
@@ -1123,10 +1168,6 @@
           "Microsoft.Extensions.DependencyInjection": {
             "target": "Package",
             "version": "[6.0.0, )"
-          },
-          "Microsoft.Extensions.Logging.Abstractions": {
-            "target": "Package",
-            "version": "[6.0.1, )"
           },
           "StackExchange.Redis": {
             "target": "Package",
