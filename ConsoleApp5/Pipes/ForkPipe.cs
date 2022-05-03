@@ -21,25 +21,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Models;
+using System.Data;
+using ConsoleApp5.Bindings;
 
-public interface IHandler<in TMessage, TResult> : IHandler<TMessage>
+namespace ConsoleApp5.Pipes;
+
+public class ForkPipe : IPipe
 {
-    new Task<TResult> HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
+    private readonly IPipeBindProvider _pipeBindProvider;
 
-    Task IHandler<TMessage>.HandleAsync(TMessage message, MessageOptions options, CancellationToken token) =>
-        HandleAsync(message, options, token);
-}
+    public ForkPipe(IPipeBindProvider pipeBindProvider)
+    {
+        _pipeBindProvider = pipeBindProvider;
+    }
 
-public interface IHandler<in TMessage> : IHandler
-{
-    Task HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
+    public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
+    {
+        var pipeBindings = _pipeBindProvider.GetBindings<TMessage>(options.RoutingKey);
+        var pipes = pipeBindings.Select(t => t.Pipe);
 
-    async Task IHandler.HandleAsync(object message, MessageOptions options, CancellationToken token) =>
-        await HandleAsync((TMessage)message, options, token);
-}
+        await Task.WhenAll(pipes.Select(p => p.Handle(message, options, token)));
+    }
 
-public interface IHandler
-{
-    Task HandleAsync(object message, MessageOptions options, CancellationToken token);
+    public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
+        CancellationToken token)
+    {
+        var pipeBindings = _pipeBindProvider.GetBindings<TMessage>(options.RoutingKey);
+        var pipes = pipeBindings.Select(t => t.Pipe).ToArray();
+
+        if (pipes.Length != 1) throw new InvalidConstraintException("Must be single pipe");
+
+        return await pipes.Single().Handle<TMessage, TResult>(message, options, token);
+    }
 }

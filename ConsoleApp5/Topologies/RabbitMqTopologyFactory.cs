@@ -21,13 +21,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.TransportBindings;
+using ConsoleApp5.Bindings;
+using ConsoleApp5.Pipes;
+using EasyNetQ;
+using Microsoft.Extensions.DependencyInjection;
 
-public interface ITransportSubscriber
+namespace ConsoleApp5.Topologies;
+
+public class RabbitMqTopologyFactory : ITopologyFactory
 {
-    Task Subscribe<TMessage>(string routingKey = "");
-    
-    Task Subscribe<TMessage, TResult>(string routingKey = "");
+    private readonly IPipeBinder _dispatchPipeBinder;
+    private readonly IBus _bus;
+    private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    Task Unsubscribe<TMessage>(string routingKey = "");
+    public RabbitMqTopologyFactory(IPipeBinder dispatchPipeBinder, IBus bus, IServiceScopeFactory serviceScopeFactory)
+    {
+        _dispatchPipeBinder = dispatchPipeBinder;
+        _bus = bus;
+        _serviceScopeFactory = serviceScopeFactory;
+    }
+
+    public Topology Create()
+    {
+        var handlerBinder = new HandlerBinder();
+        var receivePipeBinder = new RabbitMqPipeBinder(_bus);
+        var dispatchPipe = new RabbitMqPipe(_bus);
+        var receivePipe = new HandlerPipe(handlerBinder, _serviceScopeFactory);
+        return new Topology(dispatchPipe, receivePipe, _dispatchPipeBinder, receivePipeBinder, handlerBinder);
+    }
 }

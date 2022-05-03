@@ -21,26 +21,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Models;
-using ConsoleApp5.Pipes;
-using EasyNetQ;
+namespace ConsoleApp5.Bindings;
 
-namespace ConsoleApp5.TransportBindings;
-
-internal class RabbitMqTransportSubscriber : ITransportSubscriber
+internal class HandlerBinder : IHandlerBinder, IHandlerBindProvider
 {
-    private readonly IBus _bus;
-    private readonly IPipe _receivePipe;
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<Route, IDisposable> _subscriptions = new();
+    private readonly Dictionary<Route, HashSet<HandlerBind>> _handlerBindings = new();
 
-    public RabbitMqTransportSubscriber(IBus bus, IPipe receivePipe)
-    {
-        _bus = bus;
-        _receivePipe = receivePipe;
-    }
-
-    public async Task Subscribe<TMessage>(string routingKey = "")
+    public void Bind<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -48,12 +36,46 @@ internal class RabbitMqTransportSubscriber : ITransportSubscriber
 
         try
         {
-            if (!_subscriptions.ContainsKey(route))
+            _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
+            _handlerBindings[route].Add(new HandlerBind(route, handler: handler));
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+    }
+
+    public void Bind<TMessage, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage>
+    {
+        var route = new Route(typeof(TMessage), routingKey);
+
+        _lock.EnterWriteLock();
+
+        try
+        {
+            _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
+            _handlerBindings[route].Add(new HandlerBind(route, handlerType: typeof(THandler)));
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
+    }
+
+    public void Unbind<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    {
+        var route = new Route(typeof(TMessage), routingKey);
+
+        _lock.EnterWriteLock();
+
+        try
+        {
+            if (_handlerBindings.TryGetValue(route, out var set))
             {
-                var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(routingKey,
-                    (m, c) => _receivePipe.Handle(m, new MessageOptions(routingKey), c),
-                    c => c.WithDurable(false).WithAutoDelete());
-                _subscriptions[route] = subscription;
+                set.Remove(new HandlerBind(route, handler: handler));
+
+                if (!set.Any()) _handlerBindings.Remove(route);
             }
         }
         finally
@@ -62,7 +84,8 @@ internal class RabbitMqTransportSubscriber : ITransportSubscriber
         }
     }
 
-    public async Task Subscribe<TMessage, TResult>(string routingKey = "")
+    public void Unbind<TMessage, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage>
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -70,12 +93,11 @@ internal class RabbitMqTransportSubscriber : ITransportSubscriber
 
         try
         {
-            if (!_subscriptions.ContainsKey(route))
+            if (_handlerBindings.TryGetValue(route, out var set))
             {
-                var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(
-                    (m, c) => _receivePipe.Handle<TMessage, TResult>(m, new MessageOptions(routingKey), c),
-                    c => c.WithDurable(false));
-                _subscriptions[route] = subscription;
+                set.Remove(new HandlerBind(route, handlerType: typeof(THandler)));
+
+                if (!set.Any()) _handlerBindings.Remove(route);
             }
         }
         finally
@@ -84,21 +106,10 @@ internal class RabbitMqTransportSubscriber : ITransportSubscriber
         }
     }
 
-    public Task Unsubscribe<TMessage>(string routingKey = "")
+    public IEnumerable<HandlerBind> GetBindings<TMessage>(string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        _lock.EnterWriteLock();
-
-        try
-        {
-            if (_subscriptions.Remove(route, out var topology)) topology.Dispose();
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
-
-        return Task.CompletedTask;
+        return _handlerBindings.TryGetValue(route, out var bindings) ? bindings : Enumerable.Empty<HandlerBind>();
     }
 }

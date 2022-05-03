@@ -21,16 +21,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Models;
+using ConsoleApp5.Pipes;
 
-namespace ConsoleApp5.TransportBindings;
+namespace ConsoleApp5.Bindings;
 
-internal class TransportBinder : ITransportBinder, ITransportBindProvider
+internal class PipeBinder : IPipeBinder, IPipeBindProvider
 {
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<Route, HashSet<TransportBind>> _transportBindings = new();
+    private readonly Dictionary<Route, HashSet<PipeBind>> _pipeBindings = new();
 
-    public Task Bind<TMessage>(Transport transport, string routingKey = "")
+    public Task Bind<TMessage>(IPipe pipe, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -38,8 +38,8 @@ internal class TransportBinder : ITransportBinder, ITransportBindProvider
 
         try
         {
-            _transportBindings.TryAdd(route, new HashSet<TransportBind>());
-            _transportBindings[route].Add(new TransportBind(route, transport));
+            _pipeBindings.TryAdd(route, new HashSet<PipeBind>());
+            _pipeBindings[route].Add(new PipeBind(route, pipe));
         }
         finally
         {
@@ -49,7 +49,7 @@ internal class TransportBinder : ITransportBinder, ITransportBindProvider
         return Task.CompletedTask;
     }
 
-    public Task Unbind<TMessage>(Transport transport, string routingKey = "")
+    public Task Bind<TMessage, TResult>(IPipe pipe, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -57,11 +57,30 @@ internal class TransportBinder : ITransportBinder, ITransportBindProvider
 
         try
         {
-            if (_transportBindings.TryGetValue(route, out var set))
-            {
-                set.Remove(new TransportBind(route, transport));
+            _pipeBindings.TryAdd(route, new HashSet<PipeBind>());
+            _pipeBindings[route].Add(new PipeBind(route, pipe));
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
 
-                if (!set.Any()) _transportBindings.Remove(route);
+        return Task.CompletedTask;
+    }
+
+    public Task Unbind<TMessage>(IPipe pipe, string routingKey = "")
+    {
+        var route = new Route(typeof(TMessage), routingKey);
+
+        _lock.EnterWriteLock();
+
+        try
+        {
+            if (_pipeBindings.TryGetValue(route, out var set))
+            {
+                set.Remove(new PipeBind(route, pipe));
+
+                if (!set.Any()) _pipeBindings.Remove(route);
             }
         }
         finally
@@ -72,12 +91,12 @@ internal class TransportBinder : ITransportBinder, ITransportBindProvider
         return Task.CompletedTask;
     }
 
-    public IEnumerable<TransportBind> GetBinds<TMessage>(string routingKey = "")
+    public IEnumerable<PipeBind> GetBindings<TMessage>(string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        return _transportBindings.TryGetValue(route, out var transportBinds)
-            ? transportBinds
-            : Enumerable.Empty<TransportBind>();
+        return _pipeBindings.TryGetValue(route, out var pipeBindings)
+            ? pipeBindings
+            : Enumerable.Empty<PipeBind>();
     }
 }

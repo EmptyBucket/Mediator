@@ -21,18 +21,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.HandlerBindings;
-using ConsoleApp5.Models;
+using ConsoleApp5.Bindings;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ConsoleApp5.Pipes;
 
-public class HandlerForkPipe : IPipe
+public class HandlerPipe : IPipe
 {
     private readonly IHandlerBindProvider _handlerBindProvider;
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public HandlerForkPipe(IHandlerBindProvider handlerBindProvider, IServiceScopeFactory serviceScopeFactory)
+    public HandlerPipe(IHandlerBindProvider handlerBindProvider, IServiceScopeFactory serviceScopeFactory)
     {
         _handlerBindProvider = handlerBindProvider;
         _serviceScopeFactory = serviceScopeFactory;

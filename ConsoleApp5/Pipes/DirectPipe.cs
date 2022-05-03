@@ -21,31 +21,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Pipes;
-using ConsoleApp5.TransportBindings;
-using EasyNetQ;
-using Microsoft.Extensions.DependencyInjection;
+namespace ConsoleApp5.Pipes;
 
-namespace ConsoleApp5.Models;
-
-public readonly record struct Transport(string Name, IPipe Pipe, ITransportSubscriber Subscriber);
-
-public class RabbitMqTransportFactory
+public class DirectPipe : IPipe
 {
-    private readonly IBus _bus;
-    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly IPipe _pipe;
 
-    public RabbitMqTransportFactory(IBus bus, IServiceScopeFactory serviceScopeFactory)
+    public DirectPipe(IPipe pipe)
     {
-        _bus = bus;
-        _serviceScopeFactory = serviceScopeFactory;
+        _pipe = pipe;
     }
 
-    public Transport Create()
+    public Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        var rabbitMqPipe = new RabbitMqPipe(_bus);
-        var directPipe = new HandlerForkPipe(_bus, _serviceScopeFactory);
-        var rabbitMqTransportBinder = new RabbitMqTransportSubscriber(_bus);
-        new Transport("rabbitmq", rabbitMqTransportBinder)
+        return _pipe.Handle(message, options, token);
+    }
+
+    public Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options, CancellationToken token)
+    {
+        return _pipe.Handle<TMessage, TResult>(message, options, token);
     }
 }

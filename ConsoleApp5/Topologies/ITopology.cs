@@ -21,13 +21,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Models;
+namespace ConsoleApp5.Topologies;
 
-namespace ConsoleApp5.TransportBindings;
-
-public interface ITransportBinder
+public interface ITopology
 {
-    Task Bind<TMessage>(Transport transport, string routingKey = "");
-    
-    Task Unbind<TMessage>(Transport transport, string routingKey = "");
+    public Task BindDispatch<TMessage>(string routingKey = "");
+
+    public Task BindReceive<TMessage>(IHandler<TMessage> handler, string routingKey = "");
+
+    public Task BindReceive<TMessage, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage>;
+
+    public Task BindReceive<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
+
+    public Task BindReceive<TMessage, TResult, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage, TResult>;
+
+    Task UnbindDispatch<TMessage>(string routingKey = "");
+
+    Task UnbindReceive<TMessage>(IHandler<TMessage> handler, string routingKey = "");
+
+    Task UnbindReceive<TMessage, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage>;
 }

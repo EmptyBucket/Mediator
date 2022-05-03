@@ -21,9 +21,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Models;
-using ConsoleApp5.Pipes;
+namespace ConsoleApp5;
 
-namespace ConsoleApp5.TransportBindings;
+public interface IHandler<in TMessage, TResult> : IHandler<TMessage>
+{
+    new Task<TResult> HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
 
-public readonly record struct TransportBind(Route Route, Transport Transport);
+    Task IHandler<TMessage>.HandleAsync(TMessage message, MessageOptions options, CancellationToken token) =>
+        HandleAsync(message, options, token);
+}
+
+public interface IHandler<in TMessage> : IHandler
+{
+    Task HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
+
+    async Task IHandler.HandleAsync(object message, MessageOptions options, CancellationToken token) =>
+        await HandleAsync((TMessage)message, options, token);
+}
+
+public interface IHandler
+{
+    Task HandleAsync(object message, MessageOptions options, CancellationToken token);
+}

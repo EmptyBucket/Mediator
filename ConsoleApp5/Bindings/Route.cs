@@ -21,9 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.HandlerBindings;
+namespace ConsoleApp5.Bindings;
 
-public interface IHandlerBindProvider
-{
-    IEnumerable<HandlerBind> GetBindings<TMessage>(string routingKey = "");
-}
+public readonly record struct Route(Type MessageType, string RoutingKey = "");

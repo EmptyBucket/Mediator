@@ -21,25 +21,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Models;
+using ConsoleApp5.Pipes;
 
-namespace ConsoleApp5.HandlerBindings;
+namespace ConsoleApp5.Bindings;
 
-public readonly record struct HandlerBind
+public interface IPipeBinder
 {
-    public HandlerBind(Route route, IHandler? handler = null, Type? handlerType = null)
-    {
-        if (handler is null && handlerType is null)
-            throw new ArgumentException($"{nameof(handler)} or {nameof(handlerType)} must be not-null");
-
-        Route = route;
-        Handler = handler;
-        HandlerType = handlerType;
-    }
-
-    public Route Route { get; }
-
-    public IHandler? Handler { get; }
-
-    public Type? HandlerType { get; }
+    Task Bind<TMessage>(IPipe pipe, string routingKey = "");
+    
+    Task Bind<TMessage, TResult>(IPipe pipe, string routingKey = "");
+    
+    Task Unbind<TMessage>(IPipe pipe, string routingKey = "");
 }

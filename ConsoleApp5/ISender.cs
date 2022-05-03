@@ -21,24 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Models;
+namespace ConsoleApp5;
 
-namespace ConsoleApp5.HandlerBindings;
-
-public interface IHandlerBinder
+public interface ISender
 {
-    Task Bind<TMessage>(IHandler<TMessage> handler, string routingKey = "");
-
-    Task Bind<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
-
-    Task Bind<TMessage, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage>;
-
-    Task Bind<TMessage, TResult, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage, TResult>;
-
-    Task Unbind<TMessage>(IHandler<TMessage> handler, string routingKey = "");
-
-    Task Unbind<TMessage, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage>;
+    Task<TResult> Send<TMessage, TResult>(TMessage message, Action<MessageOptions>? optionsBuilder = null,
+        CancellationToken token = default);
 }

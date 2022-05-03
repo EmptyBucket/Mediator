@@ -21,27 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Bindings;
-using Microsoft.Extensions.DependencyInjection;
+namespace ConsoleApp5.Bindings;
 
-namespace ConsoleApp5;
-
-public static class ServiceCollectionExtensions
+public interface IPipeBindProvider
 {
-    public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
-        Action<IMediator>? mediatorBuilder = null, ServiceLifetime lifetime = ServiceLifetime.Singleton)
-    {
-        var serviceDescriptor = new ServiceDescriptor(typeof(IMediator), p =>
-        {
-            var topologyRegistry = new PipeBinder();
-            var pipeRegistry = new TransportRegistry(p);
-            var mediator = new Mediator();
-            mediator.AddDefaultTransport();
-            mediatorBuilder?.Invoke(mediator);
-            return mediator;
-        }, lifetime);
-        serviceCollection.Add(serviceDescriptor);
-
-        return serviceCollection;
-    }
+    IEnumerable<PipeBind> GetBindings<TMessage>(string routingKey = "");
 }

@@ -21,10 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Models;
+using ConsoleApp5.Pipes;
 
-public interface ISender
-{
-    Task<TResult> Send<TMessage, TResult>(TMessage message, Action<MessageOptions>? optionsBuilder = null,
-        CancellationToken token = default);
-}
+namespace ConsoleApp5.Bindings;
+
+public readonly record struct PipeBind(Route Route, IPipe Pipe);

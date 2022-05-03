@@ -21,36 +21,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System.Data;
-using ConsoleApp5.TransportBindings;
+namespace ConsoleApp5.Bindings;
 
-namespace ConsoleApp5.Pipes;
-
-public class TransportForkPipe : IPipe
+public readonly record struct HandlerBind
 {
-    private readonly ITransportBindProvider _transportBindProvider;
-
-    public TransportForkPipe(ITransportBindProvider transportBindProvider)
+    public HandlerBind(Route route, IHandler? handler = null, Type? handlerType = null)
     {
-        _transportBindProvider = transportBindProvider;
+        if (handler is null && handlerType is null)
+            throw new ArgumentException($"{nameof(handler)} or {nameof(handlerType)} must be not-null");
+
+        Route = route;
+        Handler = handler;
+        HandlerType = handlerType;
     }
 
-    public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
-    {
-        var transportBinds = _transportBindProvider.GetBinds<TMessage>(options.RoutingKey);
-        var pipes = transportBinds.Select(t => t.Transport.Pipe);
+    public Route Route { get; }
 
-        await Task.WhenAll(pipes.Select(p => p.Handle(message, options, token)));
-    }
+    public IHandler? Handler { get; }
 
-    public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
-        CancellationToken token)
-    {
-        var transportBinds = _transportBindProvider.GetBinds<TMessage>(options.RoutingKey);
-        var pipes = transportBinds.Select(t => t.Transport.Pipe).ToArray();
-
-        if (pipes.Length != 1) throw new InvalidConstraintException("Must be single pipe");
-
-        return await pipes.Single().Handle<TMessage, TResult>(message, options, token);
-    }
+    public Type? HandlerType { get; }
 }

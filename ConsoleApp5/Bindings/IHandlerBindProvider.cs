@@ -21,9 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.TransportBindings;
+namespace ConsoleApp5.Bindings;
 
-public interface ITransportBindProvider
+public interface IHandlerBindProvider
 {
-    IEnumerable<TransportBind> GetBinds<TMessage>(string routingKey = "");
+    IEnumerable<HandlerBind> GetBindings<TMessage>(string routingKey = "");
 }
