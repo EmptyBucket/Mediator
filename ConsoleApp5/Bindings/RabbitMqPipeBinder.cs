@@ -6,7 +6,6 @@ namespace ConsoleApp5.Bindings;
 internal class RabbitMqPipeBinder : IPipeBinder
 {
     private readonly IBus _bus;
-    private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, IDisposable> _subscriptions = new();
 
     public RabbitMqPipeBinder(IBus bus)
@@ -18,21 +17,12 @@ internal class RabbitMqPipeBinder : IPipeBinder
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        _lock.EnterWriteLock();
-
-        try
+        if (!_subscriptions.ContainsKey(route))
         {
-            if (!_subscriptions.ContainsKey(route))
-            {
-                var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(routingKey,
-                    (m, c) => pipe.Handle(m, new MessageOptions(routingKey), c),
-                    c => c.WithDurable(false).WithAutoDelete());
-                _subscriptions[route] = subscription;
-            }
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
+            var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(routingKey,
+                (m, c) => pipe.Handle(m, new MessageOptions(routingKey), c),
+                c => c.WithDurable(false).WithAutoDelete().WithTopic(route.ToString()));
+            _subscriptions[route] = subscription;
         }
     }
 
@@ -40,21 +30,12 @@ internal class RabbitMqPipeBinder : IPipeBinder
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        _lock.EnterWriteLock();
-
-        try
+        if (!_subscriptions.ContainsKey(route))
         {
-            if (!_subscriptions.ContainsKey(route))
-            {
-                var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(
-                    (m, c) => pipe.Handle<TMessage, TResult>(m, new MessageOptions(routingKey), c),
-                    c => c.WithDurable(false));
-                _subscriptions[route] = subscription;
-            }
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
+            var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(
+                (m, c) => pipe.Handle<TMessage, TResult>(m, new MessageOptions(routingKey), c),
+                c => c.WithDurable(false).WithQueueName(route.ToString()));
+            _subscriptions[route] = subscription;
         }
     }
 
@@ -62,16 +43,7 @@ internal class RabbitMqPipeBinder : IPipeBinder
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        _lock.EnterWriteLock();
-
-        try
-        {
-            if (_subscriptions.Remove(route, out var topology)) topology.Dispose();
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
+        if (_subscriptions.Remove(route, out var topology)) topology.Dispose();
 
         return Task.CompletedTask;
     }

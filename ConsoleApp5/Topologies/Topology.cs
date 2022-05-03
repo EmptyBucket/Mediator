@@ -26,6 +26,11 @@ public class Topology : ITopology
     {
         await _dispatchPipeBinder.Bind<TMessage>(_dispatchPipe, routingKey);
     }
+    
+    public async Task BindDispatch<TMessage, TResult>(string routingKey = "")
+    {
+        await _dispatchPipeBinder.Bind<TMessage, TResult>(_dispatchPipe, routingKey);
+    }
 
     public async Task BindReceive<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {

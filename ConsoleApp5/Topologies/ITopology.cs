@@ -20,4 +20,6 @@ public interface ITopology
 
     Task UnbindReceive<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>;
+
+    Task BindDispatch<TMessage, TResult>(string routingKey = "");
 }

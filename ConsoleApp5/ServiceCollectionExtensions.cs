@@ -1,4 +1,6 @@
 using ConsoleApp5.Bindings;
+using ConsoleApp5.Pipes;
+using ConsoleApp5.Topologies;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ConsoleApp5;
@@ -6,15 +8,24 @@ namespace ConsoleApp5;
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
-        Action<IMediator>? mediatorBuilder = null, ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        Action<MediatorConfiguration>? mediatorBuilder = null, ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
         var serviceDescriptor = new ServiceDescriptor(typeof(IMediator), p =>
         {
-            var topologyRegistry = new PipeBinder();
-            var pipeRegistry = new TransportRegistry(p);
-            var mediator = new Mediator();
-            mediator.AddDefaultTransport();
-            mediatorBuilder?.Invoke(mediator);
+            var dispatchPipeBinder = new PipeBinder();
+            var dispatchPipe = new ForkPipe(dispatchPipeBinder);
+            var directTopology = ActivatorUtilities.CreateInstance<DirectTopologyFactory>(p, dispatchPipeBinder)
+                .Create();
+            var rabbitMqTopology = ActivatorUtilities.CreateInstance<RabbitMqTopologyFactory>(p, dispatchPipeBinder)
+                .Create();
+            var topologies = new Dictionary<string, Topology>
+            {
+                { "direct", directTopology },
+                { "rabbitmq", rabbitMqTopology }
+            };
+            var mediatorConfiguration = new MediatorConfiguration(topologies);
+            var mediator = new Mediator(dispatchPipe, mediatorConfiguration);
+            mediatorBuilder?.Invoke(mediator.Configuration);
             return mediator;
         }, lifetime);
         serviceCollection.Add(serviceDescriptor);
