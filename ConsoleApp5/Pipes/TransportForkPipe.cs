@@ -22,24 +22,23 @@
 // SOFTWARE.
 
 using System.Data;
-using ConsoleApp5.Topologies;
+using ConsoleApp5.TransportBindings;
 
 namespace ConsoleApp5.Pipes;
 
-public class TopologyPipe : IPipe
+public class TransportForkPipe : IPipe
 {
-    private readonly IEnumerable<ITopologyProvider> _topologyProviders;
+    private readonly ITransportBindProvider _transportBindProvider;
 
-    public TopologyPipe(IEnumerable<ITopologyProvider> topologyProviders)
+    public TransportForkPipe(ITransportBindProvider transportBindProvider)
     {
-        _topologyProviders = topologyProviders;
+        _transportBindProvider = transportBindProvider;
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        var topologies =
-            _topologyProviders.Select(p => p.GetTopology<TMessage>(options.RoutingKey)).Where(t => t.HasValue);
-        var pipes = topologies.Select(t => t!.Value.Pipe);
+        var transportBinds = _transportBindProvider.GetBinds<TMessage>(options.RoutingKey);
+        var pipes = transportBinds.Select(t => t.Transport.Pipe);
 
         await Task.WhenAll(pipes.Select(p => p.Handle(message, options, token)));
     }
@@ -47,9 +46,8 @@ public class TopologyPipe : IPipe
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
-        var topologies =
-            _topologyProviders.Select(p => p.GetTopology<TMessage>(options.RoutingKey)).Where(t => t.HasValue);
-        var pipes = topologies.Select(t => t!.Value.Pipe).ToArray();
+        var transportBinds = _transportBindProvider.GetBinds<TMessage>(options.RoutingKey);
+        var pipes = transportBinds.Select(t => t.Transport.Pipe).ToArray();
 
         if (pipes.Length != 1) throw new InvalidConstraintException("Must be single pipe");
 

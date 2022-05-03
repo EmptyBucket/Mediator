@@ -24,6 +24,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using ConsoleApp5;
+using ConsoleApp5.Models;
 using EasyNetQ;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -34,13 +35,16 @@ var serviceProvider = serviceCollection.BuildServiceProvider();
 var mediator = serviceProvider.GetRequiredService<IMediator>();
 await mediator.Publish(new Event("qwe"));
 
-public record Event(string Name);
-
-public class EventHandler : IHandler<Event>
+namespace ConsoleApp5
 {
-    public Task HandleAsync(Event message, MessageOptions options, CancellationToken token)
+    public record Event(string Name);
+
+    public class EventHandler : IHandler<Event>
     {
-        Console.WriteLine(message.Name);
-        return Task.CompletedTask;
+        public Task HandleAsync(Event message, MessageOptions options, CancellationToken token)
+        {
+            Console.WriteLine(message.Name);
+            return Task.CompletedTask;
+        }
     }
 }

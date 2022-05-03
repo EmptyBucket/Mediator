@@ -21,23 +21,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Models;
+using ConsoleApp5.Models;
 
-public readonly record struct Binding
+namespace ConsoleApp5.HandlerBindings;
+
+public interface IHandlerBinder
 {
-    public Binding(Route route, IHandler? handler = null, Type? handlerType = null)
-    {
-        if (handler is null && handlerType is null)
-            throw new ArgumentException($"{nameof(handler)} or {nameof(handlerType)} must be not-null");
+    Task Bind<TMessage>(IHandler<TMessage> handler, string routingKey = "");
 
-        Route = route;
-        Handler = handler;
-        HandlerType = handlerType;
-    }
+    Task Bind<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
 
-    public Route Route { get; }
+    Task Bind<TMessage, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage>;
 
-    public IHandler? Handler { get; }
+    Task Bind<TMessage, TResult, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage, TResult>;
 
-    public Type? HandlerType { get; }
+    Task Unbind<TMessage>(IHandler<TMessage> handler, string routingKey = "");
+
+    Task Unbind<TMessage, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage>;
 }

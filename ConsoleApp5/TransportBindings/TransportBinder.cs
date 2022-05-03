@@ -21,49 +21,63 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System.Collections.Concurrent;
 using ConsoleApp5.Models;
-using ConsoleApp5.Pipes;
 
-namespace ConsoleApp5.Topologies;
+namespace ConsoleApp5.TransportBindings;
 
-internal class DirectTopologyRegistry : ITopologyRegistry, ITopologyProvider
+internal class TransportBinder : ITransportBinder, ITransportBindProvider
 {
-    private readonly IPipe _pipe;
-    private readonly ConcurrentDictionary<Route, Topology> _topologies = new();
+    private readonly ReaderWriterLockSlim _lock = new();
+    private readonly Dictionary<Route, HashSet<TransportBind>> _transportBindings = new();
 
-    public DirectTopologyRegistry(IPipe pipe)
-    {
-        _pipe = pipe;
-    }
-
-    public Task AddTopology<TMessage>(string routingKey = "")
+    public Task Bind<TMessage>(Transport transport, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        _topologies[route] = new Topology(route, _pipe);
+        _lock.EnterWriteLock();
+
+        try
+        {
+            _transportBindings.TryAdd(route, new HashSet<TransportBind>());
+            _transportBindings[route].Add(new TransportBind(route, transport));
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
 
         return Task.CompletedTask;
     }
 
-    public Task AddTopology<TMessage, TResult>(string routingKey = "")
-    {
-        return AddTopology<TMessage>(routingKey);
-    }
-
-    public Task RemoveTopology<TMessage>(string routingKey = "")
+    public Task Unbind<TMessage>(Transport transport, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        _topologies.Remove(route, out _);
+        _lock.EnterWriteLock();
+
+        try
+        {
+            if (_transportBindings.TryGetValue(route, out var set))
+            {
+                set.Remove(new TransportBind(route, transport));
+
+                if (!set.Any()) _transportBindings.Remove(route);
+            }
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
 
         return Task.CompletedTask;
     }
 
-    public Topology? GetTopology<TMessage>(string routingKey = "")
+    public IEnumerable<TransportBind> GetBinds<TMessage>(string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        return _topologies.TryGetValue(route, out var topology) ? topology : null;
+        return _transportBindings.TryGetValue(route, out var transportBinds)
+            ? transportBinds
+            : Enumerable.Empty<TransportBind>();
     }
 }

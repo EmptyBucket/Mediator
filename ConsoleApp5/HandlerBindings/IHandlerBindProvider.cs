@@ -21,25 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5;
+namespace ConsoleApp5.HandlerBindings;
 
-public interface IHandler<in TMessage, TResult> : IHandler<TMessage>
+public interface IHandlerBindProvider
 {
-    new Task<TResult> HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
-
-    Task IHandler<TMessage>.HandleAsync(TMessage message, MessageOptions options, CancellationToken token) =>
-        HandleAsync(message, options, token);
-}
-
-public interface IHandler<in TMessage> : IHandler
-{
-    Task HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
-
-    async Task IHandler.HandleAsync(object message, MessageOptions options, CancellationToken token) =>
-        await HandleAsync((TMessage)message, options, token);
-}
-
-public interface IHandler
-{
-    Task HandleAsync(object message, MessageOptions options, CancellationToken token);
+    IEnumerable<HandlerBind> GetBindings<TMessage>(string routingKey = "");
 }

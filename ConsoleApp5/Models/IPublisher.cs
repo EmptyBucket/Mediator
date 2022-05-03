@@ -21,8 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Pipes;
-
 namespace ConsoleApp5.Models;
 
-public readonly record struct Topology(Route Route, IPipe Pipe);
+public interface IPublisher
+{
+    Task Publish<TMessage>(TMessage message, Action<MessageOptions>? optionsBuilder = null,
+        CancellationToken token = default);
+}

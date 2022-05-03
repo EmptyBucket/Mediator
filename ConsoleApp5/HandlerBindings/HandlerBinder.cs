@@ -23,14 +23,14 @@
 
 using ConsoleApp5.Models;
 
-namespace ConsoleApp5.Bindings;
+namespace ConsoleApp5.HandlerBindings;
 
-internal class BindingRegistry : IBindingRegistry, IBindingProvider
+internal class HandlerBinder : IHandlerBinder, IHandlerBindProvider
 {
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<Route, HashSet<Binding>> _bindings = new();
+    private readonly Dictionary<Route, HashSet<HandlerBind>> _handlerBindings = new();
 
-    public Task AddBinding<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public Task Bind<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -38,8 +38,8 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
 
         try
         {
-            _bindings.TryAdd(route, new HashSet<Binding>());
-            _bindings[route].Add(new Binding(route, handler: handler));
+            _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
+            _handlerBindings[route].Add(new HandlerBind(route, handler: handler));
         }
         finally
         {
@@ -49,7 +49,7 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public Task AddBinding<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
+    public Task Bind<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -57,8 +57,8 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
 
         try
         {
-            _bindings.TryAdd(route, new HashSet<Binding>());
-            _bindings[route].Add(new Binding(route, handler: handler));
+            _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
+            _handlerBindings[route].Add(new HandlerBind(route, handler: handler));
         }
         finally
         {
@@ -68,7 +68,7 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public Task AddBinding<TMessage, THandler>(string routingKey = "")
+    public Task Bind<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
         var route = new Route(typeof(TMessage), routingKey);
@@ -77,8 +77,8 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
 
         try
         {
-            _bindings.TryAdd(route, new HashSet<Binding>());
-            _bindings[route].Add(new Binding(route, handlerType: typeof(THandler)));
+            _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
+            _handlerBindings[route].Add(new HandlerBind(route, handlerType: typeof(THandler)));
         }
         finally
         {
@@ -88,7 +88,7 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public Task AddBinding<TMessage, TResult, THandler>(string routingKey = "")
+    public Task Bind<TMessage, TResult, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage, TResult>
     {
         var route = new Route(typeof(TMessage), routingKey);
@@ -97,8 +97,8 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
 
         try
         {
-            _bindings.TryAdd(route, new HashSet<Binding>());
-            _bindings[route].Add(new Binding(route, handlerType: typeof(THandler)));
+            _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
+            _handlerBindings[route].Add(new HandlerBind(route, handlerType: typeof(THandler)));
         }
         finally
         {
@@ -108,7 +108,7 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public Task RemoveBinding<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public Task Unbind<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -116,11 +116,11 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
 
         try
         {
-            if (_bindings.TryGetValue(route, out var set))
+            if (_handlerBindings.TryGetValue(route, out var set))
             {
-                set.Remove(new Binding(route, handler: handler));
+                set.Remove(new HandlerBind(route, handler: handler));
 
-                if (!set.Any()) _bindings.Remove(route);
+                if (!set.Any()) _handlerBindings.Remove(route);
             }
         }
         finally
@@ -131,7 +131,7 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public Task RemoveBinding<TMessage, THandler>(string routingKey = "")
+    public Task Unbind<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
         var route = new Route(typeof(TMessage), routingKey);
@@ -140,11 +140,11 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
 
         try
         {
-            if (_bindings.TryGetValue(route, out var set))
+            if (_handlerBindings.TryGetValue(route, out var set))
             {
-                set.Remove(new Binding(route, handlerType: typeof(THandler)));
+                set.Remove(new HandlerBind(route, handlerType: typeof(THandler)));
 
-                if (!set.Any()) _bindings.Remove(route);
+                if (!set.Any()) _handlerBindings.Remove(route);
             }
         }
         finally
@@ -155,10 +155,10 @@ internal class BindingRegistry : IBindingRegistry, IBindingProvider
         return Task.CompletedTask;
     }
 
-    public IEnumerable<Binding> GetBindings<TMessage>(string routingKey = "")
+    public IEnumerable<HandlerBind> GetBindings<TMessage>(string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        return _bindings.TryGetValue(route, out var bindings) ? bindings : Enumerable.Empty<Binding>();
+        return _handlerBindings.TryGetValue(route, out var bindings) ? bindings : Enumerable.Empty<HandlerBind>();
     }
 }

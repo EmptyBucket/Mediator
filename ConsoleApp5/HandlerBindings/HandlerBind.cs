@@ -23,9 +23,23 @@
 
 using ConsoleApp5.Models;
 
-namespace ConsoleApp5.Topologies;
+namespace ConsoleApp5.HandlerBindings;
 
-public interface ITopologyProvider
+public readonly record struct HandlerBind
 {
-    Topology? GetTopology<TMessage>(string routingKey = "");
+    public HandlerBind(Route route, IHandler? handler = null, Type? handlerType = null)
+    {
+        if (handler is null && handlerType is null)
+            throw new ArgumentException($"{nameof(handler)} or {nameof(handlerType)} must be not-null");
+
+        Route = route;
+        Handler = handler;
+        HandlerType = handlerType;
+    }
+
+    public Route Route { get; }
+
+    public IHandler? Handler { get; }
+
+    public Type? HandlerType { get; }
 }

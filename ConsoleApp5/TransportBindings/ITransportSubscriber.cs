@@ -21,27 +21,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.TransportBindings;
-using Microsoft.Extensions.DependencyInjection;
+namespace ConsoleApp5.TransportBindings;
 
-namespace ConsoleApp5;
-
-public static class ServiceCollectionExtensions
+public interface ITransportSubscriber
 {
-    public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
-        Action<IMediator>? mediatorBuilder = null, ServiceLifetime lifetime = ServiceLifetime.Singleton)
-    {
-        var serviceDescriptor = new ServiceDescriptor(typeof(IMediator), p =>
-        {
-            var topologyRegistry = new TransportBinder();
-            var pipeRegistry = new TransportRegistry(p);
-            var mediator = new Mediator();
-            mediator.AddDefaultTransport();
-            mediatorBuilder?.Invoke(mediator);
-            return mediator;
-        }, lifetime);
-        serviceCollection.Add(serviceDescriptor);
+    Task Subscribe<TMessage>(string routingKey = "");
+    
+    Task Subscribe<TMessage, TResult>(string routingKey = "");
 
-        return serviceCollection;
-    }
+    Task Unsubscribe<TMessage>(string routingKey = "");
 }

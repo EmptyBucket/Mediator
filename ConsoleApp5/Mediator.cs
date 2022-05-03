@@ -31,7 +31,7 @@ internal class Mediator : IMediator
 
     public Mediator()
     {
-        _pipe = new TopologyPipe(directTopologyRegistry);
+        _pipe = new TransportForkPipe(directTopologyRegistry);
     }
 
     public async Task Publish<TMessage>(TMessage message, Action<MessageOptions>? optionsBuilder = null,

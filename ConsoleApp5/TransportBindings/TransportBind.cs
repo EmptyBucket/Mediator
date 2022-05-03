@@ -22,10 +22,8 @@
 // SOFTWARE.
 
 using ConsoleApp5.Models;
+using ConsoleApp5.Pipes;
 
-namespace ConsoleApp5.Bindings;
+namespace ConsoleApp5.TransportBindings;
 
-public interface IBindingProvider
-{
-    IEnumerable<Binding> GetBindings<TMessage>(string routingKey = "");
-}
+public readonly record struct TransportBind(Route Route, Transport Transport);

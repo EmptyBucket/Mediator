@@ -21,22 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Bindings;
+namespace ConsoleApp5.TransportBindings;
 
-public interface IBindingRegistry
+public interface ITransportBindProvider
 {
-    Task AddBinding<TMessage>(IHandler<TMessage> handler, string routingKey = "");
-
-    Task AddBinding<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
-
-    Task AddBinding<TMessage, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage>;
-
-    Task AddBinding<TMessage, TResult, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage, TResult>;
-
-    Task RemoveBinding<TMessage>(IHandler<TMessage> handler, string routingKey = "");
-
-    Task RemoveBinding<TMessage, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage>;
+    IEnumerable<TransportBind> GetBinds<TMessage>(string routingKey = "");
 }

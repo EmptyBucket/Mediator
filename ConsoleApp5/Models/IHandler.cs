@@ -21,13 +21,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5.Topologies;
+namespace ConsoleApp5.Models;
 
-public interface ITopologyRegistry
+public interface IHandler<in TMessage, TResult> : IHandler<TMessage>
 {
-    Task AddTopology<TMessage>(string routingKey = "");
-    
-    Task AddTopology<TMessage, TResult>(string routingKey = "");
+    new Task<TResult> HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
 
-    Task RemoveTopology<TMessage>(string routingKey = "");
+    Task IHandler<TMessage>.HandleAsync(TMessage message, MessageOptions options, CancellationToken token) =>
+        HandleAsync(message, options, token);
+}
+
+public interface IHandler<in TMessage> : IHandler
+{
+    Task HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
+
+    async Task IHandler.HandleAsync(object message, MessageOptions options, CancellationToken token) =>
+        await HandleAsync((TMessage)message, options, token);
+}
+
+public interface IHandler
+{
+    Task HandleAsync(object message, MessageOptions options, CancellationToken token);
 }
