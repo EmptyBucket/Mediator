@@ -4,16 +4,17 @@ namespace FlexMediator.Pipes;
 
 public class ForkPipe : IPipe
 {
-    private readonly IPipeBindProvider _pipeBindProvider;
+    private readonly IPipeBindings _pipeBindings;
 
-    public ForkPipe(IPipeBindProvider pipeBindProvider)
+    public ForkPipe(IPipeBindings pipeBindings)
     {
-        _pipeBindProvider = pipeBindProvider;
+        _pipeBindings = pipeBindings;
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        var pipeBindings = _pipeBindProvider.GetBindings<TMessage>(options.RoutingKey);
+        var route = new Route(typeof(TMessage), RoutingKey: options.RoutingKey);
+        var pipeBindings = _pipeBindings.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
         var pipes = pipeBindings.Select(t => t.Pipe);
 
         await Task.WhenAll(pipes.Select(p => p.Handle(message, options, token)));
@@ -22,7 +23,8 @@ public class ForkPipe : IPipe
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
-        var pipeBindings = _pipeBindProvider.GetBindings<TMessage, TResult>(options.RoutingKey);
+        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: options.RoutingKey);
+        var pipeBindings = _pipeBindings.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
         var pipes = pipeBindings.Select(t => t.Pipe).ToArray();
 
         if (pipes.Length != 1) throw new InvalidConstraintException("Must be single pipe");

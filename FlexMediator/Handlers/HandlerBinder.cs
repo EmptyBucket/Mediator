@@ -1,3 +1,5 @@
+using System.Collections;
+
 namespace FlexMediator.Handlers;
 
 public class HandlerBinder : IHandlerBinder, IHandlerBindProvider
@@ -101,4 +103,34 @@ public class HandlerBinder : IHandlerBinder, IHandlerBindProvider
 
         return _handlerBindings.TryGetValue(route, out var bindings) ? bindings : Enumerable.Empty<HandlerBind>();
     }
+
+    public IEnumerator<KeyValuePair<Route, IReadOnlySet<HandlerBind>>> GetEnumerator()
+    {
+        return _handlerBindings.Cast<KeyValuePair<Route, IReadOnlySet<HandlerBind>>>().GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return ((IEnumerable)_handlerBindings).GetEnumerator();
+    }
+
+    public int Count => _handlerBindings.Count;
+
+    public bool ContainsKey(Route key)
+    {
+        return _handlerBindings.ContainsKey(key);
+    }
+
+    public bool TryGetValue(Route key, out IReadOnlySet<HandlerBind> value)
+    {
+        var tryGetValue = _handlerBindings.TryGetValue(key, out var set);
+        value = set!;
+        return tryGetValue;
+    }
+
+    public IReadOnlySet<HandlerBind> this[Route key] => _handlerBindings[key];
+
+    public IEnumerable<Route> Keys => _handlerBindings.Keys;
+
+    public IEnumerable<IReadOnlySet<HandlerBind>> Values => _handlerBindings.Values;
 }
