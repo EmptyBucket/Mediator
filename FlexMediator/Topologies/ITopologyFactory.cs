@@ -21,9 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using FlexMediator.Pipes;
+
 namespace FlexMediator.Topologies;
 
 public interface ITopologyFactory
 {
-    Topology Create();
+    Topology Create(IPipeBinder dispatchPipeBinder);
 }

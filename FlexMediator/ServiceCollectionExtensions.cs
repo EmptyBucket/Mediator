@@ -24,6 +24,7 @@
 using FlexMediator.Pipes;
 using FlexMediator.Topologies;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace FlexMediator;
 
@@ -34,8 +35,6 @@ public static class ServiceCollectionExtensions
     {
         var serviceDescriptor = new ServiceDescriptor(typeof(IMediator), p =>
         {
-            var dispatchPipeBinder = new PipeBinder();
-            var dispatchPipe = new ForkPipe(dispatchPipeBinder);
             var directTopology = ActivatorUtilities.CreateInstance<DirectTopologyFactory>(p, dispatchPipeBinder)
                 .Create();
             var rabbitMqTopology = ActivatorUtilities.CreateInstance<RabbitMqTopologyFactory>(p, dispatchPipeBinder)
@@ -45,13 +44,38 @@ public static class ServiceCollectionExtensions
                 { "direct", directTopology },
                 { "rabbitmq", rabbitMqTopology }
             };
-            var mediatorConfiguration = new MediatorConfiguration(topologies);
-            var mediator = new Mediator(dispatchPipe, mediatorConfiguration);
             mediatorBuilder?.Invoke(mediator.Configuration);
             return mediator;
         }, lifetime);
         serviceCollection.Add(serviceDescriptor);
 
         return serviceCollection;
+    }
+}
+
+public class MediatorBuilder
+{
+    private readonly ServiceCollection _serviceCollection;
+    private readonly Dictionary<string, Func<IServiceProvider, Topology>> _topologyFactories = new();
+
+    public MediatorBuilder(ServiceCollection serviceCollection)
+    {
+        _serviceCollection = new ServiceCollection { serviceCollection };
+    }
+
+    public MediatorBuilder AddTopology(string name, Func<IServiceProvider, Topology> topologyFactory)
+    {
+        _topologyFactories[name] = topologyFactory;
+        return this;
+    }
+
+    public IMediator Build()
+    {
+        var dispatchPipeBinder = new PipeBinder();
+        var dispatchPipe = new ForkPipe(dispatchPipeBinder);
+
+        var mediatorConfiguration = new MediatorConfiguration();
+        var mediator = new Mediator(dispatchPipe, mediatorConfiguration);
+        return mediator;
     }
 }

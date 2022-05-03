@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "9m8vp5Xc/tW0WbrIcQglagE1pu6/c8ThlFASSPc68Ln/yLv9adqU4naN3gTh0ks0J9OJ2b7oGbcTXsm8k6lMPw==",
+  "success": true,
+  "projectFilePath": "/home/strix/RiderProjects/ConsoleApp5/FlexMediator/FlexMediator.csproj",
+  "expectedPackageFiles": [
+    "/home/strix/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/6.0.0/microsoft.extensions.dependencyinjection.abstractions.6.0.0.nupkg.sha512",
+    "/home/strix/.nuget/packages/microsoft.extensions.logging.abstractions/6.0.1/microsoft.extensions.logging.abstractions.6.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}
