@@ -9,6 +9,7 @@
       "ConsoleApp5/1.0.0": {
         "dependencies": {
           "EasyNetQ": "6.3.1",
+          "EasyNetQ.DI.Microsoft": "6.3.1",
           "Microsoft.Extensions.DependencyInjection": "6.0.0",
           "Microsoft.Extensions.Logging.Abstractions": "6.0.1",
           "StackExchange.Redis": "2.5.61"
@@ -24,6 +25,18 @@
         },
         "runtime": {
           "lib/netstandard2.0/EasyNetQ.dll": {
+            "assemblyVersion": "6.3.1.0",
+            "fileVersion": "6.3.1.0"
+          }
+        }
+      },
+      "EasyNetQ.DI.Microsoft/6.3.1": {
+        "dependencies": {
+          "EasyNetQ": "6.3.1",
+          "Microsoft.Extensions.DependencyInjection": "6.0.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/EasyNetQ.DI.Microsoft.dll": {
             "assemblyVersion": "6.3.1.0",
             "fileVersion": "6.3.1.0"
           }
@@ -264,6 +277,13 @@
       "sha512": "sha512-WBZxeGj5ivoCA12rnAy4hG12i8FS9mYi9o91+48fJ9Ei2+EOPsZ/6Y+C4z8Q0Rh9dgxC8rsZ2fW1qVd9yGlEUA==",
       "path": "easynetq/6.3.1",
       "hashPath": "easynetq.6.3.1.nupkg.sha512"
+    },
+    "EasyNetQ.DI.Microsoft/6.3.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-+q5tDphYs2B9KmdPFqFR4Ym8CkVAjVmMPRHsyPDyz9Ix2k4dq4bVL2COTGubKHGVMN6Avtt95TuyH2m38hI9Zg==",
+      "path": "easynetq.di.microsoft/6.3.1",
+      "hashPath": "easynetq.di.microsoft.6.3.1.nupkg.sha512"
     },
     "Microsoft.Extensions.DependencyInjection/6.0.0": {
       "type": "package",

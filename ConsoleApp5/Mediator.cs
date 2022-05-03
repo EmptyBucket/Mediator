@@ -21,7 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Bindings;
 using ConsoleApp5.Pipes;
 
 namespace ConsoleApp5;
@@ -29,13 +28,11 @@ namespace ConsoleApp5;
 internal class Mediator : IMediator
 {
     private readonly IPipe _dispatchPipe;
-    private readonly IPipeBinder _dispatchPipeBinder;
 
-    public Mediator()
+    public Mediator(IPipe dispatchPipe, MediatorConfiguration mediatorConfiguration)
     {
-        var dispatchPipeBinder = new PipeBinder();
-        _dispatchPipeBinder = dispatchPipeBinder;
-        _dispatchPipe = new ForkPipe(dispatchPipeBinder);
+        _dispatchPipe = dispatchPipe;
+        Configuration = mediatorConfiguration;
     }
 
     public async Task Publish<TMessage>(TMessage message, Action<MessageOptions>? optionsBuilder = null,
@@ -54,5 +51,5 @@ internal class Mediator : IMediator
         return await _dispatchPipe.Handle<TMessage, TResult>(message, messageOptions, token);
     }
 
-    public MediatorConfiguration Configuration { get; } = new();
+    public MediatorConfiguration Configuration { get; }
 }

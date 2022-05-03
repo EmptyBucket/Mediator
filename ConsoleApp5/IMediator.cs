@@ -21,8 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using ConsoleApp5.Bindings;
-using ConsoleApp5.Pipes;
+using ConsoleApp5.Topologies;
 
 namespace ConsoleApp5;
 
@@ -33,14 +32,10 @@ public interface IMediator : ISender, IPublisher
 
 public class MediatorConfiguration
 {
-    private readonly IPipe _dispatchPipe;
-    private readonly IPipeBinder _dispatchPipeBinder;
-
-    public MediatorConfiguration(IPipe dispatchPipe, IPipeBinder dispatchPipeBinder)
+    public MediatorConfiguration(IReadOnlyDictionary<string, Topology> topologies)
     {
-        _dispatchPipe = dispatchPipe;
-        _dispatchPipeBinder = dispatchPipeBinder;
+        Topologies = topologies;
     }
-    
-    public 
+
+    public IReadOnlyDictionary<string, Topology> Topologies { get; }
 }

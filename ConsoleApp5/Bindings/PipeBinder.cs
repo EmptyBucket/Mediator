@@ -27,25 +27,14 @@ namespace ConsoleApp5.Bindings;
 
 internal class PipeBinder : IPipeBinder, IPipeBindProvider
 {
-    private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, HashSet<PipeBind>> _pipeBindings = new();
 
     public Task Bind<TMessage>(IPipe pipe, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        _lock.EnterWriteLock();
-
-        try
-        {
-            _pipeBindings.TryAdd(route, new HashSet<PipeBind>());
-            _pipeBindings[route].Add(new PipeBind(route, pipe));
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
-
+        _pipeBindings.TryAdd(route, new HashSet<PipeBind>());
+        _pipeBindings[route].Add(new PipeBind(route, pipe));
         return Task.CompletedTask;
     }
 
@@ -53,18 +42,8 @@ internal class PipeBinder : IPipeBinder, IPipeBindProvider
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        _lock.EnterWriteLock();
-
-        try
-        {
-            _pipeBindings.TryAdd(route, new HashSet<PipeBind>());
-            _pipeBindings[route].Add(new PipeBind(route, pipe));
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
-
+        _pipeBindings.TryAdd(route, new HashSet<PipeBind>());
+        _pipeBindings[route].Add(new PipeBind(route, pipe));
         return Task.CompletedTask;
     }
 
@@ -72,20 +51,11 @@ internal class PipeBinder : IPipeBinder, IPipeBindProvider
     {
         var route = new Route(typeof(TMessage), routingKey);
 
-        _lock.EnterWriteLock();
-
-        try
+        if (_pipeBindings.TryGetValue(route, out var set))
         {
-            if (_pipeBindings.TryGetValue(route, out var set))
-            {
-                set.Remove(new PipeBind(route, pipe));
+            set.Remove(new PipeBind(route, pipe));
 
-                if (!set.Any()) _pipeBindings.Remove(route);
-            }
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
+            if (!set.Any()) _pipeBindings.Remove(route);
         }
 
         return Task.CompletedTask;
