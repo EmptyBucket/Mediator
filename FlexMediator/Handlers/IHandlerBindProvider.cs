@@ -23,9 +23,6 @@
 
 namespace FlexMediator.Handlers;
 
-public interface IHandlerBindProvider
+public interface IHandlerBindProvider : IReadOnlyDictionary<Route, IReadOnlySet<HandlerBind>>
 {
-    IEnumerable<HandlerBind> GetBindings<TMessage>(string routingKey = "");
-
-    IEnumerable<HandlerBind> GetBindings<TMessage, TResult>(string routingKey = "");
 }

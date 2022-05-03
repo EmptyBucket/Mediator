@@ -23,9 +23,6 @@
 
 namespace FlexMediator.Pipes;
 
-public interface IPipeBindProvider
+public interface IPipeBindings : IReadOnlyDictionary<Route, IReadOnlySet<PipeBind>>
 {
-    IEnumerable<PipeBind> GetBindings<TMessage>(string routingKey = "");
-
-    IEnumerable<PipeBind> GetBindings<TMessage, TResult>(string routingKey = "");
 }
