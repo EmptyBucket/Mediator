@@ -1,4 +1,4 @@
-namespace ConsoleApp5.HandlerBindings;
+namespace ConsoleApp5.Bindings;
 
 public interface IHandlerBindProvider
 {

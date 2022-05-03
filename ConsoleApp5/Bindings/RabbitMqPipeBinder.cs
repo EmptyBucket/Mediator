@@ -1,23 +1,20 @@
-using ConsoleApp5.Models;
 using ConsoleApp5.Pipes;
 using EasyNetQ;
 
-namespace ConsoleApp5.TransportBindings;
+namespace ConsoleApp5.Bindings;
 
-internal class RabbitMqTransportSubscriber : ITransportSubscriber
+internal class RabbitMqPipeBinder : IPipeBinder
 {
     private readonly IBus _bus;
-    private readonly IPipe _receivePipe;
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, IDisposable> _subscriptions = new();
 
-    public RabbitMqTransportSubscriber(IBus bus, IPipe receivePipe)
+    public RabbitMqPipeBinder(IBus bus)
     {
         _bus = bus;
-        _receivePipe = receivePipe;
     }
 
-    public async Task Subscribe<TMessage>(string routingKey = "")
+    public async Task Bind<TMessage>(IPipe pipe, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -28,7 +25,7 @@ internal class RabbitMqTransportSubscriber : ITransportSubscriber
             if (!_subscriptions.ContainsKey(route))
             {
                 var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(routingKey,
-                    (m, c) => _receivePipe.Handle(m, new MessageOptions(routingKey), c),
+                    (m, c) => pipe.Handle(m, new MessageOptions(routingKey), c),
                     c => c.WithDurable(false).WithAutoDelete());
                 _subscriptions[route] = subscription;
             }
@@ -39,7 +36,7 @@ internal class RabbitMqTransportSubscriber : ITransportSubscriber
         }
     }
 
-    public async Task Subscribe<TMessage, TResult>(string routingKey = "")
+    public async Task Bind<TMessage, TResult>(IPipe pipe, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -50,7 +47,7 @@ internal class RabbitMqTransportSubscriber : ITransportSubscriber
             if (!_subscriptions.ContainsKey(route))
             {
                 var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(
-                    (m, c) => _receivePipe.Handle<TMessage, TResult>(m, new MessageOptions(routingKey), c),
+                    (m, c) => pipe.Handle<TMessage, TResult>(m, new MessageOptions(routingKey), c),
                     c => c.WithDurable(false));
                 _subscriptions[route] = subscription;
             }
@@ -61,7 +58,7 @@ internal class RabbitMqTransportSubscriber : ITransportSubscriber
         }
     }
 
-    public Task Unsubscribe<TMessage>(string routingKey = "")
+    public Task Unbind<TMessage>(IPipe pipe, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 

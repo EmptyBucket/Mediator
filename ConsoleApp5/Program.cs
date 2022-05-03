@@ -1,7 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using ConsoleApp5;
-using ConsoleApp5.Models;
 using EasyNetQ;
 using Microsoft.Extensions.DependencyInjection;
 

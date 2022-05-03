@@ -1,4 +1,4 @@
-namespace ConsoleApp5.Models;
+namespace ConsoleApp5;
 
 public interface IHandler<in TMessage, TResult> : IHandler<TMessage>
 {

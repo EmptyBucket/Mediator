@@ -1,6 +1,4 @@
-using ConsoleApp5.Models;
-
-namespace ConsoleApp5.HandlerBindings;
+namespace ConsoleApp5.Bindings;
 
 public readonly record struct HandlerBind
 {

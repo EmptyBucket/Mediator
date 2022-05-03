@@ -1,13 +1,11 @@
-using ConsoleApp5.Models;
-
-namespace ConsoleApp5.HandlerBindings;
+namespace ConsoleApp5.Bindings;
 
 internal class HandlerBinder : IHandlerBinder, IHandlerBindProvider
 {
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, HashSet<HandlerBind>> _handlerBindings = new();
 
-    public Task Bind<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public void Bind<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -22,30 +20,9 @@ internal class HandlerBinder : IHandlerBinder, IHandlerBindProvider
         {
             _lock.ExitWriteLock();
         }
-
-        return Task.CompletedTask;
     }
 
-    public Task Bind<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
-    {
-        var route = new Route(typeof(TMessage), routingKey);
-
-        _lock.EnterWriteLock();
-
-        try
-        {
-            _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
-            _handlerBindings[route].Add(new HandlerBind(route, handler: handler));
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public Task Bind<TMessage, THandler>(string routingKey = "")
+    public void Bind<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
         var route = new Route(typeof(TMessage), routingKey);
@@ -61,31 +38,9 @@ internal class HandlerBinder : IHandlerBinder, IHandlerBindProvider
         {
             _lock.ExitWriteLock();
         }
-
-        return Task.CompletedTask;
     }
 
-    public Task Bind<TMessage, TResult, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage, TResult>
-    {
-        var route = new Route(typeof(TMessage), routingKey);
-
-        _lock.EnterWriteLock();
-
-        try
-        {
-            _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
-            _handlerBindings[route].Add(new HandlerBind(route, handlerType: typeof(THandler)));
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public Task Unbind<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public void Unbind<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -104,11 +59,9 @@ internal class HandlerBinder : IHandlerBinder, IHandlerBindProvider
         {
             _lock.ExitWriteLock();
         }
-
-        return Task.CompletedTask;
     }
 
-    public Task Unbind<TMessage, THandler>(string routingKey = "")
+    public void Unbind<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
         var route = new Route(typeof(TMessage), routingKey);
@@ -128,8 +81,6 @@ internal class HandlerBinder : IHandlerBinder, IHandlerBindProvider
         {
             _lock.ExitWriteLock();
         }
-
-        return Task.CompletedTask;
     }
 
     public IEnumerable<HandlerBind> GetBindings<TMessage>(string routingKey = "")
