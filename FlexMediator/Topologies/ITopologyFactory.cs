@@ -1,6 +1,8 @@
+using FlexMediator.Pipes;
+
 namespace FlexMediator.Topologies;
 
 public interface ITopologyFactory
 {
-    Topology Create();
+    Topology Create(IPipeBinder dispatchPipeBinder);
 }

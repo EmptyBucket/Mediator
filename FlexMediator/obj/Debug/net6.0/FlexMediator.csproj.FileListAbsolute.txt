@@ -1,0 +1,5 @@
+/home/strix/RiderProjects/ConsoleApp5/FlexMediator/obj/Debug/net6.0/FlexMediator.csproj.AssemblyReference.cache
+/home/strix/RiderProjects/ConsoleApp5/FlexMediator/obj/Debug/net6.0/FlexMediator.GeneratedMSBuildEditorConfig.editorconfig
+/home/strix/RiderProjects/ConsoleApp5/FlexMediator/obj/Debug/net6.0/FlexMediator.AssemblyInfoInputs.cache
+/home/strix/RiderProjects/ConsoleApp5/FlexMediator/obj/Debug/net6.0/FlexMediator.AssemblyInfo.cs
+/home/strix/RiderProjects/ConsoleApp5/FlexMediator/obj/Debug/net6.0/FlexMediator.csproj.CoreCompileInputs.cache

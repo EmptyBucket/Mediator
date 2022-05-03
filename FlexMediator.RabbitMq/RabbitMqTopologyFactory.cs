@@ -8,18 +8,16 @@ namespace FlexMediatorRabbit;
 
 public class RabbitMqTopologyFactory : ITopologyFactory
 {
-    private readonly IPipeBinder _dispatchPipeBinder;
     private readonly IBus _bus;
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public RabbitMqTopologyFactory(IPipeBinder dispatchPipeBinder, IBus bus, IServiceScopeFactory serviceScopeFactory)
+    public RabbitMqTopologyFactory(IBus bus, IServiceScopeFactory serviceScopeFactory)
     {
-        _dispatchPipeBinder = dispatchPipeBinder;
         _bus = bus;
         _serviceScopeFactory = serviceScopeFactory;
     }
 
-    public Topology Create()
+    public Topology Create(IPipeBinder dispatchPipeBinder)
     {
         var handlerBinder = new HandlerBinder();
         var receivePipeBinder = new RabbitMqPipeBinder(_bus);
