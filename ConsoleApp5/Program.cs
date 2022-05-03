@@ -1,7 +1,9 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using ConsoleApp5;
+using FlexMediator;
 using Microsoft.Extensions.DependencyInjection;
+using EventHandler = ConsoleApp5.EventHandler;
 
 var serviceCollection = new ServiceCollection();
 serviceCollection.RegisterEasyNetQ("host=localhost")
@@ -9,13 +11,13 @@ serviceCollection.RegisterEasyNetQ("host=localhost")
     {
         await c.Topologies["direct"].BindDispatch<Event>();
         await c.Topologies["direct"].BindReceive<Event, EventHandler>();
-        
+
         await c.Topologies["direct"].BindDispatch<Event, string>();
         await c.Topologies["direct"].BindReceive(new EventHandlerResult());
 
         await c.Topologies["rabbitmq"].BindDispatch<RabbitMqEvent>();
         await c.Topologies["rabbitmq"].BindReceive<RabbitMqEvent, RabbitMqEventHandler>();
-        
+
         await c.Topologies["rabbitmq"].BindDispatch<RabbitMqEvent, string>();
         await c.Topologies["rabbitmq"].BindReceive(new RabbitMqEventHandlerResult());
     })
@@ -31,39 +33,3 @@ await mediator.Publish(new RabbitMqEvent("qwe"));
 var rabbitMqEventResult = await mediator.Send<RabbitMqEvent, string>(new RabbitMqEvent("qwe"));
 
 await Task.Delay(10_000);
-
-public record Event(string Name);
-
-public record RabbitMqEvent(string Name);
-
-public class EventHandler : IHandler<Event>
-{
-    public Task HandleAsync(Event message, MessageOptions options, CancellationToken token)
-    {
-        return Task.CompletedTask;
-    }
-}
-
-public class EventHandlerResult : IHandler<Event, string>
-{
-    public Task<string> HandleAsync(Event message, MessageOptions options, CancellationToken token)
-    {
-        return Task.FromResult(message.ToString());
-    }
-}
-
-public class RabbitMqEventHandler : IHandler<RabbitMqEvent>
-{
-    public Task HandleAsync(RabbitMqEvent message, MessageOptions options, CancellationToken token)
-    {
-        return Task.CompletedTask;
-    }
-}
-
-public class RabbitMqEventHandlerResult : IHandler<RabbitMqEvent, string>
-{
-    public Task<string> HandleAsync(RabbitMqEvent message, MessageOptions options, CancellationToken token)
-    {
-        return Task.FromResult(message.ToString());
-    }
-}
