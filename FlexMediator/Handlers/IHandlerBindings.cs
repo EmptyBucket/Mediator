@@ -23,6 +23,6 @@
 
 namespace FlexMediator.Handlers;
 
-public interface IHandlerBindProvider : IReadOnlyDictionary<Route, IReadOnlySet<HandlerBind>>
+public interface IHandlerBindings : IReadOnlyDictionary<Route, IReadOnlySet<HandlerBind>>
 {
 }

@@ -28,19 +28,19 @@ namespace FlexMediator.Pipes;
 
 public class HandlerPipe : IPipe
 {
-    private readonly IHandlerBindProvider _handlerBindProvider;
+    private readonly IHandlerBindings _handlerBindings;
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public HandlerPipe(IHandlerBindProvider handlerBindProvider, IServiceScopeFactory serviceScopeFactory)
+    public HandlerPipe(IHandlerBindings handlerBindings, IServiceScopeFactory serviceScopeFactory)
     {
-        _handlerBindProvider = handlerBindProvider;
+        _handlerBindings = handlerBindings;
         _serviceScopeFactory = serviceScopeFactory;
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
         var route = new Route(typeof(TMessage), RoutingKey: options.RoutingKey);
-        var bindings = _handlerBindProvider.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
+        var bindings = _handlerBindings.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
 
         using var serviceScope = _serviceScopeFactory.CreateScope();
         var serviceProvider = serviceScope.ServiceProvider;
@@ -54,7 +54,7 @@ public class HandlerPipe : IPipe
         CancellationToken token)
     {
         var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: options.RoutingKey);
-        var bindings = _handlerBindProvider.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
+        var bindings = _handlerBindings.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
 
         using var serviceScope = _serviceScopeFactory.CreateScope();
         var serviceProvider = serviceScope.ServiceProvider;
