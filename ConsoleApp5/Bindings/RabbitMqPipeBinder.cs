@@ -15,7 +15,7 @@ internal class RabbitMqPipeBinder : IPipeBinder
 
     public async Task Bind<TMessage>(IPipe pipe, string routingKey = "")
     {
-        var route = new Route(typeof(TMessage), routingKey);
+        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
 
         if (!_subscriptions.ContainsKey(route))
         {
@@ -28,7 +28,7 @@ internal class RabbitMqPipeBinder : IPipeBinder
 
     public async Task Bind<TMessage, TResult>(IPipe pipe, string routingKey = "")
     {
-        var route = new Route(typeof(TMessage), routingKey);
+        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
 
         if (!_subscriptions.ContainsKey(route))
         {
@@ -41,7 +41,16 @@ internal class RabbitMqPipeBinder : IPipeBinder
 
     public Task Unbind<TMessage>(IPipe pipe, string routingKey = "")
     {
-        var route = new Route(typeof(TMessage), routingKey);
+        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
+
+        if (_subscriptions.Remove(route, out var topology)) topology.Dispose();
+
+        return Task.CompletedTask;
+    }
+
+    public Task Unbind<TMessage, TResult>(IPipe pipe, string routingKey = "")
+    {
+        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
 
         if (_subscriptions.Remove(route, out var topology)) topology.Dispose();
 

@@ -8,14 +8,16 @@ serviceCollection.RegisterEasyNetQ("host=localhost")
     .AddMediator(async c =>
     {
         await c.Topologies["direct"].BindDispatch<Event>();
-        await c.Topologies["direct"].BindDispatch<Event, string>();
         await c.Topologies["direct"].BindReceive<Event, EventHandler>();
-        await c.Topologies["direct"].BindReceive<Event>(new EventHandlerResult());
+        
+        await c.Topologies["direct"].BindDispatch<Event, string>();
+        await c.Topologies["direct"].BindReceive(new EventHandlerResult());
 
         await c.Topologies["rabbitmq"].BindDispatch<RabbitMqEvent>();
-        await c.Topologies["rabbitmq"].BindDispatch<RabbitMqEvent, string>();
         await c.Topologies["rabbitmq"].BindReceive<RabbitMqEvent, RabbitMqEventHandler>();
-        await c.Topologies["rabbitmq"].BindReceive<RabbitMqEvent>(new RabbitMqEventHandlerResult());
+        
+        await c.Topologies["rabbitmq"].BindDispatch<RabbitMqEvent, string>();
+        await c.Topologies["rabbitmq"].BindReceive(new RabbitMqEventHandlerResult());
     })
     .AddScoped<EventHandler>()
     .AddScoped<RabbitMqEventHandler>();
@@ -23,8 +25,9 @@ var serviceProvider = serviceCollection.BuildServiceProvider();
 
 var mediator = serviceProvider.GetRequiredService<IMediator>();
 await mediator.Publish(new Event("qwe"));
-await mediator.Publish(new RabbitMqEvent("qwe"));
 var eventResult = await mediator.Send<Event, string>(new Event("qwe"));
+
+await mediator.Publish(new RabbitMqEvent("qwe"));
 var rabbitMqEventResult = await mediator.Send<RabbitMqEvent, string>(new RabbitMqEvent("qwe"));
 
 await Task.Delay(10_000);
@@ -41,19 +44,19 @@ public class EventHandler : IHandler<Event>
     }
 }
 
-public class RabbitMqEventHandler : IHandler<RabbitMqEvent>
-{
-    public Task HandleAsync(RabbitMqEvent message, MessageOptions options, CancellationToken token)
-    {
-        return Task.CompletedTask;
-    }
-}
-
 public class EventHandlerResult : IHandler<Event, string>
 {
     public Task<string> HandleAsync(Event message, MessageOptions options, CancellationToken token)
     {
         return Task.FromResult(message.ToString());
+    }
+}
+
+public class RabbitMqEventHandler : IHandler<RabbitMqEvent>
+{
+    public Task HandleAsync(RabbitMqEvent message, MessageOptions options, CancellationToken token)
+    {
+        return Task.CompletedTask;
     }
 }
 

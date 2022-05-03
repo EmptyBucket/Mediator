@@ -29,7 +29,7 @@ public class HandlerPipe : IPipe
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
-        var bindings = _handlerBindProvider.GetBindings<TMessage>(options.RoutingKey);
+        var bindings = _handlerBindProvider.GetBindings<TMessage, TResult>(options.RoutingKey);
 
         using var serviceScope = _serviceScopeFactory.CreateScope();
         var serviceProvider = serviceScope.ServiceProvider;

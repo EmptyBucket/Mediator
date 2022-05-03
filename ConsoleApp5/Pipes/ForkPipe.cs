@@ -23,7 +23,7 @@ public class ForkPipe : IPipe
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
-        var pipeBindings = _pipeBindProvider.GetBindings<TMessage>(options.RoutingKey);
+        var pipeBindings = _pipeBindProvider.GetBindings<TMessage, TResult>(options.RoutingKey);
         var pipes = pipeBindings.Select(t => t.Pipe).ToArray();
 
         if (pipes.Length != 1) throw new InvalidConstraintException("Must be single pipe");
