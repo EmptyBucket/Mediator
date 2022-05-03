@@ -1,22 +1,23 @@
-using ConsoleApp5.Bindings;
+using ConsoleApp5.HandlerBindings;
+using ConsoleApp5.Models;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ConsoleApp5.Pipes;
 
-public class BindingPipe : IPipe
+public class HandlerForkPipe : IPipe
 {
-    private readonly IBindingProvider _bindingProvider;
+    private readonly IHandlerBindProvider _handlerBindProvider;
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public BindingPipe(IBindingProvider bindingProvider, IServiceScopeFactory serviceScopeFactory)
+    public HandlerForkPipe(IHandlerBindProvider handlerBindProvider, IServiceScopeFactory serviceScopeFactory)
     {
-        _bindingProvider = bindingProvider;
+        _handlerBindProvider = handlerBindProvider;
         _serviceScopeFactory = serviceScopeFactory;
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        var bindings = _bindingProvider.GetBindings<TMessage>(options.RoutingKey);
+        var bindings = _handlerBindProvider.GetBindings<TMessage>(options.RoutingKey);
 
         using var serviceScope = _serviceScopeFactory.CreateScope();
         var serviceProvider = serviceScope.ServiceProvider;
@@ -29,7 +30,7 @@ public class BindingPipe : IPipe
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
-        var bindings = _bindingProvider.GetBindings<TMessage>(options.RoutingKey);
+        var bindings = _handlerBindProvider.GetBindings<TMessage>(options.RoutingKey);
 
         using var serviceScope = _serviceScopeFactory.CreateScope();
         var serviceProvider = serviceScope.ServiceProvider;

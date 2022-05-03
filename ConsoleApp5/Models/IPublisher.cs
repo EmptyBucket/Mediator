@@ -1,4 +1,4 @@
-namespace ConsoleApp5;
+namespace ConsoleApp5.Models;
 
 public interface IPublisher
 {

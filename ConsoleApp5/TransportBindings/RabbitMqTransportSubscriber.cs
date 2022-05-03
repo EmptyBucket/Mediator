@@ -2,24 +2,22 @@ using ConsoleApp5.Models;
 using ConsoleApp5.Pipes;
 using EasyNetQ;
 
-namespace ConsoleApp5.Topologies;
+namespace ConsoleApp5.TransportBindings;
 
-internal class RabbitMqTopologyRegistry : ITopologyRegistry, ITopologyProvider
+internal class RabbitMqTransportSubscriber : ITransportSubscriber
 {
     private readonly IBus _bus;
-    private readonly IPipe _dispatchPipe;
     private readonly IPipe _receivePipe;
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<Route, (Topology Topology, IDisposable Subscription)> _topologies = new();
+    private readonly Dictionary<Route, IDisposable> _subscriptions = new();
 
-    public RabbitMqTopologyRegistry(IBus bus, IPipe dispatchPipe, IPipe receivePipe)
+    public RabbitMqTransportSubscriber(IBus bus, IPipe receivePipe)
     {
         _bus = bus;
-        _dispatchPipe = dispatchPipe;
         _receivePipe = receivePipe;
     }
 
-    public async Task AddTopology<TMessage>(string routingKey = "")
+    public async Task Subscribe<TMessage>(string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -27,12 +25,12 @@ internal class RabbitMqTopologyRegistry : ITopologyRegistry, ITopologyProvider
 
         try
         {
-            if (!_topologies.ContainsKey(route))
+            if (!_subscriptions.ContainsKey(route))
             {
                 var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(routingKey,
                     (m, c) => _receivePipe.Handle(m, new MessageOptions(routingKey), c),
                     c => c.WithDurable(false).WithAutoDelete());
-                _topologies[route] = (new Topology(route, _dispatchPipe), subscription);
+                _subscriptions[route] = subscription;
             }
         }
         finally
@@ -41,7 +39,7 @@ internal class RabbitMqTopologyRegistry : ITopologyRegistry, ITopologyProvider
         }
     }
 
-    public async Task AddTopology<TMessage, TResult>(string routingKey = "")
+    public async Task Subscribe<TMessage, TResult>(string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -49,12 +47,12 @@ internal class RabbitMqTopologyRegistry : ITopologyRegistry, ITopologyProvider
 
         try
         {
-            if (!_topologies.ContainsKey(route))
+            if (!_subscriptions.ContainsKey(route))
             {
                 var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(
                     (m, c) => _receivePipe.Handle<TMessage, TResult>(m, new MessageOptions(routingKey), c),
                     c => c.WithDurable(false));
-                _topologies[route] = (new Topology(route, _dispatchPipe), subscription);
+                _subscriptions[route] = subscription;
             }
         }
         finally
@@ -63,7 +61,7 @@ internal class RabbitMqTopologyRegistry : ITopologyRegistry, ITopologyProvider
         }
     }
 
-    public Task RemoveTopology<TMessage>(string routingKey = "")
+    public Task Unsubscribe<TMessage>(string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -71,7 +69,7 @@ internal class RabbitMqTopologyRegistry : ITopologyRegistry, ITopologyProvider
 
         try
         {
-            if (_topologies.Remove(route, out var topology)) topology.Subscription.Dispose();
+            if (_subscriptions.Remove(route, out var topology)) topology.Dispose();
         }
         finally
         {
@@ -79,12 +77,5 @@ internal class RabbitMqTopologyRegistry : ITopologyRegistry, ITopologyProvider
         }
 
         return Task.CompletedTask;
-    }
-
-    public Topology? GetTopology<TMessage>(string routingKey = "")
-    {
-        var route = new Route(typeof(TMessage), routingKey);
-
-        return _topologies.TryGetValue(route, out var topology) ? topology.Topology : null;
     }
 }

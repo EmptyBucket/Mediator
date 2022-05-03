@@ -1,8 +1,10 @@
-namespace ConsoleApp5.Models;
+using ConsoleApp5.Models;
 
-public readonly record struct Binding
+namespace ConsoleApp5.HandlerBindings;
+
+public readonly record struct HandlerBind
 {
-    public Binding(Route route, IHandler? handler = null, Type? handlerType = null)
+    public HandlerBind(Route route, IHandler? handler = null, Type? handlerType = null)
     {
         if (handler is null && handlerType is null)
             throw new ArgumentException($"{nameof(handler)} or {nameof(handlerType)} must be not-null");
