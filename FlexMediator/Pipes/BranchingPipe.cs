@@ -2,11 +2,11 @@ using System.Data;
 
 namespace FlexMediator.Pipes;
 
-public class ForkPipe : IPipe
+public class BranchingPipe : IPipe
 {
     private readonly IPipeBindings _pipeBindings;
 
-    public ForkPipe(IPipeBindings pipeBindings)
+    public BranchingPipe(IPipeBindings pipeBindings)
     {
         _pipeBindings = pipeBindings;
     }

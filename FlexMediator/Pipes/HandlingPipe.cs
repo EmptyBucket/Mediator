@@ -3,12 +3,12 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace FlexMediator.Pipes;
 
-public class HandlerPipe : IPipe
+public class HandlingPipe : IPipe
 {
     private readonly IHandlerBindings _handlerBindings;
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public HandlerPipe(IHandlerBindings handlerBindings, IServiceScopeFactory serviceScopeFactory)
+    public HandlingPipe(IHandlerBindings handlerBindings, IServiceScopeFactory serviceScopeFactory)
     {
         _handlerBindings = handlerBindings;
         _serviceScopeFactory = serviceScopeFactory;

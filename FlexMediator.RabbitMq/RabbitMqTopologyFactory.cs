@@ -24,7 +24,7 @@ public class RabbitMqTopologyFactory : ITopologyFactory
         var handlerBinder = new HandlerBinder();
         var receivePipeBinder = new RabbitMqPipeBinder(_bus);
         var dispatchPipe = new RabbitMqPipe(_bus);
-        var receivePipe = new HandlerPipe(handlerBinder, _serviceScopeFactory);
+        var receivePipe = new HandlingPipe(handlerBinder, _serviceScopeFactory);
         return new Topology(dispatchPipe, receivePipe, _dispatchPipeBuilder, receivePipeBinder, handlerBinder);
     }
 }

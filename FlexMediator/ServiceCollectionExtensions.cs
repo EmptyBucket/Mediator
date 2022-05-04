@@ -49,7 +49,7 @@ public class MediatorBuilder
     public IMediator Build()
     {
         var dispatchPipeBinder = new PipeBinder();
-        var dispatchPipe = new ForkPipe(dispatchPipeBinder);
+        var dispatchPipe = new BranchingPipe(dispatchPipeBinder);
 
         var mediatorConfiguration = new MediatorConfiguration();
         var mediator = new Mediator(dispatchPipe, mediatorConfiguration);
