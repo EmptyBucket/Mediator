@@ -41,7 +41,7 @@ public class DirectTopologyFactory : ITopologyFactory
     public Topology Create()
     {
         var handlerBinder = new HandlerBinder();
-        var pipe = new HandlerPipe(handlerBinder, _serviceScopeFactory);
+        var pipe = new HandlingPipe(handlerBinder, _serviceScopeFactory);
         return new Topology(pipe, pipe, _dispatchPipeBinder, _dispatchPipeBinder, handlerBinder);
     }
 }

@@ -21,46 +21,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using FlexMediator.Handlers;
-using Microsoft.Extensions.DependencyInjection;
+using System.Data;
 
 namespace FlexMediator.Pipes;
 
-public class HandlerPipe : IPipe
+public class BranchingPipe : IPipe
 {
-    private readonly IHandlerBindings _handlerBindings;
-    private readonly IServiceScopeFactory _serviceScopeFactory;
+    private readonly IPipeBindings _pipeBindings;
 
-    public HandlerPipe(IHandlerBindings handlerBindings, IServiceScopeFactory serviceScopeFactory)
+    public BranchingPipe(IPipeBindings pipeBindings)
     {
-        _handlerBindings = handlerBindings;
-        _serviceScopeFactory = serviceScopeFactory;
+        _pipeBindings = pipeBindings;
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
         var route = new Route(typeof(TMessage), RoutingKey: options.RoutingKey);
-        var bindings = _handlerBindings.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
+        var pipeBindings = _pipeBindings.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
+        var pipes = pipeBindings.Select(t => t.Pipe);
 
-        using var serviceScope = _serviceScopeFactory.CreateScope();
-        var serviceProvider = serviceScope.ServiceProvider;
-        var handlers = bindings
-            .Select(t => t.Handler ?? serviceProvider.GetRequiredService(t.HandlerType!))
-            .Cast<IHandler<TMessage>>();
-        await Task.WhenAll(handlers.Select(h => h.HandleAsync(message, options, token)));
+        await Task.WhenAll(pipes.Select(p => p.Handle(message, options, token)));
     }
 
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
         var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: options.RoutingKey);
-        var bindings = _handlerBindings.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
+        var pipeBindings = _pipeBindings.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
+        var pipes = pipeBindings.Select(t => t.Pipe).ToArray();
 
-        using var serviceScope = _serviceScopeFactory.CreateScope();
-        var serviceProvider = serviceScope.ServiceProvider;
-        var handlers = bindings
-            .Select(t => t.Handler ?? serviceProvider.GetRequiredService(t.HandlerType!))
-            .Cast<IHandler<TMessage, TResult>>();
-        return await handlers.Single().HandleAsync(message, options, token);
+        if (pipes.Length != 1) throw new InvalidConstraintException("Must be single pipe");
+
+        return await pipes.Single().Handle<TMessage, TResult>(message, options, token);
     }
 }
