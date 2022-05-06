@@ -9,10 +9,10 @@ public interface IMediator : ISender, IPublisher
 
 public class MediatorConfiguration
 {
-    public MediatorConfiguration(IReadOnlyDictionary<string, Topology> topologies)
+    public MediatorConfiguration(IReadOnlyDictionary<string, TopologyBinder> topologies)
     {
         Topologies = topologies;
     }
 
-    public IReadOnlyDictionary<string, Topology> Topologies { get; }
+    public IReadOnlyDictionary<string, TopologyBinder> Topologies { get; }
 }

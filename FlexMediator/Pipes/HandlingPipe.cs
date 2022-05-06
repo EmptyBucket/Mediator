@@ -16,7 +16,7 @@ public class HandlingPipe : IPipe
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        var route = new Route(typeof(TMessage), RoutingKey: options.RoutingKey);
+        var route = new Route(typeof(TMessage), options.RoutingKey);
         var bindings = _handlerBindings.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
 
         using var serviceScope = _serviceScopeFactory.CreateScope();
@@ -30,7 +30,7 @@ public class HandlingPipe : IPipe
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: options.RoutingKey);
+        var route = new Route(typeof(TMessage), options.RoutingKey, typeof(TResult));
         var bindings = _handlerBindings.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
 
         using var serviceScope = _serviceScopeFactory.CreateScope();

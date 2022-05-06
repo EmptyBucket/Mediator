@@ -15,10 +15,11 @@ public class DirectTopologyFactory : ITopologyFactory
         _serviceScopeFactory = serviceScopeFactory;
     }
 
-    public Topology Create()
+    public TopologyBinder Create()
     {
         var handlerBinder = new HandlerBinder();
-        var pipe = new HandlingPipe(handlerBinder, _serviceScopeFactory);
-        return new Topology(pipe, pipe, _dispatchPipeBinder, _dispatchPipeBinder, handlerBinder);
+        var dispatchReceivePipe = new HandlingPipe(handlerBinder, _serviceScopeFactory);
+        return new TopologyBinder(dispatchReceivePipe, dispatchReceivePipe, _dispatchPipeBinder, _dispatchPipeBinder,
+            handlerBinder);
     }
 }

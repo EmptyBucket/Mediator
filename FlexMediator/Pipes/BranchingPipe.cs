@@ -13,7 +13,7 @@ public class BranchingPipe : IPipe
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
-        var route = new Route(typeof(TMessage), RoutingKey: options.RoutingKey);
+        var route = new Route(typeof(TMessage), options.RoutingKey);
         var pipeBindings = _pipeBindings.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
         var pipes = pipeBindings.Select(t => t.Pipe);
 
@@ -23,7 +23,7 @@ public class BranchingPipe : IPipe
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token)
     {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: options.RoutingKey);
+        var route = new Route(typeof(TMessage), options.RoutingKey, typeof(TResult));
         var pipeBindings = _pipeBindings.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
         var pipes = pipeBindings.Select(t => t.Pipe).ToArray();
 

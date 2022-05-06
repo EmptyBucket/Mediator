@@ -6,102 +6,40 @@ public class HandlerBinder : IHandlerBinder, IHandlerBindings
 {
     private readonly Dictionary<Route, HashSet<HandlerBind>> _handlerBindings = new();
 
-    public void Bind<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    public HandlerBind Bind<TMessage, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage> =>
+        Bind(typeof(TMessage), routingKey, handlerType: typeof(THandler));
+
+    public HandlerBind Bind<TMessage, TResult, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage, TResult> =>
+        Bind(typeof(TMessage), routingKey, resultType: typeof(TResult), handlerType: typeof(THandler));
+
+    public HandlerBind Bind<TMessage>(IHandler<TMessage> handler, string routingKey = "") =>
+        Bind(typeof(TMessage), routingKey, handler: handler);
+
+    public HandlerBind Bind<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "") =>
+        Bind(typeof(TMessage), routingKey, resultType: typeof(TResult), handler: handler);
+
+    private HandlerBind Bind(Type messageType, string routingKey = "", Type? resultType = null,
+        Type? handlerType = null, IHandler? handler = null)
     {
-        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
+        var route = new Route(messageType, routingKey, resultType);
+        var handlerBind = new HandlerBind(Unbind, route, handlerType, handler);
 
         _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
-        _handlerBindings[route].Add(new HandlerBind(route, handler: handler));
+        _handlerBindings[route].Add(handlerBind);
+
+        return handlerBind;
     }
 
-    public void Bind<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
+    private void Unbind(HandlerBind handlerBind)
     {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
-
-        _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
-        _handlerBindings[route].Add(new HandlerBind(route, handler: handler));
-    }
-
-    public void Bind<TMessage, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage>
-    {
-        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
-
-        _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
-        _handlerBindings[route].Add(new HandlerBind(route, handlerType: typeof(THandler)));
-    }
-
-    public void Bind<TMessage, TResult, THandler>(string routingKey = "") 
-        where THandler : IHandler<TMessage, TResult>
-    {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
-
-        _handlerBindings.TryAdd(route, new HashSet<HandlerBind>());
-        _handlerBindings[route].Add(new HandlerBind(route, handlerType: typeof(THandler)));
-    }
-
-    public void Unbind<TMessage>(IHandler<TMessage> handler, string routingKey = "")
-    {
-        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
-
-        if (_handlerBindings.TryGetValue(route, out var set))
+        if (_handlerBindings.TryGetValue(handlerBind.Route, out var set))
         {
-            set.Remove(new HandlerBind(route, handler: handler));
+            set.Remove(handlerBind);
 
-            if (!set.Any()) _handlerBindings.Remove(route);
+            if (!set.Any()) _handlerBindings.Remove(handlerBind.Route);
         }
-    }
-
-    public void Unbind<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
-    {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
-
-        if (_handlerBindings.TryGetValue(route, out var set))
-        {
-            set.Remove(new HandlerBind(route, handler: handler));
-
-            if (!set.Any()) _handlerBindings.Remove(route);
-        }
-    }
-
-    public void Unbind<TMessage, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage>
-    {
-        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
-
-        if (_handlerBindings.TryGetValue(route, out var set))
-        {
-            set.Remove(new HandlerBind(route, handlerType: typeof(THandler)));
-
-            if (!set.Any()) _handlerBindings.Remove(route);
-        }
-    }
-
-    public void Unbind<TMessage, TResult, THandler>(string routingKey = "") 
-        where THandler : IHandler<TMessage, TResult>
-    {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
-
-        if (_handlerBindings.TryGetValue(route, out var set))
-        {
-            set.Remove(new HandlerBind(route, handlerType: typeof(THandler)));
-
-            if (!set.Any()) _handlerBindings.Remove(route);
-        }
-    }
-
-    public IEnumerable<HandlerBind> GetBindings<TMessage>(string routingKey = "")
-    {
-        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
-
-        return _handlerBindings.TryGetValue(route, out var bindings) ? bindings : Enumerable.Empty<HandlerBind>();
-    }
-    
-    public IEnumerable<HandlerBind> GetBindings<TMessage, TResult>(string routingKey = "")
-    {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
-
-        return _handlerBindings.TryGetValue(route, out var bindings) ? bindings : Enumerable.Empty<HandlerBind>();
     }
 
     public IEnumerator<KeyValuePair<Route, IReadOnlySet<HandlerBind>>> GetEnumerator()

@@ -1,11 +1,15 @@
 namespace FlexMediator.Handlers;
 
-public readonly record struct HandlerBind
+public readonly record struct HandlerBind : IDisposable
 {
-    public HandlerBind(Route route, IHandler? handler = null, Type? handlerType = null)
+    private readonly Action<HandlerBind> _unbind;
+
+    public HandlerBind(Action<HandlerBind> unbind, Route route, Type? handlerType = null, IHandler? handler = null)
     {
-        if (handler is null && handlerType is null)
-            throw new ArgumentException($"{nameof(handler)} or {nameof(handlerType)} must be not-null");
+        if (handlerType is null && handler is null)
+            throw new ArgumentException($"{nameof(handlerType)} or {nameof(handler)} must be not-null");
+
+        _unbind = unbind;
 
         Route = route;
         Handler = handler;
@@ -14,7 +18,9 @@ public readonly record struct HandlerBind
 
     public Route Route { get; }
 
+    public Type? HandlerType { get; }
+    
     public IHandler? Handler { get; }
 
-    public Type? HandlerType { get; }
+    public void Dispose() => _unbind(this);
 }

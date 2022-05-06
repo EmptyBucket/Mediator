@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
                 .Create();
             var rabbitMqTopology = ActivatorUtilities.CreateInstance<RabbitMqTopologyFactory>(p, dispatchPipeBinder)
                 .Create();
-            var topologies = new Dictionary<string, Topology>
+            var topologies = new Dictionary<string, TopologyBinder>
             {
                 { "direct", directTopology },
                 { "rabbitmq", rabbitMqTopology }
@@ -33,14 +33,14 @@ public static class ServiceCollectionExtensions
 public class MediatorBuilder
 {
     private readonly ServiceCollection _serviceCollection;
-    private readonly Dictionary<string, Func<IServiceProvider, Topology>> _topologyFactories = new();
+    private readonly Dictionary<string, Func<IServiceProvider, TopologyBinder>> _topologyFactories = new();
 
     public MediatorBuilder(ServiceCollection serviceCollection)
     {
         _serviceCollection = new ServiceCollection { serviceCollection };
     }
 
-    public MediatorBuilder AddTopology(string name, Func<IServiceProvider, Topology> topologyFactory)
+    public MediatorBuilder AddTopology(string name, Func<IServiceProvider, TopologyBinder> topologyFactory)
     {
         _topologyFactories[name] = topologyFactory;
         return this;
