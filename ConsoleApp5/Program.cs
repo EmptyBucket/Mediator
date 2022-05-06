@@ -8,13 +8,7 @@ var serviceCollection = new ServiceCollection();
 serviceCollection.RegisterEasyNetQ("host=localhost")
     .AddMediator(async (sp, p) =>
     {
-        var rabbitMqPipe = sp.GetRequiredService<RabbitMqPipe>();
-        await p.Connect<Event, RabbitMqPipe>(rabbitMqPipe);
-
-        var handlingPipe = sp.GetRequiredService<HandlingPipe>();
-        await rabbitMqPipe.Connect<Event>(handlingPipe);
-
-        handlingPipe.Connect<Event>(f => sp.GetRequiredService<EventHandler>());
+        
     })
     .AddScoped<EventHandler>();
 var serviceProvider = serviceCollection.BuildServiceProvider();
