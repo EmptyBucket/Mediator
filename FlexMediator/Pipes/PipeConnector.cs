@@ -30,20 +30,16 @@ public class PipeConnector : IPipeConnector, IPipeConnections
 {
     private readonly Dictionary<Route, HashSet<PipeConnection>> _pipeConnections = new();
 
-    public Task<PipeConnection<TPipe>> Connect<TMessage, TPipe>(TPipe pipe, string routingKey = "")
-        where TPipe : IPipe =>
+    public Task<PipeConnection> Connect<TMessage>(IPipe pipe, string routingKey = "") =>
         Connect(typeof(TMessage), pipe, routingKey: routingKey);
 
-    public Task<PipeConnection<TPipe>> Connect<TMessage, TResult, TPipe>(TPipe pipe, string routingKey = "")
-        where TPipe : IPipe =>
+    public Task<PipeConnection> Connect<TMessage, TResult>(IPipe pipe, string routingKey = "") =>
         Connect(typeof(TMessage), pipe, routingKey: routingKey, resultType: typeof(TResult));
 
-    private Task<PipeConnection<TPipe>> Connect<TPipe>(Type messageType, TPipe pipe, string routingKey = "",
-        Type? resultType = null)
-        where TPipe : IPipe
+    private Task<PipeConnection> Connect(Type messageType, IPipe pipe, string routingKey = "", Type? resultType = null)
     {
         var route = new Route(messageType, routingKey, resultType);
-        var pipeBind = new PipeConnection<TPipe>(Disconnect, route, pipe);
+        var pipeBind = new PipeConnection(Disconnect, route, pipe);
 
         _pipeConnections.TryAdd(route, new HashSet<PipeConnection>());
         _pipeConnections[route].Add(pipeBind);
