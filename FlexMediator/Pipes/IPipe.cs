@@ -1,3 +1,5 @@
+using FlexMediator.Utils;
+
 namespace FlexMediator.Pipes;
 
 public interface IPipe

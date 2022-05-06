@@ -1,35 +1,26 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-using ConsoleApp5;
+﻿using ConsoleApp5;
 using FlexMediator;
+using FlexMediator.Pipes;
 using Microsoft.Extensions.DependencyInjection;
 using EventHandler = ConsoleApp5.EventHandler;
 
 var serviceCollection = new ServiceCollection();
 serviceCollection.RegisterEasyNetQ("host=localhost")
-    .AddMediator(async c =>
+    .AddMediator(async (sp, p) =>
     {
-        await c.Topologies["direct"].BindDispatch<Event>();
-        await c.Topologies["direct"].BindReceive<Event, EventHandler>();
+        var rabbitMqPipe = sp.GetRequiredService<RabbitMqPipe>();
+        var pipeConnection = await p.Connect<Event, RabbitMqPipe>(rabbitMqPipe);
 
-        await c.Topologies["direct"].BindDispatch<Event, string>();
-        await c.Topologies["direct"].BindReceive(new EventHandlerResult());
+        var handlingPipe = sp.GetRequiredService<HandlingPipe>();
+        await rabbitMqPipe.Connect<Event>(handlingPipe);
 
-        await c.Topologies["rabbitmq"].BindDispatch<RabbitMqEvent>();
-        await c.Topologies["rabbitmq"].BindReceive<RabbitMqEvent, RabbitMqEventHandler>();
-
-        await c.Topologies["rabbitmq"].BindDispatch<RabbitMqEvent, string>();
-        await c.Topologies["rabbitmq"].BindReceive(new RabbitMqEventHandlerResult());
+        handlingPipe.Connect<Event>();
     })
-    .AddScoped<EventHandler>()
-    .AddScoped<RabbitMqEventHandler>();
+    .AddScoped<EventHandler>();
 var serviceProvider = serviceCollection.BuildServiceProvider();
 
 var mediator = serviceProvider.GetRequiredService<IMediator>();
 await mediator.Publish(new Event("qwe"));
 var eventResult = await mediator.Send<Event, string>(new Event("qwe"));
-
-await mediator.Publish(new RabbitMqEvent("qwe"));
-var rabbitMqEventResult = await mediator.Send<RabbitMqEvent, string>(new RabbitMqEvent("qwe"));
 
 await Task.Delay(10_000);

@@ -1,4 +1,4 @@
-namespace FlexMediator;
+namespace FlexMediator.Utils;
 
 public record MessageOptions(string RoutingKey = "")
 {

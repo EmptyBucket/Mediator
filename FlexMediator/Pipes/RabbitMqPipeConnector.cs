@@ -1,20 +1,20 @@
 using EasyNetQ;
-using FlexMediator;
-using FlexMediator.Pipes;
+using FlexMediator.Utils;
 
-namespace FlexMediatorRabbit;
+namespace FlexMediator.Pipes;
 
-internal class RabbitMqPipeBinder : IPipeBinder
+public class RabbitMqPipeConnector : IPipeConnector
 {
     private readonly IBus _bus;
     private readonly Dictionary<Route, IDisposable> _subscriptions = new();
 
-    public RabbitMqPipeBinder(IBus bus)
+    public RabbitMqPipeConnector(IBus bus)
     {
         _bus = bus;
     }
 
-    public async Task<PipeBind> Bind<TMessage>(IPipe pipe, string routingKey = "")
+    public async Task<PipeConnection<TPipe>> Connect<TMessage, TPipe>(TPipe pipe, string routingKey = "")
+        where TPipe : IPipe
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -26,10 +26,11 @@ internal class RabbitMqPipeBinder : IPipeBinder
             _subscriptions[route] = subscription;
         }
 
-        return new PipeBind(Unbind, route, pipe);
+        return new PipeConnection<TPipe>(Disconnect, route, pipe);
     }
 
-    public async Task<PipeBind> Bind<TMessage, TResult>(IPipe pipe, string routingKey = "")
+    public async Task<PipeConnection<TPipe>> Connect<TMessage, TResult, TPipe>(TPipe pipe, string routingKey = "")
+        where TPipe : IPipe
     {
         var route = new Route(typeof(TMessage), routingKey, typeof(TResult));
 
@@ -41,12 +42,12 @@ internal class RabbitMqPipeBinder : IPipeBinder
             _subscriptions[route] = subscription;
         }
 
-        return new PipeBind(Unbind, route, pipe);
+        return new PipeConnection<TPipe>(Disconnect, route, pipe);
     }
 
-    private ValueTask Unbind(PipeBind pipeBind)
+    private ValueTask Disconnect(PipeConnection pipeConnection)
     {
-        if (_subscriptions.Remove(pipeBind.Route, out var topology)) topology.Dispose();
+        if (_subscriptions.Remove(pipeConnection.Route, out var topology)) topology.Dispose();
 
         return ValueTask.CompletedTask;
     }

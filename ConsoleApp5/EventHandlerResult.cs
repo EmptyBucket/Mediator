@@ -1,5 +1,5 @@
-using FlexMediator;
 using FlexMediator.Handlers;
+using FlexMediator.Utils;
 
 namespace ConsoleApp5;
 
