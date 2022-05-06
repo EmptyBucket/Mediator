@@ -13,7 +13,7 @@ public class RabbitMqPipeConnector : IPipeConnector
         _bus = bus;
     }
 
-    public async Task<PipeConnection> Connect<TMessage>(IPipe pipe, string routingKey = "")
+    public async Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -28,7 +28,7 @@ public class RabbitMqPipeConnector : IPipeConnector
         return new PipeConnection(Disconnect, route, pipe);
     }
 
-    public async Task<PipeConnection> Connect<TMessage, TResult>(IPipe pipe, string routingKey = "")
+    public async Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey, typeof(TResult));
 
