@@ -22,36 +22,28 @@
 // SOFTWARE.
 
 using FlexMediator.Handlers;
+using FlexMediator.Pipes;
 
 namespace FlexMediator.Topologies;
 
-public interface ITopology
+public readonly record struct TopologyBind : IAsyncDisposable
 {
-    Task BindDispatch<TMessage>(string routingKey = "");
-    
-    Task BindDispatch<TMessage, TResult>(string routingKey = "");
+    private readonly Func<TopologyBind, ValueTask> _unbind;
 
-    Task UnbindDispatch<TMessage>(string routingKey = "");
+    public TopologyBind(Func<TopologyBind, ValueTask> unbind, Route route, PipeBind pipeBind,
+        HandlerBind? handlerBind = null)
+    {
+        _unbind = unbind;
+        Route = route;
+        PipeBind = pipeBind;
+        HandlerBind = handlerBind;
+    }
 
-    Task UnbindDispatch<TMessage, TResult>(string routingKey = "");
+    public Route Route { get; }
 
-    Task BindReceive<TMessage>(IHandler<TMessage> handler, string routingKey = "");
+    public PipeBind PipeBind { get; }
 
-    Task BindReceive<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
+    public HandlerBind? HandlerBind { get; }
 
-    Task BindReceive<TMessage, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage>;
-
-    Task BindReceive<TMessage, TResult, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage, TResult>;
-
-    Task UnbindReceive<TMessage>(IHandler<TMessage> handler, string routingKey = "");
-
-    Task UnbindReceive<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
-
-    Task UnbindReceive<TMessage, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage>;
-
-    Task UnbindReceive<TMessage, TResult, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage, TResult>;
+    public ValueTask DisposeAsync() => _unbind(this);
 }

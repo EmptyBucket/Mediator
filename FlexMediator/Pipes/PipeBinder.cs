@@ -29,68 +29,33 @@ internal class PipeBinder : IPipeBinder, IPipeBindings
 {
     private readonly Dictionary<Route, HashSet<PipeBind>> _pipeBindings = new();
 
-    public Task Bind<TMessage>(IPipe pipe, string routingKey = "")
+    public Task<PipeBind> Bind<TMessage>(IPipe pipe, string routingKey = "") =>
+        Bind(typeof(TMessage), pipe, routingKey: routingKey);
+
+    public Task<PipeBind> Bind<TMessage, TResult>(IPipe pipe, string routingKey = "") =>
+        Bind(typeof(TMessage), pipe, routingKey: routingKey, resultType: typeof(TResult));
+
+    private Task<PipeBind> Bind(Type messageType, IPipe pipe, string routingKey = "", Type? resultType = null)
     {
-        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
+        var route = new Route(messageType, routingKey, resultType);
+        var pipeBind = new PipeBind(Unbind, route, pipe);
 
         _pipeBindings.TryAdd(route, new HashSet<PipeBind>());
-        _pipeBindings[route].Add(new PipeBind(route, pipe));
-        return Task.CompletedTask;
+        _pipeBindings[route].Add(pipeBind);
+
+        return Task.FromResult(pipeBind);
     }
 
-    public Task Bind<TMessage, TResult>(IPipe pipe, string routingKey = "")
+    private ValueTask Unbind(PipeBind pipeBind)
     {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
-
-        _pipeBindings.TryAdd(route, new HashSet<PipeBind>());
-        _pipeBindings[route].Add(new PipeBind(route, pipe));
-        return Task.CompletedTask;
-    }
-
-    public Task Unbind<TMessage>(IPipe pipe, string routingKey = "")
-    {
-        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
-
-        if (_pipeBindings.TryGetValue(route, out var set))
+        if (_pipeBindings.TryGetValue(pipeBind.Route, out var set))
         {
-            set.Remove(new PipeBind(route, pipe));
+            set.Remove(pipeBind);
 
-            if (!set.Any()) _pipeBindings.Remove(route);
+            if (!set.Any()) _pipeBindings.Remove(pipeBind.Route);
         }
 
-        return Task.CompletedTask;
-    }
-
-    public Task Unbind<TMessage, TResult>(IPipe pipe, string routingKey = "")
-    {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
-
-        if (_pipeBindings.TryGetValue(route, out var set))
-        {
-            set.Remove(new PipeBind(route, pipe));
-
-            if (!set.Any()) _pipeBindings.Remove(route);
-        }
-
-        return Task.CompletedTask;
-    }
-
-    public IEnumerable<PipeBind> GetBindings<TMessage>(string routingKey = "")
-    {
-        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
-
-        return _pipeBindings.TryGetValue(route, out var pipeBindings)
-            ? pipeBindings
-            : Enumerable.Empty<PipeBind>();
-    }
-
-    public IEnumerable<PipeBind> GetBindings<TMessage, TResult>(string routingKey = "")
-    {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
-
-        return _pipeBindings.TryGetValue(route, out var pipeBindings)
-            ? pipeBindings
-            : Enumerable.Empty<PipeBind>();
+        return ValueTask.CompletedTask;
     }
 
     public IEnumerator<KeyValuePair<Route, IReadOnlySet<PipeBind>>> GetEnumerator()

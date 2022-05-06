@@ -37,9 +37,9 @@ internal class RabbitMqPipeBinder : IPipeBinder
         _bus = bus;
     }
 
-    public async Task Bind<TMessage>(IPipe pipe, string routingKey = "")
+    public async Task<PipeBind> Bind<TMessage>(IPipe pipe, string routingKey = "")
     {
-        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
+        var route = new Route(typeof(TMessage), routingKey);
 
         if (!_subscriptions.ContainsKey(route))
         {
@@ -48,11 +48,13 @@ internal class RabbitMqPipeBinder : IPipeBinder
                 c => c.WithDurable(false).WithAutoDelete().WithTopic(route.ToString()));
             _subscriptions[route] = subscription;
         }
+
+        return new PipeBind(Unbind, route, pipe);
     }
 
-    public async Task Bind<TMessage, TResult>(IPipe pipe, string routingKey = "")
+    public async Task<PipeBind> Bind<TMessage, TResult>(IPipe pipe, string routingKey = "")
     {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
+        var route = new Route(typeof(TMessage), routingKey, typeof(TResult));
 
         if (!_subscriptions.ContainsKey(route))
         {
@@ -61,23 +63,14 @@ internal class RabbitMqPipeBinder : IPipeBinder
                 c => c.WithDurable(false).WithQueueName(route.ToString()));
             _subscriptions[route] = subscription;
         }
+
+        return new PipeBind(Unbind, route, pipe);
     }
 
-    public Task Unbind<TMessage>(IPipe pipe, string routingKey = "")
+    private ValueTask Unbind(PipeBind pipeBind)
     {
-        var route = new Route(typeof(TMessage), RoutingKey: routingKey);
+        if (_subscriptions.Remove(pipeBind.Route, out var topology)) topology.Dispose();
 
-        if (_subscriptions.Remove(route, out var topology)) topology.Dispose();
-
-        return Task.CompletedTask;
-    }
-
-    public Task Unbind<TMessage, TResult>(IPipe pipe, string routingKey = "")
-    {
-        var route = new Route(typeof(TMessage), ResultType: typeof(TResult), RoutingKey: routingKey);
-
-        if (_subscriptions.Remove(route, out var topology)) topology.Dispose();
-
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }
