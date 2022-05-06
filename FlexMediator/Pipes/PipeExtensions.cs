@@ -23,9 +23,13 @@
 
 namespace FlexMediator.Pipes;
 
-public interface IPipeConnector
+public static class PipeExtensions
 {
-    Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "");
+    public static Task<PipeConnection> In<TMessage>(this IPipe pipe, IPipeConnector pipeConnector,
+        string routingKey = "") =>
+        pipeConnector.Out<TMessage>(pipe, routingKey);
 
-    Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "");
+    public static Task<PipeConnection> In<TMessage, TResult>(this IPipe pipe, IPipeConnector pipeConnector,
+        string routingKey = "") =>
+        pipeConnector.Out<TMessage, TResult>(pipe, routingKey);
 }

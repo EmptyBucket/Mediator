@@ -30,10 +30,10 @@ public class PipeConnector : IPipeConnector, IPipeConnections
 {
     private readonly Dictionary<Route, HashSet<PipeConnection>> _pipeConnections = new();
 
-    public Task<PipeConnection> Connect<TMessage>(IPipe pipe, string routingKey = "") =>
+    public Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "") =>
         Connect(typeof(TMessage), pipe, routingKey: routingKey);
 
-    public Task<PipeConnection> Connect<TMessage, TResult>(IPipe pipe, string routingKey = "") =>
+    public Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "") =>
         Connect(typeof(TMessage), pipe, routingKey: routingKey, resultType: typeof(TResult));
 
     private Task<PipeConnection> Connect(Type messageType, IPipe pipe, string routingKey = "", Type? resultType = null)

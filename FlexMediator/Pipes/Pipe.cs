@@ -51,9 +51,9 @@ public class Pipe : IPipe, IPipeConnector
         return await pipes.Single().Handle<TMessage, TResult>(message, options, token);
     }
 
-    public Task<PipeConnection> Connect<TMessage>(IPipe pipe, string routingKey = "") =>
-        _pipeConnector.Connect<TMessage>(pipe, routingKey);
+    public Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "") =>
+        _pipeConnector.Out<TMessage>(pipe, routingKey);
 
-    public Task<PipeConnection> Connect<TMessage, TResult>(IPipe pipe, string routingKey = "") =>
-        _pipeConnector.Connect<TMessage, TResult>(pipe, routingKey);
+    public Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "") =>
+        _pipeConnector.Out<TMessage, TResult>(pipe, routingKey);
 }

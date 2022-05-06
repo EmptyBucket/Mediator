@@ -25,7 +25,7 @@ using FlexMediator.Utils;
 
 namespace FlexMediator.Handlers;
 
-public record HandlerConnection : IDisposable
+public readonly record struct HandlerConnection : IDisposable
 {
     private readonly Action<HandlerConnection> _disconnect;
 
