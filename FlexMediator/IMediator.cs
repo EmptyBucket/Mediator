@@ -32,10 +32,10 @@ public interface IMediator : ISender, IPublisher
 
 public class MediatorConfiguration
 {
-    public MediatorConfiguration(IReadOnlyDictionary<string, TopologyBinder> topologies)
+    public MediatorConfiguration(IReadOnlyDictionary<string, ITopologyBinder> topologies)
     {
         Topologies = topologies;
     }
 
-    public IReadOnlyDictionary<string, TopologyBinder> Topologies { get; }
+    public IReadOnlyDictionary<string, ITopologyBinder> Topologies { get; }
 }

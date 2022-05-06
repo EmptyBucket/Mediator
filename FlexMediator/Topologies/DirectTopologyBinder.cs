@@ -23,25 +23,22 @@
 
 using FlexMediator.Handlers;
 using FlexMediator.Pipes;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FlexMediator.Topologies;
 
-public class TopologyBinder : ITopologyBinder
+public class DirectTopologyBinder : ITopologyBinder
 {
     private readonly IPipe _boundDispatchPipe;
-    private readonly IPipe _boundReceivePipe;
     private readonly IPipeBinder _dispatchPipeBinder;
-    private readonly IPipeBinder _receivePipeBinder;
     private readonly IHandlerBinder _handlerBinder;
 
-    public TopologyBinder(IPipe boundDispatchPipe, IPipe boundReceivePipe,
-        IPipeBinder dispatchPipeBinder, IPipeBinder receivePipeBinder,
-        IHandlerBinder handlerBinder)
+    public DirectTopologyBinder(IPipeBinder dispatchPipeBinder, IServiceScopeFactory serviceScopeFactory)
     {
-        _boundDispatchPipe = boundDispatchPipe;
-        _boundReceivePipe = boundReceivePipe;
+        var handlerBinder = new HandlerBinder();
+        var dispatchReceivePipe = new HandlingPipe(handlerBinder, serviceScopeFactory);
+        _boundDispatchPipe = dispatchReceivePipe;
         _dispatchPipeBinder = dispatchPipeBinder;
-        _receivePipeBinder = receivePipeBinder;
         _handlerBinder = handlerBinder;
     }
 
@@ -62,7 +59,7 @@ public class TopologyBinder : ITopologyBinder
     public async Task<TopologyBind> BindReceive<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>
     {
-        var pipeBind = await _receivePipeBinder.Bind<TMessage>(_boundReceivePipe);
+        var pipeBind = await _dispatchPipeBinder.Bind<TMessage>(_boundDispatchPipe);
         var handlerBind = _handlerBinder.Bind<TMessage, THandler>(routingKey);
         var route = new Route(typeof(TMessage), routingKey);
         return new TopologyBind(Unbind, route, pipeBind, handlerBind);
@@ -71,7 +68,7 @@ public class TopologyBinder : ITopologyBinder
     public async Task<TopologyBind> BindReceive<TMessage, TResult, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage, TResult>
     {
-        var pipeBind = await _receivePipeBinder.Bind<TMessage, TResult>(_boundReceivePipe);
+        var pipeBind = await _dispatchPipeBinder.Bind<TMessage, TResult>(_boundDispatchPipe);
         var handlerBind = _handlerBinder.Bind<TMessage, TResult, THandler>(routingKey);
         var route = new Route(typeof(TMessage), routingKey, typeof(TResult));
         return new TopologyBind(Unbind, route, pipeBind, handlerBind);
@@ -79,7 +76,7 @@ public class TopologyBinder : ITopologyBinder
 
     public async Task<TopologyBind> BindReceive<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
-        var pipeBind = await _receivePipeBinder.Bind<TMessage>(_boundReceivePipe);
+        var pipeBind = await _dispatchPipeBinder.Bind<TMessage>(_boundDispatchPipe);
         var handlerBind = _handlerBinder.Bind(handler, routingKey);
         var route = new Route(typeof(TMessage), routingKey);
         return new TopologyBind(Unbind, route, pipeBind, handlerBind);
@@ -88,7 +85,7 @@ public class TopologyBinder : ITopologyBinder
     public async Task<TopologyBind> BindReceive<TMessage, TResult>(IHandler<TMessage, TResult> handler,
         string routingKey = "")
     {
-        var pipeBind = await _receivePipeBinder.Bind<TMessage, TResult>(_boundReceivePipe);
+        var pipeBind = await _dispatchPipeBinder.Bind<TMessage, TResult>(_boundDispatchPipe);
         var handlerBind = _handlerBinder.Bind(handler, routingKey);
         var route = new Route(typeof(TMessage), routingKey, typeof(TResult));
         return new TopologyBind(Unbind, route, pipeBind, handlerBind);
