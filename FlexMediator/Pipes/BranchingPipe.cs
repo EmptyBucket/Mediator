@@ -2,19 +2,19 @@ using System.Data;
 
 namespace FlexMediator.Pipes;
 
-public class BranchingPipe : IPipe
+public class BranchingPipe : IPipe, IPipeBinder
 {
-    private readonly IPipeBindings _pipeBindings;
+    private readonly PipeBinder _pipeBinder;
 
-    public BranchingPipe(IPipeBindings pipeBindings)
+    public BranchingPipe()
     {
-        _pipeBindings = pipeBindings;
+        _pipeBinder = new PipeBinder();
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
         var route = new Route(typeof(TMessage), options.RoutingKey);
-        var pipeBindings = _pipeBindings.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
+        var pipeBindings = _pipeBinder.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
         var pipes = pipeBindings.Select(t => t.Pipe);
 
         await Task.WhenAll(pipes.Select(p => p.Handle(message, options, token)));
@@ -24,11 +24,21 @@ public class BranchingPipe : IPipe
         CancellationToken token)
     {
         var route = new Route(typeof(TMessage), options.RoutingKey, typeof(TResult));
-        var pipeBindings = _pipeBindings.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
+        var pipeBindings = _pipeBinder.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
         var pipes = pipeBindings.Select(t => t.Pipe).ToArray();
 
         if (pipes.Length != 1) throw new InvalidConstraintException("Must be single pipe");
 
         return await pipes.Single().Handle<TMessage, TResult>(message, options, token);
+    }
+
+    public Task<PipeBind> Bind<TMessage>(IPipe pipe, string routingKey = "")
+    {
+        return _pipeBinder.Bind<TMessage>(pipe, routingKey);
+    }
+
+    public Task<PipeBind> Bind<TMessage, TResult>(IPipe pipe, string routingKey = "")
+    {
+        return _pipeBinder.Bind<TMessage, TResult>(pipe, routingKey);
     }
 }

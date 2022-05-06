@@ -3,21 +3,21 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace FlexMediator.Pipes;
 
-public class HandlingPipe : IPipe
+public class HandlingPipe : IPipe, IHandlerBinder
 {
-    private readonly IHandlerBindings _handlerBindings;
+    private readonly HandlerBinder _handlerBinder;
     private readonly IServiceScopeFactory _serviceScopeFactory;
 
-    public HandlingPipe(IHandlerBindings handlerBindings, IServiceScopeFactory serviceScopeFactory)
+    public HandlingPipe(IServiceScopeFactory serviceScopeFactory)
     {
-        _handlerBindings = handlerBindings;
+        _handlerBinder = new HandlerBinder();
         _serviceScopeFactory = serviceScopeFactory;
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
         var route = new Route(typeof(TMessage), options.RoutingKey);
-        var bindings = _handlerBindings.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
+        var bindings = _handlerBinder.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
 
         using var serviceScope = _serviceScopeFactory.CreateScope();
         var serviceProvider = serviceScope.ServiceProvider;
@@ -31,7 +31,7 @@ public class HandlingPipe : IPipe
         CancellationToken token)
     {
         var route = new Route(typeof(TMessage), options.RoutingKey, typeof(TResult));
-        var bindings = _handlerBindings.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
+        var bindings = _handlerBinder.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerBind>();
 
         using var serviceScope = _serviceScopeFactory.CreateScope();
         var serviceProvider = serviceScope.ServiceProvider;
@@ -39,5 +39,27 @@ public class HandlingPipe : IPipe
             .Select(t => t.Handler ?? serviceProvider.GetRequiredService(t.HandlerType!))
             .Cast<IHandler<TMessage, TResult>>();
         return await handlers.Single().HandleAsync(message, options, token);
+    }
+
+    public HandlerBind Bind<TMessage, THandler>(string routingKey = "") 
+        where THandler : IHandler<TMessage>
+    {
+        return _handlerBinder.Bind<TMessage, THandler>(routingKey);
+    }
+
+    public HandlerBind Bind<TMessage, TResult, THandler>(string routingKey = "")
+        where THandler : IHandler<TMessage, TResult>
+    {
+        return _handlerBinder.Bind<TMessage, TResult, THandler>(routingKey);
+    }
+
+    public HandlerBind Bind<TMessage>(IHandler<TMessage> handler, string routingKey = "")
+    {
+        return _handlerBinder.Bind(handler, routingKey);
+    }
+
+    public HandlerBind Bind<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "")
+    {
+        return _handlerBinder.Bind(handler, routingKey);
     }
 }
