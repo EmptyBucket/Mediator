@@ -38,6 +38,10 @@
         "net6.0": {
           "targetAlias": "net6.0",
           "dependencies": {
+            "EasyNetQ": {
+              "target": "Package",
+              "version": "[6.3.1, )"
+            },
             "Microsoft.Extensions.DependencyInjection.Abstractions": {
               "target": "Package",
               "version": "[6.0.0, )"

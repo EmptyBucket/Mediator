@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 using FlexMediator.Pipes;
+using FlexMediator.Utils;
 
 namespace FlexMediator;
 
@@ -29,10 +30,9 @@ internal class Mediator : IMediator
 {
     private readonly IPipe _dispatchPipe;
 
-    public Mediator(IPipe dispatchPipe, MediatorConfiguration mediatorConfiguration)
+    public Mediator(IPipe dispatchPipe)
     {
         _dispatchPipe = dispatchPipe;
-        Configuration = mediatorConfiguration;
     }
 
     public async Task Publish<TMessage>(TMessage message, Action<MessageOptions>? optionsBuilder = null,
@@ -50,6 +50,4 @@ internal class Mediator : IMediator
         optionsBuilder?.Invoke(messageOptions);
         return await _dispatchPipe.Handle<TMessage, TResult>(message, messageOptions, token);
     }
-
-    public MediatorConfiguration Configuration { get; }
 }

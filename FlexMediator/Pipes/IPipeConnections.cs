@@ -21,6 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace ConsoleApp5;
+using FlexMediator.Utils;
 
-public record RabbitMqEvent(string Name);
+namespace FlexMediator.Pipes;
+
+public interface IPipeConnections : IReadOnlyDictionary<Route, IReadOnlySet<PipeConnection>>
+{
+}

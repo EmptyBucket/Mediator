@@ -23,6 +23,7 @@
 
 namespace FlexMediator.Pipes;
 
-public interface IPipeBindings : IReadOnlyDictionary<Route, IReadOnlySet<PipeBind>>
+public interface IPipeFactory
 {
+    TPipe Create<TPipe>() where TPipe : IPipe;
 }

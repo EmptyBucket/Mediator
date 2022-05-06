@@ -21,22 +21,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace FlexMediator.Pipes;
+using FlexMediator.Utils;
 
-public readonly record struct PipeBind : IAsyncDisposable
+namespace FlexMediator.Handlers;
+
+public record HandlerConnection : IDisposable
 {
-    private readonly Func<PipeBind, ValueTask> _unbind;
+    private readonly Action<HandlerConnection> _disconnect;
 
-    public PipeBind(Func<PipeBind, ValueTask> unbind, Route route, IPipe pipe)
+    public HandlerConnection(Action<HandlerConnection> disconnect, Route route,
+        Func<IServiceProvider, IHandler> factory)
     {
-        _unbind = unbind;
+        _disconnect = disconnect;
         Route = route;
-        Pipe = pipe;
+        Factory = factory;
     }
 
     public Route Route { get; }
 
-    public IPipe Pipe { get; }
+    public Func<IServiceProvider, IHandler> Factory { get; }
 
-    public ValueTask DisposeAsync() => _unbind(this);
+    public void Dispose() => _disconnect(this);
 }

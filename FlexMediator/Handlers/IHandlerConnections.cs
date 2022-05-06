@@ -21,8 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace FlexMediator;
+using FlexMediator.Utils;
 
-public record MessageOptions(string RoutingKey = "")
+namespace FlexMediator.Handlers;
+
+public interface IHandlerConnections : IReadOnlyDictionary<Route, IReadOnlySet<HandlerConnection>>
 {
 }

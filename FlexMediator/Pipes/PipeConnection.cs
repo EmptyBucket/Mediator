@@ -21,29 +21,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace FlexMediator.Handlers;
+using FlexMediator.Utils;
 
-public readonly record struct HandlerBind : IDisposable
+namespace FlexMediator.Pipes;
+
+public record PipeConnection : IAsyncDisposable
 {
-    private readonly Action<HandlerBind> _unbind;
+    private readonly Func<PipeConnection, ValueTask> _disconnect;
 
-    public HandlerBind(Action<HandlerBind> unbind, Route route, Type? handlerType = null, IHandler? handler = null)
+    public PipeConnection(Func<PipeConnection, ValueTask> disconnect, Route route, IPipe pipe)
     {
-        if (handlerType is null && handler is null)
-            throw new ArgumentException($"{nameof(handlerType)} or {nameof(handler)} must be not-null");
-
-        _unbind = unbind;
-
+        _disconnect = disconnect;
         Route = route;
-        Handler = handler;
-        HandlerType = handlerType;
+        Pipe = pipe;
     }
 
     public Route Route { get; }
 
-    public Type? HandlerType { get; }
-    
-    public IHandler? Handler { get; }
+    public IPipe Pipe { get; }
 
-    public void Dispose() => _unbind(this);
+    public ValueTask DisposeAsync() => _disconnect(this);
+}
+
+public record PipeConnection<TPipe> : PipeConnection
+    where TPipe : IPipe
+{
+    public PipeConnection(Func<PipeConnection, ValueTask> disconnect, Route route, TPipe pipe)
+        : base(disconnect, route, pipe)
+    {
+        Pipe = pipe;
+    }
+
+    public new TPipe Pipe { get; }
 }

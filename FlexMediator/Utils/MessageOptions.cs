@@ -21,6 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace FlexMediator;
+namespace FlexMediator.Utils;
 
-public readonly record struct Route(Type MessageType, string RoutingKey = "", Type? ResultType = null);
+public record MessageOptions(string RoutingKey = "")
+{
+}

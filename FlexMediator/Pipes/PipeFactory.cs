@@ -21,17 +21,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace FlexMediator.Handlers;
+using Microsoft.Extensions.DependencyInjection;
 
-public interface IHandlerPlumber
+namespace FlexMediator.Pipes;
+
+internal class PipeFactory : IPipeFactory
 {
-    HandlerBind Bind<TMessage, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage>;
+    private readonly IServiceProvider _serviceProvider;
 
-    HandlerBind Bind<TMessage, TResult, THandler>(string routingKey = "")
-        where THandler : IHandler<TMessage, TResult>;
+    public PipeFactory(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
 
-    HandlerBind Bind<TMessage>(IHandler<TMessage> handler, string routingKey = "");
-
-    HandlerBind Bind<TMessage, TResult>(IHandler<TMessage, TResult> handler, string routingKey = "");
+    public TPipe Create<TPipe>() where TPipe : IPipe
+    {
+        return _serviceProvider.GetRequiredService<TPipe>();
+    }
 }

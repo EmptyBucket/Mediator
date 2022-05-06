@@ -21,25 +21,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using System.Data;
+using FlexMediator.Utils;
 
 namespace FlexMediator.Pipes;
 
-public class BranchingPipe : IPipe, IPipeBinder
+public class Pipe : IPipe, IPipeConnector
 {
-    private readonly PipeBinder _pipeBinder;
+    private readonly PipeConnector _pipeConnector;
 
-    public BranchingPipe()
+    public Pipe()
     {
-        _pipeBinder = new PipeBinder();
+        _pipeConnector = new PipeConnector();
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
     {
         var route = new Route(typeof(TMessage), options.RoutingKey);
-        var pipeBindings = _pipeBinder.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
-        var pipes = pipeBindings.Select(t => t.Pipe);
-
+        var connections = _pipeConnector.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection>();
+        var pipes = connections.Select(c => c.Pipe);
         await Task.WhenAll(pipes.Select(p => p.Handle(message, options, token)));
     }
 
@@ -47,21 +46,16 @@ public class BranchingPipe : IPipe, IPipeBinder
         CancellationToken token)
     {
         var route = new Route(typeof(TMessage), options.RoutingKey, typeof(TResult));
-        var pipeBindings = _pipeBinder.GetValueOrDefault(route) ?? Enumerable.Empty<PipeBind>();
-        var pipes = pipeBindings.Select(t => t.Pipe).ToArray();
-
-        if (pipes.Length != 1) throw new InvalidConstraintException("Must be single pipe");
-
+        var connections = _pipeConnector.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection>();
+        var pipes = connections.Select(c => c.Pipe);
         return await pipes.Single().Handle<TMessage, TResult>(message, options, token);
     }
 
-    public Task<PipeBind> Bind<TMessage>(IPipe pipe, string routingKey = "")
-    {
-        return _pipeBinder.Bind<TMessage>(pipe, routingKey);
-    }
+    public Task<PipeConnection<TPipe>> Connect<TMessage, TPipe>(TPipe pipe, string routingKey = "")
+        where TPipe : IPipe =>
+        _pipeConnector.Connect<TMessage, TPipe>(pipe, routingKey);
 
-    public Task<PipeBind> Bind<TMessage, TResult>(IPipe pipe, string routingKey = "")
-    {
-        return _pipeBinder.Bind<TMessage, TResult>(pipe, routingKey);
-    }
+    public Task<PipeConnection<TPipe>> Connect<TMessage, TResult, TPipe>(TPipe pipe, string routingKey = "")
+        where TPipe : IPipe =>
+        _pipeConnector.Connect<TMessage, TResult, TPipe>(pipe, routingKey);
 }

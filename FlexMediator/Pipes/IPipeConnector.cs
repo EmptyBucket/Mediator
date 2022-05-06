@@ -21,15 +21,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using FlexMediator;
-using FlexMediator.Handlers;
+namespace FlexMediator.Pipes;
 
-namespace ConsoleApp5;
-
-public class RabbitMqEventHandlerResult : IHandler<RabbitMqEvent, string>
+public interface IPipeConnector
 {
-    public Task<string> HandleAsync(RabbitMqEvent message, MessageOptions options, CancellationToken token)
-    {
-        return Task.FromResult(message.ToString());
-    }
+    Task<PipeConnection<TPipe>> Connect<TMessage, TPipe>(TPipe pipe, string routingKey = "")
+        where TPipe : IPipe;
+
+    Task<PipeConnection<TPipe>> Connect<TMessage, TResult, TPipe>(TPipe pipe, string routingKey = "")
+        where TPipe : IPipe;
 }

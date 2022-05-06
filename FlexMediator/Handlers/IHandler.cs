@@ -21,14 +21,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using FlexMediator.Utils;
+
 namespace FlexMediator.Handlers;
 
-public interface IHandler<in TMessage, TResult> : IHandler<TMessage>
+public interface IHandler
 {
-    new Task<TResult> HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
-
-    Task IHandler<TMessage>.HandleAsync(TMessage message, MessageOptions options, CancellationToken token) =>
-        HandleAsync(message, options, token);
+    Task HandleAsync(object message, MessageOptions options, CancellationToken token);
 }
 
 public interface IHandler<in TMessage> : IHandler
@@ -39,7 +38,10 @@ public interface IHandler<in TMessage> : IHandler
         await HandleAsync((TMessage)message, options, token);
 }
 
-public interface IHandler
+public interface IHandler<in TMessage, TResult> : IHandler<TMessage>
 {
-    Task HandleAsync(object message, MessageOptions options, CancellationToken token);
+    new Task<TResult> HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
+
+    Task IHandler<TMessage>.HandleAsync(TMessage message, MessageOptions options, CancellationToken token) =>
+        HandleAsync(message, options, token);
 }
