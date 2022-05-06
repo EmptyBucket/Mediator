@@ -1,5 +1,4 @@
 using FlexMediator.Pipes;
-using FlexMediator.Topologies;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -16,7 +15,7 @@ public static class ServiceCollectionExtensions
                 .Create();
             var rabbitMqTopology = ActivatorUtilities.CreateInstance<RabbitMqTopologyFactory>(p, dispatchPipeBinder)
                 .Create();
-            var topologies = new Dictionary<string, TopologyBinder>
+            var topologies = new Dictionary<string, RabbitMqTopologyBinder>
             {
                 { "direct", directTopology },
                 { "rabbitmq", rabbitMqTopology }
@@ -33,14 +32,14 @@ public static class ServiceCollectionExtensions
 public class MediatorBuilder
 {
     private readonly ServiceCollection _serviceCollection;
-    private readonly Dictionary<string, Func<IServiceProvider, TopologyBinder>> _topologyFactories = new();
+    private readonly Dictionary<string, Func<IServiceProvider, RabbitMqTopologyBinder>> _topologyFactories = new();
 
     public MediatorBuilder(ServiceCollection serviceCollection)
     {
         _serviceCollection = new ServiceCollection { serviceCollection };
     }
 
-    public MediatorBuilder AddTopology(string name, Func<IServiceProvider, TopologyBinder> topologyFactory)
+    public MediatorBuilder AddTopology(string name, Func<IServiceProvider, RabbitMqTopologyBinder> topologyFactory)
     {
         _topologyFactories[name] = topologyFactory;
         return this;

@@ -1,9 +1,13 @@
+using EasyNetQ;
+using FlexMediator;
 using FlexMediator.Handlers;
 using FlexMediator.Pipes;
+using FlexMediator.Topologies;
+using Microsoft.Extensions.DependencyInjection;
 
-namespace FlexMediator.Topologies;
+namespace FlexMediatorRabbit;
 
-public class TopologyBinder : ITopologyBinder
+public class RabbitMqTopologyBinder : ITopologyBinder
 {
     private readonly IPipe _boundDispatchPipe;
     private readonly IPipe _boundReceivePipe;
@@ -11,15 +15,16 @@ public class TopologyBinder : ITopologyBinder
     private readonly IPipeBinder _receivePipeBinder;
     private readonly IHandlerBinder _handlerBinder;
 
-    public TopologyBinder(IPipe boundDispatchPipe, IPipe boundReceivePipe,
-        IPipeBinder dispatchPipeBinder, IPipeBinder receivePipeBinder,
-        IHandlerBinder handlerBinder)
+    public RabbitMqTopologyBinder(IPipeBinder dispatchPipeBinder, IBus bus, IServiceScopeFactory serviceScopeFactory)
     {
-        _boundDispatchPipe = boundDispatchPipe;
-        _boundReceivePipe = boundReceivePipe;
-        _dispatchPipeBinder = dispatchPipeBinder;
-        _receivePipeBinder = receivePipeBinder;
+        var handlerBinder = new HandlerBinder();
         _handlerBinder = handlerBinder;
+        
+        _dispatchPipeBinder = dispatchPipeBinder;
+        _receivePipeBinder = new RabbitMqPipeBinder(bus);
+        
+        _boundDispatchPipe = new RabbitMqPipe(bus);
+        _boundReceivePipe = new HandlingPipe(handlerBinder, serviceScopeFactory);
     }
 
     public async Task<TopologyBind> BindDispatch<TMessage>(string routingKey = "")
