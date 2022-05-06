@@ -28,11 +28,9 @@ public class Pipe : IPipe, IPipeConnector
         return await pipes.Single().Handle<TMessage, TResult>(message, options, token);
     }
 
-    public Task<PipeConnection<TPipe>> Connect<TMessage, TPipe>(TPipe pipe, string routingKey = "")
-        where TPipe : IPipe =>
-        _pipeConnector.Connect<TMessage, TPipe>(pipe, routingKey);
+    public Task<PipeConnection> Connect<TMessage>(IPipe pipe, string routingKey = "") =>
+        _pipeConnector.Connect<TMessage>(pipe, routingKey);
 
-    public Task<PipeConnection<TPipe>> Connect<TMessage, TResult, TPipe>(TPipe pipe, string routingKey = "")
-        where TPipe : IPipe =>
-        _pipeConnector.Connect<TMessage, TResult, TPipe>(pipe, routingKey);
+    public Task<PipeConnection> Connect<TMessage, TResult>(IPipe pipe, string routingKey = "") =>
+        _pipeConnector.Connect<TMessage, TResult>(pipe, routingKey);
 }

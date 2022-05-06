@@ -13,8 +13,7 @@ public class RabbitMqPipeConnector : IPipeConnector
         _bus = bus;
     }
 
-    public async Task<PipeConnection<TPipe>> Connect<TMessage, TPipe>(TPipe pipe, string routingKey = "")
-        where TPipe : IPipe
+    public async Task<PipeConnection> Connect<TMessage>(IPipe pipe, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
 
@@ -26,11 +25,10 @@ public class RabbitMqPipeConnector : IPipeConnector
             _subscriptions[route] = subscription;
         }
 
-        return new PipeConnection<TPipe>(Disconnect, route, pipe);
+        return new PipeConnection(Disconnect, route, pipe);
     }
 
-    public async Task<PipeConnection<TPipe>> Connect<TMessage, TResult, TPipe>(TPipe pipe, string routingKey = "")
-        where TPipe : IPipe
+    public async Task<PipeConnection> Connect<TMessage, TResult>(IPipe pipe, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey, typeof(TResult));
 
@@ -42,7 +40,7 @@ public class RabbitMqPipeConnector : IPipeConnector
             _subscriptions[route] = subscription;
         }
 
-        return new PipeConnection<TPipe>(Disconnect, route, pipe);
+        return new PipeConnection(Disconnect, route, pipe);
     }
 
     private ValueTask Disconnect(PipeConnection pipeConnection)

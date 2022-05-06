@@ -2,9 +2,7 @@ namespace FlexMediator.Pipes;
 
 public interface IPipeConnector
 {
-    Task<PipeConnection<TPipe>> Connect<TMessage, TPipe>(TPipe pipe, string routingKey = "")
-        where TPipe : IPipe;
+    Task<PipeConnection> Connect<TMessage>(IPipe pipe, string routingKey = "");
 
-    Task<PipeConnection<TPipe>> Connect<TMessage, TResult, TPipe>(TPipe pipe, string routingKey = "")
-        where TPipe : IPipe;
+    Task<PipeConnection> Connect<TMessage, TResult>(IPipe pipe, string routingKey = "");
 }
