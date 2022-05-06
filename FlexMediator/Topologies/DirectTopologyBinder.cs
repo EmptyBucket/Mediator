@@ -29,30 +29,26 @@ namespace FlexMediator.Topologies;
 
 public class DirectTopologyBinder : ITopologyBinder
 {
-    private readonly IPipe _boundDispatchPipe;
-    private readonly IPipeBinder _dispatchPipeBinder;
-    private readonly IHandlerBinder _handlerBinder;
+    private readonly HandlingPipe _receivePipe;
+    private readonly BranchingPipe _dispatchPipe;
 
-    public DirectTopologyBinder(IPipeBinder dispatchPipeBinder, IServiceScopeFactory serviceScopeFactory)
+    public DirectTopologyBinder(BranchingPipe dispatchPipe, IServiceScopeFactory serviceScopeFactory)
     {
-        var handlerBinder = new HandlerBinder();
-        var dispatchReceivePipe = new HandlingPipe(handlerBinder, serviceScopeFactory);
-        _boundDispatchPipe = dispatchReceivePipe;
-        _dispatchPipeBinder = dispatchPipeBinder;
-        _handlerBinder = handlerBinder;
+        _dispatchPipe = dispatchPipe;
+        _receivePipe = new HandlingPipe(serviceScopeFactory);
     }
 
     public async Task<TopologyBind> BindDispatch<TMessage>(string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
-        var pipeBind = await _dispatchPipeBinder.Bind<TMessage>(_boundDispatchPipe, routingKey);
+        var pipeBind = await _dispatchPipe.Bind<TMessage>(_receivePipe, routingKey);
         return new TopologyBind(Unbind, route, pipeBind);
     }
 
     public async Task<TopologyBind> BindDispatch<TMessage, TResult>(string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey, typeof(TResult));
-        var pipeBind = await _dispatchPipeBinder.Bind<TMessage, TResult>(_boundDispatchPipe, routingKey);
+        var pipeBind = await _dispatchPipe.Bind<TMessage, TResult>(_receivePipe, routingKey);
         return new TopologyBind(Unbind, route, pipeBind);
     }
 
@@ -60,8 +56,7 @@ public class DirectTopologyBinder : ITopologyBinder
         where THandler : IHandler<TMessage>
     {
         var route = new Route(typeof(TMessage), routingKey);
-        var pipeBind = await _dispatchPipeBinder.Bind<TMessage>(_boundDispatchPipe);
-        var handlerBind = _handlerBinder.Bind<TMessage, THandler>(routingKey);
+        var handlerBind = _receivePipe.Bind<TMessage, THandler>(routingKey);
         return new TopologyBind(Unbind, route, pipeBind, handlerBind);
     }
 
@@ -69,16 +64,16 @@ public class DirectTopologyBinder : ITopologyBinder
         where THandler : IHandler<TMessage, TResult>
     {
         var route = new Route(typeof(TMessage), routingKey, typeof(TResult));
-        var pipeBind = await _dispatchPipeBinder.Bind<TMessage, TResult>(_boundDispatchPipe);
-        var handlerBind = _handlerBinder.Bind<TMessage, TResult, THandler>(routingKey);
+        var pipeBind = await _dispatchPipe.Bind<TMessage, TResult>(_receivePipe);
+        var handlerBind = _receivePipe.Bind<TMessage, TResult, THandler>(routingKey);
         return new TopologyBind(Unbind, route, pipeBind, handlerBind);
     }
 
     public async Task<TopologyBind> BindReceive<TMessage>(IHandler<TMessage> handler, string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey);
-        var pipeBind = await _dispatchPipeBinder.Bind<TMessage>(_boundDispatchPipe);
-        var handlerBind = _handlerBinder.Bind(handler, routingKey);
+        var pipeBind = await _dispatchPipe.Bind<TMessage>(_receivePipe);
+        var handlerBind = _receivePipe.Bind(handler, routingKey);
         return new TopologyBind(Unbind, route, pipeBind, handlerBind);
     }
 
@@ -86,8 +81,8 @@ public class DirectTopologyBinder : ITopologyBinder
         string routingKey = "")
     {
         var route = new Route(typeof(TMessage), routingKey, typeof(TResult));
-        var pipeBind = await _dispatchPipeBinder.Bind<TMessage, TResult>(_boundDispatchPipe);
-        var handlerBind = _handlerBinder.Bind(handler, routingKey);
+        var pipeBind = await _dispatchPipe.Bind<TMessage, TResult>(_receivePipe);
+        var handlerBind = _receivePipe.Bind(handler, routingKey);
         return new TopologyBind(Unbind, route, pipeBind, handlerBind);
     }
 
