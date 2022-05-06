@@ -4,13 +4,15 @@ using FlexMediator.Pipes;
 
 namespace FlexMediatorRabbit;
 
-public class RabbitMqPipe : IPipe
+public class RabbitMqPipe : IPipe, IPipeBinder
 {
     private readonly IBus _bus;
+    private IPipeBinder _pipeBinder;
 
     public RabbitMqPipe(IBus bus)
     {
         _bus = bus;
+        _pipeBinder = new RabbitMqPipeBinder(bus);
     }
 
     public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
@@ -26,5 +28,15 @@ public class RabbitMqPipe : IPipe
         var route = new Route(typeof(TMessage), options.RoutingKey, typeof(TResult));
 
         return await _bus.Rpc.RequestAsync<TMessage, TResult>(message, c => c.WithQueueName(route.ToString()), token);
+    }
+
+    public Task<PipeBind> Bind<TMessage>(IPipe pipe, string routingKey = "")
+    {
+        return _pipeBinder.Bind<TMessage>(pipe, routingKey);
+    }
+
+    public Task<PipeBind> Bind<TMessage, TResult>(IPipe pipe, string routingKey = "")
+    {
+        return _pipeBinder.Bind<TMessage, TResult>(pipe, routingKey);
     }
 }

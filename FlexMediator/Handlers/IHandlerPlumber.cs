@@ -1,6 +1,6 @@
 namespace FlexMediator.Handlers;
 
-public interface IHandlerBinder
+public interface IHandlerPlumber
 {
     HandlerBind Bind<TMessage, THandler>(string routingKey = "")
         where THandler : IHandler<TMessage>;
