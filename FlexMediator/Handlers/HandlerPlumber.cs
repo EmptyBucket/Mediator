@@ -25,7 +25,7 @@ using System.Collections;
 
 namespace FlexMediator.Handlers;
 
-public class HandlerBinder : IHandlerBinder, IHandlerBindings
+public class HandlerPlumber : IHandlerPlumber, IHandlerBindings
 {
     private readonly Dictionary<Route, HashSet<HandlerBind>> _handlerBindings = new();
 
