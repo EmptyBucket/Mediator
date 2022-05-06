@@ -1,4 +1,5 @@
 using FlexMediator.Pipes;
+using FlexMediator.Topologies;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -32,16 +33,16 @@ public static class ServiceCollectionExtensions
 public class MediatorBuilder
 {
     private readonly ServiceCollection _serviceCollection;
-    private readonly Dictionary<string, Func<IServiceProvider, RabbitMqTopologyBinder>> _topologyFactories = new();
+    private readonly Dictionary<string, Func<IServiceProvider, ITopologyBinder>> _topologyBinders = new();
 
     public MediatorBuilder(ServiceCollection serviceCollection)
     {
         _serviceCollection = new ServiceCollection { serviceCollection };
     }
 
-    public MediatorBuilder AddTopology(string name, Func<IServiceProvider, RabbitMqTopologyBinder> topologyFactory)
+    public MediatorBuilder AddTopology(string name, Func<IServiceProvider, ITopologyBinder> topologyBinder)
     {
-        _topologyFactories[name] = topologyFactory;
+        _topologyBinders[name] = topologyBinder;
         return this;
     }
 
