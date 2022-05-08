@@ -47,7 +47,7 @@ public class RedisMqPipeConnector : IPipeConnector
         var channelMessageQueue = await _subscriber.SubscribeAsync(route.ToString());
         channelMessageQueue.OnMessage(async r =>
         {
-            var message = JsonSerializer.Deserialize<TMessage>(r.ToString())!;
+            var message = JsonSerializer.Deserialize<TMessage>(r.Message)!;
             await pipe.Handle<TMessage>(message, new MessageOptions(routingKey), token);
         });
         return _pipeConnections[route] =
@@ -57,18 +57,19 @@ public class RedisMqPipeConnector : IPipeConnector
     public async Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
-        var route = new Route(typeof(TMessage), routingKey);
+        var route = new Route(typeof(TMessage), routingKey, typeof(TResult));
 
         if (_pipeConnections.TryGetValue(route, out var pipeConnection)) return pipeConnection;
 
         var channelMessageQueue = await _subscriber.SubscribeAsync(route.ToString());
         channelMessageQueue.OnMessage(async r =>
         {
-            var correlationId = JsonDocument.Parse(r.ToString()).RootElement.GetProperty("CorrelationId").ToString();
+            var correlationId = 
+                JsonDocument.Parse(r.Message.ToString()).RootElement.GetProperty("CorrelationId").ToString();
 
             try
             {
-                var request = JsonSerializer.Deserialize<RedisMessage<TMessage>>(r.ToString());
+                var request = JsonSerializer.Deserialize<RedisMessage<TMessage>>(r.Message);
                 var result =
                     await pipe.Handle<TMessage, TResult>(request.Value!, new MessageOptions(routingKey), token);
                 var response = new RedisMessage<TResult>(correlationId, result);

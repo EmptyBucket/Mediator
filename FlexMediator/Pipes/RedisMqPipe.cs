@@ -32,6 +32,7 @@ public class RedisMqPipe : IPipe, IPipeConnector
 {
     private readonly ISubscriber _subscriber;
     private readonly IPipeConnector _pipeConnector;
+    private bool _responsesMqIsSubscribed;
     private readonly ConcurrentDictionary<string, Action<string>> _responseActions = new();
 
     public RedisMqPipe(ISubscriber subscriber)
@@ -78,13 +79,16 @@ public class RedisMqPipe : IPipe, IPipeConnector
 
     private async Task EnsureResponsesMqExist()
     {
-        if (!_subscriber.IsConnected("responses"))
+        if (!_responsesMqIsSubscribed)
+        {
             await _subscriber.SubscribeAsync("responses", (_, r) =>
             {
                 var correlationId =
                     JsonDocument.Parse(r.ToString()).RootElement.GetProperty("CorrelationId").ToString();
                 _responseActions[correlationId].Invoke(r);
             });
+            _responsesMqIsSubscribed = true;
+        }
     }
 
     public async Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "",
