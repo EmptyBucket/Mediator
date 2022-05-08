@@ -5,10 +5,12 @@ namespace ConsoleApp5;
 
 public record Event(string Name);
 
-public class EventHandler : IHandler<Event, string>
+public record EventResult(string Name);
+
+public class EventHandler : IHandler<Event, EventResult>
 {
-    public Task<string> HandleAsync(Event message, MessageOptions options, CancellationToken token)
+    public Task<EventResult> HandleAsync(Event message, MessageOptions options, CancellationToken token)
     {
-        return Task.FromResult(message.Name);
+        return Task.FromResult(new EventResult(message.Name));
     }
 }
