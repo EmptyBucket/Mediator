@@ -11,7 +11,8 @@ public class Pipe : IPipe, IPipeConnector
         _pipeConnector = new PipeConnector();
     }
 
-    public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
+    public async Task Handle<TMessage>(TMessage message, MessageOptions options,
+        CancellationToken token = default)
     {
         var route = new Route(typeof(TMessage), options.RoutingKey);
         var connections = _pipeConnector.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection>();
@@ -20,7 +21,7 @@ public class Pipe : IPipe, IPipeConnector
     }
 
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
-        CancellationToken token)
+        CancellationToken token = default)
     {
         var route = new Route(typeof(TMessage), options.RoutingKey, typeof(TResult));
         var connections = _pipeConnector.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection>();
@@ -28,9 +29,11 @@ public class Pipe : IPipe, IPipeConnector
         return await pipes.Single().Handle<TMessage, TResult>(message, options, token);
     }
 
-    public Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "") =>
+    public Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "",
+        CancellationToken token = default) =>
         _pipeConnector.Out<TMessage>(pipe, routingKey);
 
-    public Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "") =>
+    public Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "",
+        CancellationToken token = default) =>
         _pipeConnector.Out<TMessage, TResult>(pipe, routingKey);
 }

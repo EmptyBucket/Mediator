@@ -26,9 +26,6 @@
           "net6.0": {
             "targetAlias": "net6.0",
             "projectReferences": {
-              "/home/strix/RiderProjects/ConsoleApp5/FlexMediator.RabbitMq/FlexMediator.RabbitMq.csproj": {
-                "projectPath": "/home/strix/RiderProjects/ConsoleApp5/FlexMediator.RabbitMq/FlexMediator.RabbitMq.csproj"
-              },
               "/home/strix/RiderProjects/ConsoleApp5/FlexMediator/FlexMediator.csproj": {
                 "projectPath": "/home/strix/RiderProjects/ConsoleApp5/FlexMediator/FlexMediator.csproj"
               }
@@ -60,68 +57,10 @@
             "StackExchange.Redis": {
               "target": "Package",
               "version": "[2.5.61, )"
-            }
-          },
-          "imports": [
-            "net461",
-            "net462",
-            "net47",
-            "net471",
-            "net472",
-            "net48"
-          ],
-          "assetTargetFallback": true,
-          "warn": true,
-          "frameworkReferences": {
-            "Microsoft.NETCore.App": {
-              "privateAssets": "all"
-            }
-          },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/6.0.102/RuntimeIdentifierGraph.json"
-        }
-      }
-    },
-    "/home/strix/RiderProjects/ConsoleApp5/FlexMediator.RabbitMq/FlexMediator.RabbitMq.csproj": {
-      "version": "1.0.0",
-      "restore": {
-        "projectUniqueName": "/home/strix/RiderProjects/ConsoleApp5/FlexMediator.RabbitMq/FlexMediator.RabbitMq.csproj",
-        "projectName": "FlexMediator.RabbitMq",
-        "projectPath": "/home/strix/RiderProjects/ConsoleApp5/FlexMediator.RabbitMq/FlexMediator.RabbitMq.csproj",
-        "packagesPath": "/home/strix/.nuget/packages/",
-        "outputPath": "/home/strix/RiderProjects/ConsoleApp5/FlexMediator.RabbitMq/obj/",
-        "projectStyle": "PackageReference",
-        "configFilePaths": [
-          "/home/strix/.nuget/NuGet/NuGet.Config"
-        ],
-        "originalTargetFrameworks": [
-          "net6.0"
-        ],
-        "sources": {
-          "https://api.nuget.org/v3/index.json": {}
-        },
-        "frameworks": {
-          "net6.0": {
-            "targetAlias": "net6.0",
-            "projectReferences": {
-              "/home/strix/RiderProjects/ConsoleApp5/FlexMediator/FlexMediator.csproj": {
-                "projectPath": "/home/strix/RiderProjects/ConsoleApp5/FlexMediator/FlexMediator.csproj"
-              }
-            }
-          }
-        },
-        "warningProperties": {
-          "warnAsError": [
-            "NU1605"
-          ]
-        }
-      },
-      "frameworks": {
-        "net6.0": {
-          "targetAlias": "net6.0",
-          "dependencies": {
-            "EasyNetQ": {
+            },
+            "System.Text.Json": {
               "target": "Package",
-              "version": "[6.3.1, )"
+              "version": "[6.0.3, )"
             }
           },
           "imports": [
@@ -188,6 +127,14 @@
             "Microsoft.Extensions.Logging.Abstractions": {
               "target": "Package",
               "version": "[6.0.1, )"
+            },
+            "StackExchange.Redis": {
+              "target": "Package",
+              "version": "[2.5.61, )"
+            },
+            "System.Text.Json": {
+              "target": "Package",
+              "version": "[6.0.3, )"
             }
           },
           "imports": [
