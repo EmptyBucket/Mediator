@@ -23,7 +23,7 @@
 
 using FlexMediator.Utils;
 
-namespace FlexMediator.Handlers;
+namespace FlexMediator;
 
 public interface IHandler
 {
