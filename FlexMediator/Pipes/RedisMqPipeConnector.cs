@@ -41,20 +41,18 @@ public class RedisMqPipeConnector : IPipeConnector
         var channelMessageQueue = await _subscriber.SubscribeAsync(route.ToString());
         channelMessageQueue.OnMessage(async r =>
         {
-            var correlationId = 
-                JsonDocument.Parse(r.Message.ToString()).RootElement.GetProperty("CorrelationId").ToString();
+            var request = JsonSerializer.Deserialize<RedisMessage<TMessage>>(r.Message);
 
             try
             {
-                var request = JsonSerializer.Deserialize<RedisMessage<TMessage>>(r.Message);
                 var result =
                     await pipe.Handle<TMessage, TResult>(request.Value!, new MessageOptions(routingKey), token);
-                var response = new RedisMessage<TResult>(correlationId, result);
+                var response = new RedisMessage<TResult>(request.CorrelationId, result);
                 await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
             }
             catch (Exception e)
             {
-                var response = new RedisMessage<TResult>(correlationId, Exception: e.Message);
+                var response = new RedisMessage<TResult>(request.CorrelationId, Exception: e.Message);
                 await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
                 throw;
             }
