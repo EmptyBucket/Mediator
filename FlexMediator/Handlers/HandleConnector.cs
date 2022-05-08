@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using FlexMediator.Utils;
 
 namespace FlexMediator.Handlers;
@@ -33,7 +34,8 @@ public class HandleConnector : IHandleConnector, IHandlerConnections
     public HandlerConnection BindHandler<TMessage>(Func<IServiceProvider, IHandler> factory, string routingKey = "") =>
         Out(typeof(TMessage), factory, routingKey);
 
-    public HandlerConnection BindHandler<TMessage, TResult>(Func<IServiceProvider, IHandler> factory, string routingKey = "") =>
+    public HandlerConnection BindHandler<TMessage, TResult>(Func<IServiceProvider, IHandler> factory,
+        string routingKey = "") =>
         Out(typeof(TMessage), factory, routingKey, typeof(TResult));
 
     private HandlerConnection Out(Type messageType, Func<IServiceProvider, IHandler> factory, string routingKey = "",
@@ -60,27 +62,19 @@ public class HandleConnector : IHandleConnector, IHandlerConnections
 
     #region IReadOnlyDictionary implementation
 
-    public IEnumerator<KeyValuePair<Route, IReadOnlySet<HandlerConnection>>> GetEnumerator()
-    {
-        return _handlerConnections.Cast<KeyValuePair<Route, IReadOnlySet<HandlerConnection>>>().GetEnumerator();
-    }
+    public IEnumerator<KeyValuePair<Route, IReadOnlySet<HandlerConnection>>> GetEnumerator() =>
+        _handlerConnections.Cast<KeyValuePair<Route, IReadOnlySet<HandlerConnection>>>().GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return ((IEnumerable)_handlerConnections).GetEnumerator();
-    }
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public int Count => _handlerConnections.Count;
 
-    public bool ContainsKey(Route key)
-    {
-        return _handlerConnections.ContainsKey(key);
-    }
+    public bool ContainsKey(Route key) => _handlerConnections.ContainsKey(key);
 
-    public bool TryGetValue(Route key, out IReadOnlySet<HandlerConnection> value)
+    public bool TryGetValue(Route key, [MaybeNullWhen(false)] out IReadOnlySet<HandlerConnection> value)
     {
         var tryGetValue = _handlerConnections.TryGetValue(key, out var set);
-        value = set!;
+        value = set;
         return tryGetValue;
     }
 
