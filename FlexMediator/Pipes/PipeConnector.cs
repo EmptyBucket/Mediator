@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using FlexMediator.Utils;
 
 namespace FlexMediator.Pipes;
@@ -9,11 +10,11 @@ public class PipeConnector : IPipeConnector, IPipeConnections
 
     public Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        Connect(typeof(TMessage), pipe, routingKey: routingKey);
+        Connect(typeof(TMessage), pipe, routingKey);
 
     public Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        Connect(typeof(TMessage), pipe, routingKey: routingKey, resultType: typeof(TResult));
+        Connect(typeof(TMessage), pipe, routingKey, typeof(TResult));
 
     private Task<PipeConnection> Connect(Type messageType, IPipe pipe, string routingKey = "", Type? resultType = null)
     {
@@ -40,27 +41,19 @@ public class PipeConnector : IPipeConnector, IPipeConnections
 
     #region IReadOnlyDictionary implementation
 
-    public IEnumerator<KeyValuePair<Route, IReadOnlySet<PipeConnection>>> GetEnumerator()
-    {
-        return _pipeConnections.Cast<KeyValuePair<Route, IReadOnlySet<PipeConnection>>>().GetEnumerator();
-    }
+    public IEnumerator<KeyValuePair<Route, IReadOnlySet<PipeConnection>>> GetEnumerator() =>
+        _pipeConnections.Cast<KeyValuePair<Route, IReadOnlySet<PipeConnection>>>().GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return ((IEnumerable)_pipeConnections).GetEnumerator();
-    }
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public int Count => _pipeConnections.Count;
 
-    public bool ContainsKey(Route key)
-    {
-        return _pipeConnections.ContainsKey(key);
-    }
+    public bool ContainsKey(Route key) => _pipeConnections.ContainsKey(key);
 
-    public bool TryGetValue(Route key, out IReadOnlySet<PipeConnection> value)
+    public bool TryGetValue(Route key, [MaybeNullWhen(false)] out IReadOnlySet<PipeConnection> value)
     {
         var tryGetValue = _pipeConnections.TryGetValue(key, out var set);
-        value = set!;
+        value = set;
         return tryGetValue;
     }
 
