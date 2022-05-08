@@ -28,29 +28,26 @@ using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using EventHandler = ConsoleApp5.EventHandler;
 
-var serviceCollection = new ServiceCollection();
-serviceCollection
+var serviceProvider = new ServiceCollection()
     .RegisterEasyNetQ("host=localhost")
-    .AddMediator(async (f, p) =>
-    {
-        var connectionMultiplexer = ConnectionMultiplexer.Connect("localhost");
-        var subscriber = connectionMultiplexer.GetSubscriber();
-        
-        var redisMqPipe = new RedisMqPipe(subscriber);
-        await redisMqPipe.In<Event>(p);
-        await redisMqPipe.In<Event, string>(p);
-
-        var handlingPipe = f.Create<HandlingPipe>();
-        await handlingPipe.In<Event>(redisMqPipe);
-        await handlingPipe.In<Event, string>(redisMqPipe);
-
-        handlingPipe.Out<Event>(_ => new EventHandler());
-        handlingPipe.Out<Event, string>(_ => new EventHandler());
-    });
-var serviceProvider = serviceCollection.BuildServiceProvider();
+    .AddSingleton<ISubscriber>(_ => ConnectionMultiplexer.Connect("localhost").GetSubscriber())
+    .AddMediator()
+    .BuildServiceProvider();
 
 var mediator = serviceProvider.GetRequiredService<IMediator>();
-// await mediator.Publish(new Event("qwe"));
-var result = await mediator.Send<Event, string>(new Event("qwe"));
+var pipeFactory = serviceProvider.GetRequiredService<IPipeFactory>();
+
+var rabbitMqPipe = pipeFactory.Create<RabbitMqPipe>();
+await rabbitMqPipe.In<Event, EventResult>(mediator.PipeConnector);
+
+var redisMqPipe = pipeFactory.Create<RedisMqPipe>();
+await redisMqPipe.In<Event, EventResult>(rabbitMqPipe);
+
+var handlingPipe = pipeFactory.Create<HandlingPipe>();
+await handlingPipe.In<Event, EventResult>(redisMqPipe);
+handlingPipe.Out<Event, EventResult>(_ => new EventHandler());
+
+await mediator.Publish(new Event("qwe"));
+var result = await mediator.Send<Event, EventResult>(new Event("qwe"));
 
 await Task.Delay(10_000);

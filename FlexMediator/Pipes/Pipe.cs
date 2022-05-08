@@ -54,9 +54,9 @@ public class Pipe : IPipe, IPipeConnector
 
     public Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        _pipeConnector.Out<TMessage>(pipe, routingKey);
+        _pipeConnector.Out<TMessage>(pipe, routingKey, token);
 
     public Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        _pipeConnector.Out<TMessage, TResult>(pipe, routingKey);
+        _pipeConnector.Out<TMessage, TResult>(pipe, routingKey, token);
 }
