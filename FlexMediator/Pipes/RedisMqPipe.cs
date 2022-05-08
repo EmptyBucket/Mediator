@@ -32,7 +32,7 @@ public class RedisMqPipe : IPipe, IPipeConnector
 {
     private readonly ISubscriber _subscriber;
     private readonly IPipeConnector _pipeConnector;
-    private bool _responsesMqIsSubscribed;
+    private ulong _responsesMqIsSubscribed;
     private readonly ConcurrentDictionary<string, Action<string>> _responseActions = new();
 
     public RedisMqPipe(ISubscriber subscriber)
@@ -51,7 +51,7 @@ public class RedisMqPipe : IPipe, IPipeConnector
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token = default)
     {
-        await EnsureResponsesMqExist();
+        await EnsureResponsesMqIsSubscribed();
 
         var correlationId = Guid.NewGuid().ToString();
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -77,18 +77,15 @@ public class RedisMqPipe : IPipe, IPipeConnector
         }
     }
 
-    private async Task EnsureResponsesMqExist()
+    private async Task EnsureResponsesMqIsSubscribed()
     {
-        if (!_responsesMqIsSubscribed)
-        {
+        if (Interlocked.CompareExchange(ref _responsesMqIsSubscribed, 1, 0) == 0)
             await _subscriber.SubscribeAsync("responses", (_, r) =>
             {
                 var correlationId =
                     JsonDocument.Parse(r.ToString()).RootElement.GetProperty("CorrelationId").ToString();
                 _responseActions[correlationId].Invoke(r);
             });
-            _responsesMqIsSubscribed = true;
-        }
     }
 
     public async Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "",
