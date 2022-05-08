@@ -1,8 +1,8 @@
 namespace FlexMediator.Pipes;
 
-public interface IPipeConnector
+public interface IPipeConnector : IAsyncDisposable
 {
-    Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "", CancellationToken token = default);
+    Task<PipeConnection> Into<TMessage>(IPipe pipe, string routingKey = "", CancellationToken token = default);
 
-    Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "", CancellationToken token = default);
+    Task<PipeConnection> Into<TMessage, TResult>(IPipe pipe, string routingKey = "", CancellationToken token = default);
 }

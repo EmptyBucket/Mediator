@@ -30,7 +30,7 @@ public static class ServiceCollectionExtensions
             var mediator = new Mediator();
 
             var pipeFactory = p.GetRequiredService<IPipeFactory>();
-            builder.Invoke(p, pipeFactory, mediator.PipeConnector);
+            builder.Invoke(p, pipeFactory, mediator);
 
             return mediator;
         }, lifetime));

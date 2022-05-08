@@ -14,10 +14,10 @@ public class RedisMqPipeConnector : IPipeConnector
         _subscriber = subscriber;
     }
 
-    public async Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> Into<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
-        var route = new Route(typeof(TMessage), routingKey);
+        var route = Route.For<TMessage>(routingKey);
 
         if (_pipeConnections.TryGetValue(route, out var pipeConnection)) return pipeConnection;
 
@@ -28,13 +28,13 @@ public class RedisMqPipeConnector : IPipeConnector
             await pipe.Handle<TMessage>(message, new MessageOptions(routingKey), token);
         });
         return _pipeConnections[route] =
-            new PipeConnection(p => Disconnect(p, () => _subscriber.UnsubscribeAsync(route.ToString())), route, pipe);
+            new PipeConnection(route, pipe, p => Disconnect(p, () => _subscriber.UnsubscribeAsync(route.ToString())));
     }
 
-    public async Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> Into<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
-        var route = new Route(typeof(TMessage), routingKey, typeof(TResult));
+        var route = Route.For<TMessage, TResult>(routingKey);
 
         if (_pipeConnections.TryGetValue(route, out var pipeConnection)) return pipeConnection;
 
@@ -58,11 +58,16 @@ public class RedisMqPipeConnector : IPipeConnector
             }
         });
         return _pipeConnections[route] =
-            new PipeConnection(p => Disconnect(p, () => _subscriber.UnsubscribeAsync(route.ToString())), route, pipe);
+            new PipeConnection(route, pipe, p => Disconnect(p, () => _subscriber.UnsubscribeAsync(route.ToString())));
     }
 
     private async ValueTask Disconnect(PipeConnection pipeConnection, Func<Task> unsubscribe)
     {
         if (_pipeConnections.Remove(pipeConnection.Route)) await unsubscribe.Invoke();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var pipeConnection in _pipeConnections.Values) await pipeConnection.DisposeAsync();
     }
 }
