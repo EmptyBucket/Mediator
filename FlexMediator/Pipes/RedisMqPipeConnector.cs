@@ -21,10 +21,11 @@ public class RedisMqPipeConnector : IPipeConnector
 
         if (_pipeConnections.TryGetValue(route, out var pipeConnection)) return pipeConnection;
 
-        await _subscriber.SubscribeAsync(route.ToString(), (_, r) =>
+        var channelMessageQueue = await _subscriber.SubscribeAsync(route.ToString());
+        channelMessageQueue.OnMessage(async r =>
         {
             var message = JsonSerializer.Deserialize<TMessage>(r.ToString())!;
-            pipe.Handle<TMessage>(message, new MessageOptions(routingKey), CancellationToken.None);
+            await pipe.Handle<TMessage>(message, new MessageOptions(routingKey), token);
         });
         return _pipeConnections[route] =
             new PipeConnection(p => Disconnect(p, () => _subscriber.UnsubscribeAsync(route.ToString())), route, pipe);
@@ -37,27 +38,26 @@ public class RedisMqPipeConnector : IPipeConnector
 
         if (_pipeConnections.TryGetValue(route, out var pipeConnection)) return pipeConnection;
 
-        await _subscriber.SubscribeAsync(route.ToString(), (_, r) =>
+        var channelMessageQueue = await _subscriber.SubscribeAsync(route.ToString());
+        channelMessageQueue.OnMessage(async r =>
         {
             var correlationId = JsonDocument.Parse(r.ToString()).RootElement.GetProperty("CorrelationId").ToString();
 
             try
             {
                 var request = JsonSerializer.Deserialize<RedisMessage<TMessage>>(r.ToString());
-                var result = pipe
-                    .Handle<TMessage, TResult>(request.Value!, new MessageOptions(routingKey), CancellationToken.None)
-                    .Result;
+                var result =
+                    await pipe.Handle<TMessage, TResult>(request.Value!, new MessageOptions(routingKey), token);
                 var response = new RedisMessage<TResult>(correlationId, result);
-                _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
+                await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
             }
             catch (Exception e)
             {
                 var response = new RedisMessage<TResult>(correlationId, Exception: e.Message);
-                _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
+                await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
                 throw;
             }
         });
-
         return _pipeConnections[route] =
             new PipeConnection(p => Disconnect(p, () => _subscriber.UnsubscribeAsync(route.ToString())), route, pipe);
     }
