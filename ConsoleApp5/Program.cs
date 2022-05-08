@@ -20,9 +20,10 @@ await rabbitMqPipe.In<Event, EventResult>(mediator.PipeConnector);
 var redisMqPipe = pipeFactory.Create<RedisMqPipe>();
 await redisMqPipe.In<Event, EventResult>(rabbitMqPipe);
 
+//todo попробовать сделать так, чтобы при падении одного сообщения не запускались все хендлеры на ретрае
 var handlingPipe = pipeFactory.Create<HandlingPipe>();
 await handlingPipe.In<Event, EventResult>(redisMqPipe);
-handlingPipe.Out<Event, EventResult>(_ => new EventHandler());
+handlingPipe.BindHandler<Event, EventResult>(_ => new EventHandler());
 
 await mediator.Publish(new Event("qwe"));
 var result = await mediator.Send<Event, EventResult>(new Event("qwe"));

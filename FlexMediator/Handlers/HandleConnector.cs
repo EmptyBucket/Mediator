@@ -7,10 +7,10 @@ public class HandleConnector : IHandleConnector, IHandlerConnections
 {
     private readonly Dictionary<Route, HashSet<HandlerConnection>> _handlerConnections = new();
 
-    public HandlerConnection Out<TMessage>(Func<IServiceProvider, IHandler> factory, string routingKey = "") =>
+    public HandlerConnection BindHandler<TMessage>(Func<IServiceProvider, IHandler> factory, string routingKey = "") =>
         Out(typeof(TMessage), factory, routingKey);
 
-    public HandlerConnection Out<TMessage, TResult>(Func<IServiceProvider, IHandler> factory, string routingKey = "") =>
+    public HandlerConnection BindHandler<TMessage, TResult>(Func<IServiceProvider, IHandler> factory, string routingKey = "") =>
         Out(typeof(TMessage), factory, routingKey, typeof(TResult));
 
     private HandlerConnection Out(Type messageType, Func<IServiceProvider, IHandler> factory, string routingKey = "",

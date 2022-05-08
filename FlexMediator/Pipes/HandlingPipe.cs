@@ -39,11 +39,11 @@ public class HandlingPipe : IPipe, IHandleConnector
         return await handlers.Single().HandleAsync(message, options, token);
     }
 
-    public HandlerConnection Out<TMessage>(Func<IServiceProvider, IHandler> factory,
+    public HandlerConnection BindHandler<TMessage>(Func<IServiceProvider, IHandler> factory,
         string routingKey = "") =>
-        _handleConnector.Out<TMessage>(factory, routingKey);
+        _handleConnector.BindHandler<TMessage>(factory, routingKey);
 
-    public HandlerConnection Out<TMessage, TResult>(Func<IServiceProvider, IHandler> factory,
+    public HandlerConnection BindHandler<TMessage, TResult>(Func<IServiceProvider, IHandler> factory,
         string routingKey = "") =>
-        _handleConnector.Out<TMessage, TResult>(factory, routingKey);
+        _handleConnector.BindHandler<TMessage, TResult>(factory, routingKey);
 }
