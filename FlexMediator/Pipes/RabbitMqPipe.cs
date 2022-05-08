@@ -40,22 +40,24 @@ public class RabbitMqPipe : IPipe, IPipeConnector
     public async Task Handle<TMessage>(TMessage message, MessageOptions options,
         CancellationToken token = default)
     {
-        var route = new Route(typeof(TMessage), options.RoutingKey);
+        var route = Route.For<TMessage>(options.RoutingKey);
         await _bus.PubSub.PublishAsync(message, c => c.WithTopic(route), token);
     }
 
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token = default)
     {
-        var route = new Route(typeof(TMessage), options.RoutingKey, typeof(TResult));
+        var route = Route.For<TMessage, TResult>(options.RoutingKey);
         return await _bus.Rpc.RequestAsync<TMessage, TResult>(message, c => c.WithQueueName(route), token);
     }
 
-    public Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "",
+    public Task<PipeConnection> Into<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        _pipeConnector.Out<TMessage>(pipe, routingKey, token);
+        _pipeConnector.Into<TMessage>(pipe, routingKey, token);
 
-    public Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public Task<PipeConnection> Into<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        _pipeConnector.Out<TMessage, TResult>(pipe, routingKey, token);
+        _pipeConnector.Into<TMessage, TResult>(pipe, routingKey, token);
+
+    public ValueTask DisposeAsync() => _pipeConnector.DisposeAsync();
 }

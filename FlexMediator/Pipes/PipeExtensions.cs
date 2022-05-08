@@ -25,11 +25,11 @@ namespace FlexMediator.Pipes;
 
 public static class PipeExtensions
 {
-    public static Task<PipeConnection> In<TMessage>(this IPipe pipe, IPipeConnector pipeConnector,
+    public static Task<PipeConnection> From<TMessage>(this IPipe pipe, IPipeConnector pipeConnector,
         string routingKey = "") =>
-        pipeConnector.Out<TMessage>(pipe, routingKey);
+        pipeConnector.Into<TMessage>(pipe, routingKey);
 
-    public static Task<PipeConnection> In<TMessage, TResult>(this IPipe pipe, IPipeConnector pipeConnector,
+    public static Task<PipeConnection> From<TMessage, TResult>(this IPipe pipe, IPipeConnector pipeConnector,
         string routingKey = "") =>
-        pipeConnector.Out<TMessage, TResult>(pipe, routingKey);
+        pipeConnector.Into<TMessage, TResult>(pipe, routingKey);
 }

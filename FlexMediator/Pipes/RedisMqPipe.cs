@@ -44,7 +44,7 @@ public class RedisMqPipe : IPipe, IPipeConnector
     public async Task Handle<TMessage>(TMessage message, MessageOptions options,
         CancellationToken token = default)
     {
-        var route = new Route(typeof(TMessage), options.RoutingKey);
+        var route = Route.For<TMessage>(options.RoutingKey);
         await _subscriber.PublishAsync(route.ToString(), new RedisValue(JsonSerializer.Serialize(message)));
     }
 
@@ -66,7 +66,7 @@ public class RedisMqPipe : IPipe, IPipeConnector
 
         try
         {
-            var route = new Route(typeof(TMessage), options.RoutingKey, typeof(TResult));
+            var route = Route.For<TMessage, TResult>(options.RoutingKey);
             var request = new RedisMessage<TMessage>(correlationId, message);
             await _subscriber.PublishAsync(route.ToString(), new RedisValue(JsonSerializer.Serialize(request)));
             return await tcs.Task;
@@ -88,13 +88,15 @@ public class RedisMqPipe : IPipe, IPipeConnector
             });
     }
 
-    public async Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> Into<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        await _pipeConnector.Out<TMessage>(pipe, routingKey, token);
+        await _pipeConnector.Into<TMessage>(pipe, routingKey, token);
 
-    public async Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> Into<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        await _pipeConnector.Out<TMessage, TResult>(pipe, routingKey, token);
+        await _pipeConnector.Into<TMessage, TResult>(pipe, routingKey, token);
+
+    public ValueTask DisposeAsync() => _pipeConnector.DisposeAsync();
 }
 
 internal readonly record struct RedisMessage<T>(string CorrelationId, T? Value = default, string? Exception = null);

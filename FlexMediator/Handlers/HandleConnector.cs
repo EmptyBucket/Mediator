@@ -32,17 +32,15 @@ public class HandleConnector : IHandleConnector, IHandlerConnections
     private readonly Dictionary<Route, HashSet<HandlerConnection>> _handlerConnections = new();
 
     public HandlerConnection BindHandler<TMessage>(Func<IServiceProvider, IHandler> factory, string routingKey = "") =>
-        Out(typeof(TMessage), factory, routingKey);
+        Out(Route.For<TMessage>(routingKey), factory);
 
     public HandlerConnection BindHandler<TMessage, TResult>(Func<IServiceProvider, IHandler> factory,
         string routingKey = "") =>
-        Out(typeof(TMessage), factory, routingKey, typeof(TResult));
+        Out(Route.For<TMessage, TResult>(routingKey), factory);
 
-    private HandlerConnection Out(Type messageType, Func<IServiceProvider, IHandler> factory, string routingKey = "",
-        Type? resultType = null)
+    private HandlerConnection Out(Route route, Func<IServiceProvider, IHandler> factory)
     {
-        var route = new Route(messageType, routingKey, resultType);
-        var handlerBind = new HandlerConnection(Disconnect, route, factory);
+        var handlerBind = new HandlerConnection(route, factory, Disconnect);
 
         _handlerConnections.TryAdd(route, new HashSet<HandlerConnection>());
         _handlerConnections[route].Add(handlerBind);

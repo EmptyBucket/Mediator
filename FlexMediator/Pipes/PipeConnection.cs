@@ -29,11 +29,11 @@ public readonly record struct PipeConnection : IAsyncDisposable
 {
     private readonly Func<PipeConnection, ValueTask> _disconnect;
 
-    public PipeConnection(Func<PipeConnection, ValueTask> disconnect, Route route, IPipe pipe)
+    public PipeConnection(Route route, IPipe pipe, Func<PipeConnection, ValueTask> disconnect)
     {
-        _disconnect = disconnect;
         Route = route;
         Pipe = pipe;
+        _disconnect = disconnect;
     }
 
     public Route Route { get; }

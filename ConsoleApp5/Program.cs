@@ -24,6 +24,7 @@
 using ConsoleApp5;
 using FlexMediator;
 using FlexMediator.Pipes;
+using FlexMediator.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 using EventHandler = ConsoleApp5.EventHandler;
@@ -34,20 +35,19 @@ var serviceProvider = new ServiceCollection()
     .AddMediator()
     .BuildServiceProvider();
 
-var mediator = serviceProvider.GetRequiredService<IMediator>();
+var mediator = serviceProvider.GetRequiredService<Mediator>();
 var pipeFactory = serviceProvider.GetRequiredService<IPipeFactory>();
 
 var rabbitMqPipe = pipeFactory.Create<RabbitMqPipe>();
-await rabbitMqPipe.In<Event, EventResult>(mediator.PipeConnector);
+await rabbitMqPipe.From<Event, EventResult>(mediator);
 
 var redisMqPipe = pipeFactory.Create<RedisMqPipe>();
-await redisMqPipe.In<Event, EventResult>(rabbitMqPipe);
+await redisMqPipe.From<Event, EventResult>(rabbitMqPipe);
 
 //todo потокобезопасность
-//todo сделать, чтобы PipeConnection наследовал IPipeConnector
 //todo попробовать сделать так, чтобы при падении одного сообщения не запускались все хендлеры на ретрае
 var handlingPipe = pipeFactory.Create<HandlingPipe>();
-await handlingPipe.In<Event, EventResult>(redisMqPipe);
+await handlingPipe.From<Event, EventResult>(redisMqPipe);
 handlingPipe.BindHandler<Event, EventResult>(_ => new EventHandler());
 
 await mediator.Publish(new Event("qwe"));

@@ -29,8 +29,8 @@ public readonly record struct HandlerConnection : IDisposable
 {
     private readonly Action<HandlerConnection> _disconnect;
 
-    public HandlerConnection(Action<HandlerConnection> disconnect, Route route,
-        Func<IServiceProvider, IHandler> factory)
+    public HandlerConnection(Route route, Func<IServiceProvider, IHandler> factory,
+        Action<HandlerConnection> disconnect)
     {
         _disconnect = disconnect;
         Route = route;

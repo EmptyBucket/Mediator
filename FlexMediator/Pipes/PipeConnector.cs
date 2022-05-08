@@ -31,23 +31,22 @@ public class PipeConnector : IPipeConnector, IPipeConnections
 {
     private readonly Dictionary<Route, HashSet<PipeConnection>> _pipeConnections = new();
 
-    public Task<PipeConnection> Out<TMessage>(IPipe pipe, string routingKey = "",
+    public Task<PipeConnection> Into<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        Connect(typeof(TMessage), pipe, routingKey);
+        Connect(Route.For<TMessage>(routingKey), pipe);
 
-    public Task<PipeConnection> Out<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public Task<PipeConnection> Into<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        Connect(typeof(TMessage), pipe, routingKey, typeof(TResult));
+        Connect(Route.For<TMessage, TResult>(routingKey), pipe);
 
-    private Task<PipeConnection> Connect(Type messageType, IPipe pipe, string routingKey = "", Type? resultType = null)
+    private Task<PipeConnection> Connect(Route route, IPipe pipe)
     {
-        var route = new Route(messageType, routingKey, resultType);
-        var pipeBind = new PipeConnection(Disconnect, route, pipe);
+        var pipeConnection = new PipeConnection(route, pipe, Disconnect);
 
         _pipeConnections.TryAdd(route, new HashSet<PipeConnection>());
-        _pipeConnections[route].Add(pipeBind);
+        _pipeConnections[route].Add(pipeConnection);
 
-        return Task.FromResult(pipeBind);
+        return Task.FromResult(pipeConnection);
     }
 
     private ValueTask Disconnect(PipeConnection pipeConnection)
@@ -60,6 +59,11 @@ public class PipeConnector : IPipeConnector, IPipeConnections
         }
 
         return ValueTask.CompletedTask;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        foreach (var pipeConnection in _pipeConnections.Values.SelectMany(c => c)) await pipeConnection.DisposeAsync();
     }
 
     #region IReadOnlyDictionary implementation

@@ -26,7 +26,7 @@ using FlexMediator.Utils;
 
 namespace FlexMediator;
 
-internal class Mediator : IMediator
+public class Mediator : IMediator, IPipeConnector
 {
     private readonly Pipe _pipe;
 
@@ -51,5 +51,13 @@ internal class Mediator : IMediator
         return await _pipe.Handle<TMessage, TResult>(message, messageOptions, token);
     }
 
-    public IPipeConnector PipeConnector => _pipe;
+    public Task<PipeConnection> Into<TMessage>(IPipe pipe, string routingKey = "",
+        CancellationToken token = default) =>
+        _pipe.Into<TMessage>(pipe, routingKey, token);
+
+    public Task<PipeConnection> Into<TMessage, TResult>(IPipe pipe, string routingKey = "",
+        CancellationToken token = default) =>
+        _pipe.Into<TMessage, TResult>(pipe, routingKey, token);
+
+    public ValueTask DisposeAsync() => _pipe.DisposeAsync();
 }
