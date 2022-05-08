@@ -21,8 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using FlexMediator.Pipes;
+
 namespace FlexMediator;
 
 public interface IMediator : ISender, IPublisher
 {
+    IPipeConnector PipeConnector { get; }
 }

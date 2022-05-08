@@ -28,11 +28,11 @@ namespace FlexMediator;
 
 internal class Mediator : IMediator
 {
-    private readonly IPipe _dispatchPipe;
+    private readonly Pipe _pipe;
 
-    public Mediator(IPipe dispatchPipe)
+    public Mediator()
     {
-        _dispatchPipe = dispatchPipe;
+        _pipe = new Pipe();
     }
 
     public async Task Publish<TMessage>(TMessage message, Action<MessageOptions>? optionsBuilder = null,
@@ -40,7 +40,7 @@ internal class Mediator : IMediator
     {
         var messageOptions = new MessageOptions();
         optionsBuilder?.Invoke(messageOptions);
-        await _dispatchPipe.Handle(message, messageOptions, token);
+        await _pipe.Handle(message, messageOptions, token);
     }
 
     public async Task<TResult> Send<TMessage, TResult>(TMessage message, Action<MessageOptions>? optionsBuilder = null,
@@ -48,6 +48,8 @@ internal class Mediator : IMediator
     {
         var messageOptions = new MessageOptions();
         optionsBuilder?.Invoke(messageOptions);
-        return await _dispatchPipe.Handle<TMessage, TResult>(message, messageOptions, token);
+        return await _pipe.Handle<TMessage, TResult>(message, messageOptions, token);
     }
+
+    public IPipeConnector PipeConnector => _pipe;
 }

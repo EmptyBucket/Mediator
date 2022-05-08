@@ -38,7 +38,8 @@ public class HandlingPipe : IPipe, IHandleConnector
         _handleConnector = new HandleConnector();
     }
 
-    public async Task Handle<TMessage>(TMessage message, MessageOptions options, CancellationToken token)
+    public async Task Handle<TMessage>(TMessage message, MessageOptions options,
+        CancellationToken token = default)
     {
         var route = new Route(typeof(TMessage), options.RoutingKey);
         var connections = _handleConnector.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerConnection>();
@@ -50,7 +51,7 @@ public class HandlingPipe : IPipe, IHandleConnector
     }
 
     public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
-        CancellationToken token)
+        CancellationToken token = default)
     {
         var route = new Route(typeof(TMessage), options.RoutingKey, typeof(TResult));
         var connections = _handleConnector.GetValueOrDefault(route) ?? Enumerable.Empty<HandlerConnection>();

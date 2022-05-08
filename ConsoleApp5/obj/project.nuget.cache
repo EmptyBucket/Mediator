@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "KTHggMRJvwfvJM/6pQX6RjvK3ZWB2jn+SnZE6MhwS8/6ucAEGWi/KKBDq37dtL4WkX4ccH3h57njR4RaNwtsgQ==",
+  "dgSpecHash": "yUF0rb20Wr2fxBzV0UrRPdGhjJNqolU5As+YRnve5kASEEzYQplTCh2daRYwudrBFaoIsr6VEXVL9IM8cricPg==",
   "success": true,
   "projectFilePath": "/home/strix/RiderProjects/ConsoleApp5/ConsoleApp5/ConsoleApp5.csproj",
   "expectedPackageFiles": [
@@ -26,6 +26,8 @@
     "/home/strix/.nuget/packages/system.security.cryptography.protecteddata/5.0.0/system.security.cryptography.protecteddata.5.0.0.nupkg.sha512",
     "/home/strix/.nuget/packages/system.security.permissions/5.0.0/system.security.permissions.5.0.0.nupkg.sha512",
     "/home/strix/.nuget/packages/system.security.principal.windows/5.0.0/system.security.principal.windows.5.0.0.nupkg.sha512",
+    "/home/strix/.nuget/packages/system.text.encodings.web/6.0.0/system.text.encodings.web.6.0.0.nupkg.sha512",
+    "/home/strix/.nuget/packages/system.text.json/6.0.3/system.text.json.6.0.3.nupkg.sha512",
     "/home/strix/.nuget/packages/system.threading.channels/4.7.1/system.threading.channels.4.7.1.nupkg.sha512",
     "/home/strix/.nuget/packages/system.windows.extensions/5.0.0/system.windows.extensions.5.0.0.nupkg.sha512"
   ],

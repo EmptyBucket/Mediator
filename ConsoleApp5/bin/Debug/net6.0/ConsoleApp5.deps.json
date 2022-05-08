@@ -10,9 +10,10 @@
         "dependencies": {
           "EasyNetQ": "6.3.1",
           "EasyNetQ.DI.Microsoft": "6.3.1",
+          "FlexMediator": "1.0.0",
           "Microsoft.Extensions.DependencyInjection": "6.0.0",
-          "Microsoft.Extensions.Logging.Abstractions": "6.0.1",
-          "StackExchange.Redis": "2.5.61"
+          "StackExchange.Redis": "2.5.61",
+          "System.Text.Json": "6.0.3"
         },
         "runtime": {
           "ConsoleApp5.dll": {}
@@ -243,6 +244,23 @@
         }
       },
       "System.Security.Principal.Windows/5.0.0": {},
+      "System.Text.Encodings.Web/6.0.0": {
+        "dependencies": {
+          "System.Runtime.CompilerServices.Unsafe": "6.0.0"
+        }
+      },
+      "System.Text.Json/6.0.3": {
+        "dependencies": {
+          "System.Runtime.CompilerServices.Unsafe": "6.0.0",
+          "System.Text.Encodings.Web": "6.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/System.Text.Json.dll": {
+            "assemblyVersion": "6.0.0.0",
+            "fileVersion": "6.0.422.16404"
+          }
+        }
+      },
       "System.Threading.Channels/4.7.1": {},
       "System.Windows.Extensions/5.0.0": {
         "dependencies": {
@@ -261,6 +279,18 @@
             "assemblyVersion": "5.0.0.0",
             "fileVersion": "5.0.20.51904"
           }
+        }
+      },
+      "FlexMediator/1.0.0": {
+        "dependencies": {
+          "EasyNetQ": "6.3.1",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "6.0.0",
+          "Microsoft.Extensions.Logging.Abstractions": "6.0.1",
+          "StackExchange.Redis": "2.5.61",
+          "System.Text.Json": "6.0.3"
+        },
+        "runtime": {
+          "FlexMediator.dll": {}
         }
       }
     }
@@ -425,6 +455,20 @@
       "path": "system.security.principal.windows/5.0.0",
       "hashPath": "system.security.principal.windows.5.0.0.nupkg.sha512"
     },
+    "System.Text.Encodings.Web/6.0.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Vg8eB5Tawm1IFqj4TVK1czJX89rhFxJo9ELqc/Eiq0eXy13RK00eubyU6TJE6y+GQXjyV5gSfiewDUZjQgSE0w==",
+      "path": "system.text.encodings.web/6.0.0",
+      "hashPath": "system.text.encodings.web.6.0.0.nupkg.sha512"
+    },
+    "System.Text.Json/6.0.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-1Bi8pSdTTVNVKcGFiU1o9Iq6FwFyGQmgBgGHxy9pPvZANXc1cT6D72j+r/H/NsyVnWxKIxOgI3o7DrAwC3zcaA==",
+      "path": "system.text.json/6.0.3",
+      "hashPath": "system.text.json.6.0.3.nupkg.sha512"
+    },
     "System.Threading.Channels/4.7.1": {
       "type": "package",
       "serviceable": true,
@@ -438,6 +482,11 @@
       "sha512": "sha512-c1ho9WU9ZxMZawML+ssPKZfdnrg/OjR3pe0m9v8230z3acqphwvPJqzAkH54xRYm5ntZHGG1EPP3sux9H3qSPg==",
       "path": "system.windows.extensions/5.0.0",
       "hashPath": "system.windows.extensions.5.0.0.nupkg.sha512"
+    },
+    "FlexMediator/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
     }
   }
 }
