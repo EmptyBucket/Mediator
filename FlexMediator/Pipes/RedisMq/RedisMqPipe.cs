@@ -48,7 +48,7 @@ public class RedisMqPipe : IPipe, IPipeConnector
                 var message = r.Message.ToString();
                 var jsonElement = JsonDocument.Parse(message).RootElement;
                 var correlationId = jsonElement.GetProperty(nameof(RedisMqMessage<int>.CorrelationId)).ToString();
-                _responseActions[correlationId](message);
+                if (_responseActions.TryRemove(correlationId, out var action)) action(message);
             });
             return channelMq;
         });
@@ -77,17 +77,11 @@ public class RedisMqPipe : IPipe, IPipeConnector
             else tcs.SetException(new InvalidOperationException("Message was not be processed"));
         });
 
-        try
-        {
-            var route = Route.For<TMessage, TResult>(context.RoutingKey);
-            var request = new RedisMqMessage<TMessage>(correlationId, message);
-            await _subscriber.PublishAsync(route.ToString(), JsonSerializer.Serialize(request)).ConfigureAwait(false);
-            return await tcs.Task.ConfigureAwait(false);
-        }
-        finally
-        {
-            _responseActions.TryRemove(correlationId, out _);
-        }
+        var route = Route.For<TMessage, TResult>(context.RoutingKey);
+        var request = new RedisMqMessage<TMessage>(correlationId, message);
+        await _subscriber.PublishAsync(route.ToString(), JsonSerializer.Serialize(request)).ConfigureAwait(false);
+        var result = await tcs.Task.ConfigureAwait(false);
+        return result;
     }
 
     public async Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
