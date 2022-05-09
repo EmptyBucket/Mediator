@@ -48,8 +48,8 @@ public class RabbitMqPipeConnector : IPipeConnector
         var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(string.Empty, async (m, c) =>
             {
                 await using var scope = _serviceProvider.CreateAsyncScope();
-                var messageOptions = new MessageContext(scope.ServiceProvider, routingKey);
-                await pipe.PassAsync(m, messageOptions, c);
+                var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
+                await pipe.PassAsync(m, messageContext, c);
             },
             c => c.WithQueueName(route).WithTopic(route), token);
         var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, subscription));
@@ -64,8 +64,8 @@ public class RabbitMqPipeConnector : IPipeConnector
         var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(async (m, c) =>
             {
                 await using var scope = _serviceProvider.CreateAsyncScope();
-                var messageOptions = new MessageContext(scope.ServiceProvider, routingKey);
-                return await pipe.PassAsync<TMessage, TResult>(m, messageOptions, c);
+                var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
+                return await pipe.PassAsync<TMessage, TResult>(m, messageContext, c);
             },
             c => c.WithQueueName(route), token);
         var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, subscription));
