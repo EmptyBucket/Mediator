@@ -21,50 +21,63 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System.Collections.Concurrent;
 using EasyNetQ;
 using FlexMediator.Utils;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace FlexMediator.Pipes;
 
 public class RabbitMqPipeConnector : IPipeConnector
 {
     private readonly IBus _bus;
-    private readonly Dictionary<Route, PipeConnection> _pipeConnections = new();
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ConcurrentDictionary<PipeConnection, PipeConnection> _pipeConnections = new();
 
-    public RabbitMqPipeConnector(IBus bus)
+    public RabbitMqPipeConnector(IBus bus, IServiceProvider serviceProvider)
     {
         _bus = bus;
+        _serviceProvider = serviceProvider;
     }
 
-    public async Task<PipeConnection> Into<TMessage>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> ConnectInAsync<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
-
-        if (_pipeConnections.TryGetValue(route, out var pipeConnection)) return pipeConnection;
-
-        var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(string.Empty,
-            (m, c) => pipe.Handle(m, new MessageOptions(routingKey), c),
+        //todo нужно сделать subscriptionId
+        var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(string.Empty, async (m, c) =>
+            {
+                await using var scope = _serviceProvider.CreateAsyncScope();
+                var messageOptions = new MessageOptions(scope.ServiceProvider, routingKey);
+                await pipe.PassAsync(m, messageOptions, c);
+            },
             c => c.WithQueueName(route).WithTopic(route), token);
-        return _pipeConnections[route] = new PipeConnection(route, pipe, p => Disconnect(p, subscription));
+        var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, subscription));
+        Connect(pipeConnection);
+        return pipeConnection;
     }
 
-    public async Task<PipeConnection> Into<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> ConnectInAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
-
-        if (_pipeConnections.TryGetValue(route, out var pipeConnection)) return pipeConnection;
-
-        var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(
-            (m, c) => pipe.Handle<TMessage, TResult>(m, new MessageOptions(routingKey), c),
-            c => c.WithQueueName(route), token); 
-        return _pipeConnections[route] = new PipeConnection(route, pipe, p => Disconnect(p, subscription));
+        var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(async (m, c) =>
+            {
+                await using var scope = _serviceProvider.CreateAsyncScope();
+                var messageOptions = new MessageOptions(scope.ServiceProvider, routingKey);
+                return await pipe.PassAsync<TMessage, TResult>(m, messageOptions, c);
+            },
+            c => c.WithQueueName(route), token);
+        var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, subscription));
+        Connect(pipeConnection);
+        return pipeConnection;
     }
 
-    private ValueTask Disconnect(PipeConnection pipeConnection, IDisposable subscription)
+    private void Connect(PipeConnection pipeConnection) => _pipeConnections.TryAdd(pipeConnection, pipeConnection);
+
+    private ValueTask Disconnect(PipeConnection pipeConnection, IDisposable unsubscribe)
     {
-        if (_pipeConnections.Remove(pipeConnection.Route)) subscription.Dispose();
+        if (_pipeConnections.TryRemove(pipeConnection, out _)) unsubscribe.Dispose();
 
         return ValueTask.CompletedTask;
     }

@@ -23,6 +23,6 @@
 
 namespace FlexMediator.Utils;
 
-public record MessageOptions(string RoutingKey = "")
+public record MessageOptions(IServiceProvider ServiceProvider, string RoutingKey = "")
 {
 }
