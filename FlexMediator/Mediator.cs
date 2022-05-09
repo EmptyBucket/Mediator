@@ -26,7 +26,7 @@ using FlexMediator.Utils;
 
 namespace FlexMediator;
 
-public class Mediator : IMediator, IPipeConnector
+public class Mediator : IMediator
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly Pipe _pipe;

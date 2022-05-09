@@ -21,11 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using FlexMediator.Pipes;
 using FlexMediator.Utils;
 
 namespace FlexMediator;
 
-public interface IMediator
+public interface IMediator : IPipeConnector
 {
     Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Action<MessageContext>? contextBuilder = null,
         CancellationToken token = default);
