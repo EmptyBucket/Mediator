@@ -23,7 +23,13 @@
 
 namespace Mediator.Pipes;
 
-public interface IPipeFactory
+public readonly record struct Route(Type MessageType, string RoutingKey = "", Type? ResultType = null)
 {
-    TPipe Create<TPipe>(string pipeName = "") where TPipe : IPipe;
-}
+    public static Route For<TMessage>(string routingKey = "") =>
+        new(typeof(TMessage), routingKey);
+
+    public static Route For<TMessage, TResult>(string routingKey = "") =>
+        new(typeof(TMessage), routingKey, typeof(TResult));
+
+    public static implicit operator string(Route route) => route.ToString();
+};

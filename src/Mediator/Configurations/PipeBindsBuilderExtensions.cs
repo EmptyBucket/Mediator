@@ -21,6 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.Pipes.RedisMq;
+namespace Mediator.Configurations;
 
-internal readonly record struct RedisMqMessage<T>(string CorrelationId, T? Value = default, string? Exception = null);
+public static class PipeBindsBuilderExtensions
+{
+    public static IPipeBindsBuilder BindPipe<TPipe>(this IPipeBindsBuilder pipeBindsBuilder, string pipeName = "") =>
+        pipeBindsBuilder.BindPipe(typeof(TPipe), pipeName);
+}

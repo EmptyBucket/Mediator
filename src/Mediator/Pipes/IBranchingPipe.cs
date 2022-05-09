@@ -23,7 +23,6 @@
 
 namespace Mediator.Pipes;
 
-public interface IPipeFactory
+public interface IBranchingPipe : IPipe, IPipeConnector
 {
-    TPipe Create<TPipe>(string pipeName = "") where TPipe : IPipe;
 }

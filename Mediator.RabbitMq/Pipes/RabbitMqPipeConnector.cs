@@ -23,10 +23,10 @@
 
 using System.Collections.Concurrent;
 using EasyNetQ;
-using Mediator.Utils;
+using Mediator.Pipes;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Mediator.Pipes.RabbitMq;
+namespace Mediator.RabbitMq.Pipes;
 
 public class RabbitMqPipeConnector : IPipeConnector
 {

@@ -21,8 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Utils;
-
 namespace Mediator.Pipes;
 
 public class HandlingPipe<THandlerMessage> : IPipe

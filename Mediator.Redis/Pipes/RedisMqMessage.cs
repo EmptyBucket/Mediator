@@ -21,9 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.Pipes;
+namespace Mediator.Redis.Pipes;
 
-public interface IPipeFactory
-{
-    TPipe Create<TPipe>(string pipeName = "") where TPipe : IPipe;
-}
+internal readonly record struct RedisMqMessage<T>(string CorrelationId, T? Value = default, string? Exception = null);

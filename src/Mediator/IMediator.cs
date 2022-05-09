@@ -22,7 +22,6 @@
 // SOFTWARE.
 
 using Mediator.Pipes;
-using Mediator.Utils;
 
 namespace Mediator;
 

@@ -22,7 +22,6 @@
 // SOFTWARE.
 
 using Mediator;
-using Mediator.Utils;
 using Samples.Events;
 
 namespace Samples.Handlers;

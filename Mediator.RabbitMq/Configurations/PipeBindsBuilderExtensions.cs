@@ -21,15 +21,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.Utils;
+using Mediator.Configurations;
+using Mediator.Pipes;
+using Mediator.RabbitMq.Pipes;
 
-public readonly record struct Route(Type MessageType, string RoutingKey = "", Type? ResultType = null)
+namespace Mediator.RabbitMq.Configurations;
+
+public static class PipeBindsBuilderExtensions
 {
-    public static Route For<TMessage>(string routingKey = "") =>
-        new(typeof(TMessage), routingKey);
-
-    public static Route For<TMessage, TResult>(string routingKey = "") =>
-        new(typeof(TMessage), routingKey, typeof(TResult));
-
-    public static implicit operator string(Route route) => route.ToString();
-};
+    public static IPipeBindsBuilder AddRabbitMq(this IPipeBindsBuilder pipeBindsBuilder, string pipeName = "rabbit") =>
+        pipeBindsBuilder.BindPipe<RabbitMqPipe>(pipeName);
+}

@@ -21,8 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.Utils;
+namespace Mediator.Redis.Pipes;
 
-public record MessageContext(IServiceProvider ServiceProvider, string RoutingKey = "")
+internal static class RedisMqWellKnown
 {
+    public const string ResponsesMq = "responses";
 }

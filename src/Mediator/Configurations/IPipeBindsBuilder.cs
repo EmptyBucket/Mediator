@@ -21,9 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.Pipes;
+namespace Mediator.Configurations;
 
-public interface IPipeFactory
+public interface IPipeBindsBuilder
 {
-    TPipe Create<TPipe>(string pipeName = "") where TPipe : IPipe;
+    IPipeBindsBuilder BindPipe(Type pipeType, string pipeName = "");
 }
