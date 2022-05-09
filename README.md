@@ -4,7 +4,7 @@ Transparent mediator, allows messages to be routed according to the configured t
 An example of how a pipeline can be configured:
 * mediator =[Event]> rabbitmq =[Event]> EventHandler#1
 * mediator =[Event]> rabbitmq =[Event]> EventHandler#2
-* mediator =[Event]> rabbitmq =[Event]> redismq =[Event]> EventHandler#3 =[EventResult]> result
+* mediator =[Event]> rabbitmq =[Event]> redismq =[Event]> EventHandler#result =[EventResult]> result
 * mediator =[AnotherEvent]> redismq =[AnotherEvent]> AnotherEventHandler
 ```csharp
 var serviceCollection = new ServiceCollection();
