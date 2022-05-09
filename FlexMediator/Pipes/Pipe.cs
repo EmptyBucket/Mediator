@@ -22,7 +22,7 @@ public class Pipe : IPipe, IPipeConnector
     }
 
     public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
-        CancellationToken token = default)
+        string subscriptionName = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
         var pipeConnection = new PipeConnection(route, pipe, Disconnect);
@@ -31,7 +31,7 @@ public class Pipe : IPipe, IPipeConnector
     }
 
     public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
-        CancellationToken token = default)
+        string subscriptionName = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         var pipeConnection = new PipeConnection(route, pipe, Disconnect);

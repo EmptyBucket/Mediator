@@ -31,12 +31,12 @@ public class RabbitMqPipe : IPipe, IPipeConnector
     }
 
     public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
-        CancellationToken token = default) =>
-        _pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, token);
+        string subscriptionName = "", CancellationToken token = default) =>
+        _pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionName, token);
 
     public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
-        CancellationToken token = default) =>
-        _pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
+        string subscriptionName = "", CancellationToken token = default) =>
+        _pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, subscriptionName, token);
 
     public ValueTask DisposeAsync() => _pipeConnector.DisposeAsync();
 }
