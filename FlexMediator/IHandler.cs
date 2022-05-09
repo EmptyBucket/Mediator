@@ -2,23 +2,15 @@ using FlexMediator.Utils;
 
 namespace FlexMediator;
 
-public interface IHandler
+public interface IHandler<in TMessage>
 {
-    Task HandleAsync(object message, MessageOptions options, CancellationToken token);
-}
-
-public interface IHandler<in TMessage> : IHandler
-{
-    Task HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
-
-    async Task IHandler.HandleAsync(object message, MessageOptions options, CancellationToken token) =>
-        await HandleAsync((TMessage)message, options, token);
+    Task HandleAsync(TMessage message, MessageContext context, CancellationToken token);
 }
 
 public interface IHandler<in TMessage, TResult> : IHandler<TMessage>
 {
-    new Task<TResult> HandleAsync(TMessage message, MessageOptions options, CancellationToken token);
+    new Task<TResult> HandleAsync(TMessage message, MessageContext context, CancellationToken token);
 
-    Task IHandler<TMessage>.HandleAsync(TMessage message, MessageOptions options, CancellationToken token) =>
-        HandleAsync(message, options, token);
+    Task IHandler<TMessage>.HandleAsync(TMessage message, MessageContext context, CancellationToken token) =>
+        HandleAsync(message, context, token);
 }

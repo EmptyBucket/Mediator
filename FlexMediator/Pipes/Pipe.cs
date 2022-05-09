@@ -7,18 +7,18 @@ public class Pipe : IPipe, IPipeConnector
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, List<PipeConnection>> _pipeConnections = new();
 
-    public async Task PassAsync<TMessage>(TMessage message, MessageOptions options,
+    public async Task PassAsync<TMessage>(TMessage message, MessageContext context,
         CancellationToken token = default)
     {
-        var route = Route.For<TMessage>(options.RoutingKey);
-        await Task.WhenAll(GetPipes(route).Select(p => p.PassAsync(message, options, token)));
+        var route = Route.For<TMessage>(context.RoutingKey);
+        await Task.WhenAll(GetPipes(route).Select(p => p.PassAsync(message, context, token)));
     }
 
-    public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageOptions options,
+    public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
         CancellationToken token = default)
     {
-        var route = Route.For<TMessage, TResult>(options.RoutingKey);
-        return await GetPipes(route).Single().PassAsync<TMessage, TResult>(message, options, token);
+        var route = Route.For<TMessage, TResult>(context.RoutingKey);
+        return await GetPipes(route).Single().PassAsync<TMessage, TResult>(message, context, token);
     }
 
     public Task<PipeConnection> ConnectInAsync<TMessage>(IPipe pipe, string routingKey = "",

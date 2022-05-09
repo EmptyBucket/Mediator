@@ -4,9 +4,9 @@ namespace FlexMediator;
 
 public interface IMediator
 {
-    Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Action<MessageOptions>? optionsBuilder = null,
+    Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Action<MessageContext>? optionsBuilder = null,
         CancellationToken token = default);
 
-    Task PublishAsync<TMessage>(TMessage message, Action<MessageOptions>? optionsBuilder = null,
+    Task PublishAsync<TMessage>(TMessage message, Action<MessageContext>? optionsBuilder = null,
         CancellationToken token = default);
 }

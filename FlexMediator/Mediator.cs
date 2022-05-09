@@ -15,17 +15,17 @@ public class Mediator : IMediator, IPipeConnector
     }
 
     public async Task PublishAsync<TMessage>(TMessage message,
-        Action<MessageOptions>? optionsBuilder = null, CancellationToken token = default)
+        Action<MessageContext>? optionsBuilder = null, CancellationToken token = default)
     {
-        var messageOptions = new MessageOptions(_serviceProvider);
+        var messageOptions = new MessageContext(_serviceProvider);
         optionsBuilder?.Invoke(messageOptions);
         await _pipe.PassAsync(message, messageOptions, token);
     }
 
     public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message,
-        Action<MessageOptions>? optionsBuilder = null, CancellationToken token = default)
+        Action<MessageContext>? optionsBuilder = null, CancellationToken token = default)
     {
-        var messageOptions = new MessageOptions(_serviceProvider);
+        var messageOptions = new MessageContext(_serviceProvider);
         optionsBuilder?.Invoke(messageOptions);
         return await _pipe.PassAsync<TMessage, TResult>(message, messageOptions, token);
     }

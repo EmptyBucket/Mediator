@@ -19,14 +19,14 @@ public class RedisMqPipe : IPipe, IPipeConnector
         _pipeConnector = new RedisMqPipeConnector(subscriber, serviceProvider);
     }
 
-    public async Task PassAsync<TMessage>(TMessage message, MessageOptions options,
+    public async Task PassAsync<TMessage>(TMessage message, MessageContext context,
         CancellationToken token = default)
     {
-        var route = Route.For<TMessage>(options.RoutingKey);
+        var route = Route.For<TMessage>(context.RoutingKey);
         await _subscriber.PublishAsync(route.ToString(), new RedisValue(JsonSerializer.Serialize(message)));
     }
 
-    public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageOptions options,
+    public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
         CancellationToken token = default)
     {
         await EnsureResponsesMqIsSubscribed();
@@ -35,7 +35,7 @@ public class RedisMqPipe : IPipe, IPipeConnector
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         _responseActions.TryAdd(correlationId, r =>
         {
-            var response = JsonSerializer.Deserialize<RedisMessage<TResult>>(r);
+            var response = JsonSerializer.Deserialize<RedisMqMessage<TResult>>(r);
 
             if (response.Value is not null) tcs.SetResult(response.Value);
             else if (response.Exception is not null) tcs.SetException(new Exception(response.Exception));
@@ -44,8 +44,8 @@ public class RedisMqPipe : IPipe, IPipeConnector
 
         try
         {
-            var route = Route.For<TMessage, TResult>(options.RoutingKey);
-            var request = new RedisMessage<TMessage>(correlationId, message);
+            var route = Route.For<TMessage, TResult>(context.RoutingKey);
+            var request = new RedisMqMessage<TMessage>(correlationId, message);
             await _subscriber.PublishAsync(route.ToString(), new RedisValue(JsonSerializer.Serialize(request)));
             return await tcs.Task;
         }
@@ -85,5 +85,3 @@ public class RedisMqPipe : IPipe, IPipeConnector
         await _pipeConnector.DisposeAsync();
     }
 }
-
-internal readonly record struct RedisMessage<T>(string CorrelationId, T? Value = default, string? Exception = null);
