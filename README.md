@@ -1,6 +1,7 @@
 # Mediator
 Transparent mediator, allows messages to be routed according to the configured topology. Can integrate with ```rabbitmq``` or ```redismq```. Supports ```pub/sub```, ```request/response``` models and dynamic configuration.
 ### Usage
+An example of how a pipeline can be configured:
 * mediator =[Event]> rabbitmq =[Event]> EventHandler#1
 * mediator =[Event]> rabbitmq =[Event]> EventHandler#2
 * mediator =[Event]> rabbitmq =[Event]> redismq =[Event]> EventHandler#3 =[EventResult]> result
