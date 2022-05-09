@@ -42,12 +42,13 @@ public class RedisMqPipe : IPipe, IPipeConnector
         _pipeConnector = new RedisMqPipeConnector(subscriber, serviceProvider);
         _responsesMq = new Lazy<Task<ChannelMessageQueue>>(async () =>
         {
-            var channelMq = await _subscriber.SubscribeAsync("responses").ConfigureAwait(false);
+            var channelMq = await _subscriber.SubscribeAsync(RedisMqWellKnown.ResponsesMq).ConfigureAwait(false);
             channelMq.OnMessage(r =>
             {
-                var correlationId =
-                    JsonDocument.Parse(r.ToString()).RootElement.GetProperty("CorrelationId").ToString();
-                _responseActions[correlationId](r.Message);
+                var message = r.Message.ToString();
+                var jsonElement = JsonDocument.Parse(message).RootElement;
+                var correlationId = jsonElement.GetProperty(nameof(RedisMqMessage<int>.CorrelationId)).ToString();
+                _responseActions[correlationId](message);
             });
             return channelMq;
         });
@@ -57,8 +58,7 @@ public class RedisMqPipe : IPipe, IPipeConnector
         CancellationToken token = default)
     {
         var route = Route.For<TMessage>(context.RoutingKey);
-        await _subscriber.PublishAsync(route.ToString(), new RedisValue(JsonSerializer.Serialize(message)))
-            .ConfigureAwait(false);
+        await _subscriber.PublishAsync(route.ToString(), JsonSerializer.Serialize(message)).ConfigureAwait(false);
     }
 
     public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
@@ -74,15 +74,14 @@ public class RedisMqPipe : IPipe, IPipeConnector
 
             if (response.Value is not null) tcs.SetResult(response.Value);
             else if (response.Exception is not null) tcs.SetException(new Exception(response.Exception));
-            else tcs.SetException(new ArgumentException("Message was not be processed"));
+            else tcs.SetException(new InvalidOperationException("Message was not be processed"));
         });
 
         try
         {
             var route = Route.For<TMessage, TResult>(context.RoutingKey);
             var request = new RedisMqMessage<TMessage>(correlationId, message);
-            await _subscriber.PublishAsync(route.ToString(), new RedisValue(JsonSerializer.Serialize(request)))
-                .ConfigureAwait(false);
+            await _subscriber.PublishAsync(route.ToString(), JsonSerializer.Serialize(request)).ConfigureAwait(false);
             return await tcs.Task.ConfigureAwait(false);
         }
         finally
