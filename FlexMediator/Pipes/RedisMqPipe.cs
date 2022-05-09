@@ -19,7 +19,7 @@ public class RedisMqPipe : IPipe, IPipeConnector
         _pipeConnector = new RedisMqPipeConnector(subscriber, serviceProvider);
         _responsesMq = new Lazy<Task<ChannelMessageQueue>>(async () =>
         {
-            var channelMq = await _subscriber.SubscribeAsync("responses");
+            var channelMq = await _subscriber.SubscribeAsync("responses").ConfigureAwait(false);
             channelMq.OnMessage(r =>
             {
                 var correlationId =
@@ -34,7 +34,8 @@ public class RedisMqPipe : IPipe, IPipeConnector
         CancellationToken token = default)
     {
         var route = Route.For<TMessage>(context.RoutingKey);
-        await _subscriber.PublishAsync(route.ToString(), new RedisValue(JsonSerializer.Serialize(message)));
+        await _subscriber.PublishAsync(route.ToString(), new RedisValue(JsonSerializer.Serialize(message)))
+            .ConfigureAwait(false);
     }
 
     public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
@@ -57,8 +58,9 @@ public class RedisMqPipe : IPipe, IPipeConnector
         {
             var route = Route.For<TMessage, TResult>(context.RoutingKey);
             var request = new RedisMqMessage<TMessage>(correlationId, message);
-            await _subscriber.PublishAsync(route.ToString(), new RedisValue(JsonSerializer.Serialize(request)));
-            return await tcs.Task;
+            await _subscriber.PublishAsync(route.ToString(), new RedisValue(JsonSerializer.Serialize(request)))
+                .ConfigureAwait(false);
+            return await tcs.Task.ConfigureAwait(false);
         }
         finally
         {
@@ -78,7 +80,7 @@ public class RedisMqPipe : IPipe, IPipeConnector
     {
         if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1) return;
 
-        if (_responsesMq.IsValueCreated) await _responsesMq.Value.Result.UnsubscribeAsync();
+        if (_responsesMq.IsValueCreated) await _responsesMq.Value.Result.UnsubscribeAsync().ConfigureAwait(false);
 
         await _pipeConnector.DisposeAsync();
     }

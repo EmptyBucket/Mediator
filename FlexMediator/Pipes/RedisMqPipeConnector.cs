@@ -22,7 +22,7 @@ public class RedisMqPipeConnector : IPipeConnector
         CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
-        var channelMq = await _subscriber.SubscribeAsync(route.ToString());
+        var channelMq = await _subscriber.SubscribeAsync(route.ToString()).ConfigureAwait(false);
         channelMq.OnMessage(async r =>
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
@@ -39,7 +39,7 @@ public class RedisMqPipeConnector : IPipeConnector
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
-        var channelMq = await _subscriber.SubscribeAsync(route.ToString());
+        var channelMq = await _subscriber.SubscribeAsync(route.ToString()).ConfigureAwait(false);
         channelMq.OnMessage(async r =>
         {
             var request = JsonSerializer.Deserialize<RedisMqMessage<TMessage>>(r.Message);
@@ -50,12 +50,14 @@ public class RedisMqPipeConnector : IPipeConnector
                 var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
                 var result = await pipe.PassAsync<TMessage, TResult>(request.Value!, messageContext, token);
                 var response = new RedisMqMessage<TResult>(request.CorrelationId, result);
-                await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
+                await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)))
+                    .ConfigureAwait(false);
             }
             catch (Exception e)
             {
                 var response = new RedisMqMessage<TResult>(request.CorrelationId, Exception: e.Message);
-                await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
+                await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)))
+                    .ConfigureAwait(false);
                 throw;
             }
         });

@@ -18,14 +18,16 @@ public class RabbitMqPipe : IPipe, IPipeConnector
         CancellationToken token = default)
     {
         var route = Route.For<TMessage>(context.RoutingKey);
-        await _bus.PubSub.PublishAsync(message, c => c.WithTopic(route), token);
+        await _bus.PubSub.PublishAsync(message, c => c.WithTopic(route), token)
+            .ConfigureAwait(false);
     }
 
     public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(context.RoutingKey);
-        return await _bus.Rpc.RequestAsync<TMessage, TResult>(message, c => c.WithQueueName(route), token);
+        return await _bus.Rpc.RequestAsync<TMessage, TResult>(message, c => c.WithQueueName(route), token)
+            .ConfigureAwait(false);
     }
 
     public Task<PipeConnection> ConnectInAsync<TMessage>(IPipe pipe, string routingKey = "",
