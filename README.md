@@ -1,6 +1,10 @@
 # Mediator
 Transparent mediator, allows messages to be routed according to the configured topology. Can integrate with ```rabbitmq``` or ```redismq```. Supports ```pub/sub```, ```request/response``` models and dynamic configuration.
 ### Usage
+* mediator =[Event]> rabbitmq =[Event]> EventHandler#1
+* mediator =[Event]> rabbitmq =[Event]> EventHandler#2
+* mediator =[Event]> rabbitmq =[Event]> redismq =[Event]> EventHandler#3 =[EventResult]> result
+* mediator =[AnotherEvent]> redismq =[AnotherEvent]> AnotherEventHandler
 ```csharp
 var serviceCollection = new ServiceCollection();
 serviceCollection
@@ -16,7 +20,6 @@ serviceCollection
         var rabbitMqPipe = pipeFactory.Create<IBranchingPipe>("rabbit");
         await rabbitMqPipe.ConnectInAsync<Event>(c);
         await rabbitMqPipe.ConnectInAsync<Event, EventResult>(c);
-        await rabbitMqPipe.ConnectInAsync<AnotherEvent>(c);
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "2");
 
