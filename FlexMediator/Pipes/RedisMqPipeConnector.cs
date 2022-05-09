@@ -50,13 +50,13 @@ public class RedisMqPipeConnector : IPipeConnector
                 var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
                 var result = await pipe.PassAsync<TMessage, TResult>(request.Value!, messageContext, token);
                 var response = new RedisMqMessage<TResult>(request.CorrelationId, result);
-                await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)))
+                await _subscriber.PublishAsync(RedisMqWellKnown.ResponsesMq, JsonSerializer.Serialize(response))
                     .ConfigureAwait(false);
             }
             catch (Exception e)
             {
                 var response = new RedisMqMessage<TResult>(request.CorrelationId, Exception: e.Message);
-                await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)))
+                await _subscriber.PublishAsync(RedisMqWellKnown.ResponsesMq, JsonSerializer.Serialize(response))
                     .ConfigureAwait(false);
                 throw;
             }
