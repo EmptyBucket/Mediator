@@ -1,3 +1,4 @@
+using Mediator.Handlers;
 using Mediator.Pipes;
 
 namespace Mediator;

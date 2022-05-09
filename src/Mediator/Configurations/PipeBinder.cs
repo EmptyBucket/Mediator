@@ -3,11 +3,11 @@ using Mediator.Pipes;
 
 namespace Mediator.Configurations;
 
-internal class PipeBindsBuilder : IPipeBindsBuilder
+internal class PipeBinder : IPipeBinder
 {
     private IImmutableDictionary<PipeBind, Type> _pipeBinds = ImmutableDictionary<PipeBind, Type>.Empty;
 
-    public IPipeBindsBuilder BindPipe(Type pipeType, string pipeName = "")
+    public IPipeBinder BindPipe(Type pipeType, string pipeName = "")
     {
         _pipeBinds = _pipeBinds.SetItem(new PipeBind(pipeType, pipeName), pipeType);
 

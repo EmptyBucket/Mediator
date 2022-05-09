@@ -1,3 +1,4 @@
+using Mediator.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Pipes;

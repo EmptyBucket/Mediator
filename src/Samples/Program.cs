@@ -1,8 +1,9 @@
 using Mediator;
+using Mediator.Configurations;
 using Mediator.Pipes;
-using Mediator.RabbitMq;
+using Mediator.RabbitMq.Configurations;
 using Mediator.RabbitMq.Pipes;
-using Mediator.Redis;
+using Mediator.Redis.Configurations;
 using Mediator.Redis.Pipes;
 using Microsoft.Extensions.DependencyInjection;
 using Samples.Events;
@@ -10,36 +11,32 @@ using Samples.Handlers;
 using StackExchange.Redis;
 using EventHandler = Samples.Handlers.EventHandler;
 
-var serviceProvider = new ServiceCollection()
-    // register rabbitMq
+var serviceCollection = new ServiceCollection();
+serviceCollection
     .RegisterEasyNetQ("host=localhost")
-    // register redisMq
-    .AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect("localhost"))
-    .AddMediator(async (f, c) =>
+    .AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect("localhost"));
+serviceCollection
+    .AddMediator(b => b.BindRabbitMq().BindRedisMq(), async (p, c) =>
     {
-        // configure rabbitmq pipeline
-        var rabbitMqPipe = f.Create<RabbitMqPipe>();
+        var pipeFactory = p.GetRequiredService<IPipeFactory>();
 
+        // configure rabbitMq pipeline
+        var rabbitMqPipe = pipeFactory.Create<IBranchingPipe>("rabbit");
         await rabbitMqPipe.ConnectInAsync<Event>(c);
+        await rabbitMqPipe.ConnectInAsync<Event, EventResult>(c);
+        await rabbitMqPipe.ConnectInAsync<AnotherEvent>(c);
         await rabbitMqPipe.ConnectOutAsync(_ => new EventHandler(), subscriptionId: "1");
         await rabbitMqPipe.ConnectOutAsync(_ => new EventHandler(), subscriptionId: "2");
 
-        await rabbitMqPipe.ConnectInAsync<Event, EventResult>(c);
-        
-        await rabbitMqPipe.ConnectInAsync<AnotherEvent>(c);
-
         // configure redisMq pipeline
-        var redisMqPipe = f.Create<RedisMqPipe>();
-
+        var redisMqPipe = pipeFactory.Create<IBranchingPipe>("redis");
         await redisMqPipe.ConnectInAsync<Event, EventResult>(rabbitMqPipe);
-        await redisMqPipe.ConnectOutAsync(_ => new EventHandlerWithResult());
-
         await redisMqPipe.ConnectInAsync<AnotherEvent>(c);
+        await redisMqPipe.ConnectOutAsync(_ => new EventHandlerWithResult());
         await redisMqPipe.ConnectOutAsync(_ => new AnotherEventHandler());
-    })
-    .BuildServiceProvider();
+    });
+var serviceProvider = serviceCollection.BuildServiceProvider();
 var mediator = await serviceProvider.GetRequiredService<IMediatorFactory>().CreateAsync();
-
 
 await mediator.PublishAsync(new Event());
 await mediator.PublishAsync(new AnotherEvent());

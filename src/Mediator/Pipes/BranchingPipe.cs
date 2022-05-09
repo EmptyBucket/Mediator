@@ -1,3 +1,5 @@
+using Mediator.Handlers;
+
 namespace Mediator.Pipes;
 
 public class BranchingPipe : IBranchingPipe

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
+using Mediator.Handlers;
 using Mediator.Pipes;
 using StackExchange.Redis;
 
