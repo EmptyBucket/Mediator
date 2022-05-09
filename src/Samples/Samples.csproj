@@ -16,8 +16,8 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Mediator.RabbitMq\Mediator.RabbitMq.csproj" />
-      <ProjectReference Include="..\..\Mediator.Redis\Mediator.Redis.csproj" />
+      <ProjectReference Include="..\Mediator.RabbitMq\Mediator.RabbitMq.csproj" />
+      <ProjectReference Include="..\Mediator.Redis\Mediator.Redis.csproj" />
       <ProjectReference Include="..\Mediator\Mediator.csproj" />
     </ItemGroup>
 
