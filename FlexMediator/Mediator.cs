@@ -57,7 +57,8 @@ public class Mediator : IMediator, IPipeConnector
         string subscriptionId = "", CancellationToken token = default) =>
         _pipe.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
 
-    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "", CancellationToken token = default) =>
+    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+        CancellationToken token = default) =>
         _pipe.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 
     public ValueTask DisposeAsync() => _pipe.DisposeAsync();
