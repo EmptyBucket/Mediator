@@ -25,8 +25,9 @@ using FlexMediator.Utils;
 
 namespace FlexMediator.Pipes;
 
-public readonly record struct PipeConnection : IAsyncDisposable
+public record struct PipeConnection : IAsyncDisposable
 {
+    private int _isDisposed = 0;
     private readonly Func<PipeConnection, ValueTask> _disconnect;
 
     public PipeConnection(Route route, IPipe pipe, Func<PipeConnection, ValueTask> disconnect)
@@ -40,5 +41,7 @@ public readonly record struct PipeConnection : IAsyncDisposable
 
     public IPipe Pipe { get; }
 
-    public ValueTask DisposeAsync() => _disconnect(this);
+    public ValueTask DisposeAsync() => Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1
+        ? ValueTask.CompletedTask
+        : _disconnect(this);
 }

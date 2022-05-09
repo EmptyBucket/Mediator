@@ -50,7 +50,8 @@ public class RedisMqPipeConnector : IPipeConnector
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
             var message = JsonSerializer.Deserialize<TMessage>(r.Message)!;
-            await pipe.PassAsync<TMessage>(message, new MessageContext(scope.ServiceProvider, routingKey), token);
+            var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
+            await pipe.PassAsync<TMessage>(message, messageContext, token);
         });
         var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, () => channelMq.UnsubscribeAsync()));
         Connect(pipeConnection);
@@ -69,8 +70,8 @@ public class RedisMqPipeConnector : IPipeConnector
             try
             {
                 await using var scope = _serviceProvider.CreateAsyncScope();
-                var result = await pipe.PassAsync<TMessage, TResult>(request.Value!,
-                    new MessageContext(scope.ServiceProvider, routingKey), token);
+                var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
+                var result = await pipe.PassAsync<TMessage, TResult>(request.Value!, messageContext, token);
                 var response = new RedisMqMessage<TResult>(request.CorrelationId, result);
                 await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
             }

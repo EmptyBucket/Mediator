@@ -30,16 +30,27 @@ namespace FlexMediator.Pipes;
 
 public class RedisMqPipe : IPipe, IPipeConnector
 {
+    private int _isDisposed;
     private readonly ISubscriber _subscriber;
     private readonly IPipeConnector _pipeConnector;
-    private ulong _responsesMqIsSubscribed;
-    private ChannelMessageQueue? _responsesMq;
+    private readonly Lazy<Task<ChannelMessageQueue>> _responsesMq;
     private readonly ConcurrentDictionary<string, Action<string>> _responseActions = new();
 
     public RedisMqPipe(ISubscriber subscriber, IServiceProvider serviceProvider)
     {
         _subscriber = subscriber;
         _pipeConnector = new RedisMqPipeConnector(subscriber, serviceProvider);
+        _responsesMq = new Lazy<Task<ChannelMessageQueue>>(async () =>
+        {
+            var channelMq = await _subscriber.SubscribeAsync("responses");
+            channelMq.OnMessage(r =>
+            {
+                var correlationId =
+                    JsonDocument.Parse(r.ToString()).RootElement.GetProperty("CorrelationId").ToString();
+                _responseActions[correlationId](r.Message);
+            });
+            return channelMq;
+        });
     }
 
     public async Task PassAsync<TMessage>(TMessage message, MessageContext context,
@@ -52,7 +63,7 @@ public class RedisMqPipe : IPipe, IPipeConnector
     public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
         CancellationToken token = default)
     {
-        await EnsureResponsesMqIsSubscribed();
+        await _responsesMq.Value;
 
         var correlationId = Guid.NewGuid().ToString();
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -78,20 +89,6 @@ public class RedisMqPipe : IPipe, IPipeConnector
         }
     }
 
-    private async Task EnsureResponsesMqIsSubscribed()
-    {
-        if (Interlocked.CompareExchange(ref _responsesMqIsSubscribed, 1, 0) == 0)
-        {
-            _responsesMq = await _subscriber.SubscribeAsync("responses");
-            _responsesMq.OnMessage(r =>
-            {
-                var correlationId =
-                    JsonDocument.Parse(r.ToString()).RootElement.GetProperty("CorrelationId").ToString();
-                _responseActions[correlationId](r.Message);
-            });
-        }
-    }
-
     public async Task<PipeConnection> ConnectInAsync<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
         await _pipeConnector.ConnectInAsync<TMessage>(pipe, routingKey, token);
@@ -102,8 +99,9 @@ public class RedisMqPipe : IPipe, IPipeConnector
 
     public async ValueTask DisposeAsync()
     {
-        if (Interlocked.CompareExchange(ref _responsesMqIsSubscribed, 0, 1) == 1)
-            await _responsesMq!.UnsubscribeAsync();
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1) return;
+
+        if (_responsesMq.IsValueCreated) await _responsesMq.Value.Result.UnsubscribeAsync();
 
         await _pipeConnector.DisposeAsync();
     }
