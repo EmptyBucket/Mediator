@@ -41,11 +41,10 @@ public class RabbitMqPipeConnector : IPipeConnector
     }
 
     public async Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
-        CancellationToken token = default)
+        string subscriptionName = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
-        //todo нужно сделать subscriptionId
-        var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(string.Empty, async (m, c) =>
+        var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(subscriptionName, async (m, c) =>
                 {
                     await using var scope = _serviceProvider.CreateAsyncScope();
                     var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
@@ -59,7 +58,7 @@ public class RabbitMqPipeConnector : IPipeConnector
     }
 
     public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
-        CancellationToken token = default)
+        string subscriptionName = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(async (m, c) =>
