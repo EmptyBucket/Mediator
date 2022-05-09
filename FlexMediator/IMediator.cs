@@ -1,8 +1,9 @@
+using FlexMediator.Pipes;
 using FlexMediator.Utils;
 
 namespace FlexMediator;
 
-public interface IMediator
+public interface IMediator : IPipeConnector
 {
     Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Action<MessageContext>? contextBuilder = null,
         CancellationToken token = default);

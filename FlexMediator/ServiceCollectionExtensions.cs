@@ -28,7 +28,7 @@ public static class ServiceCollectionExtensions
 
         serviceCollection.AddSingleton<IPipeFactory, PipeFactory>();
 
-        serviceCollection.Add(new ServiceDescriptor(typeof(Mediator), p =>
+        serviceCollection.Add(new ServiceDescriptor(typeof(IMediator), p =>
         {
             var mediator = new Mediator(p);
 
@@ -37,8 +37,6 @@ public static class ServiceCollectionExtensions
 
             return mediator;
         }, lifetime));
-        serviceCollection.Add(
-            new ServiceDescriptor(typeof(IMediator), p => p.GetRequiredService<Mediator>(), lifetime));
 
         return serviceCollection;
     }
