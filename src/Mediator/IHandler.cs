@@ -1,5 +1,3 @@
-using Mediator.Utils;
-
 namespace Mediator;
 
 public interface IHandler<in TMessage>

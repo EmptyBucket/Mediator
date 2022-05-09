@@ -1,7 +1,9 @@
 using Mediator;
 using Mediator.Pipes;
-using Mediator.Pipes.RabbitMq;
-using Mediator.Pipes.RedisMq;
+using Mediator.RabbitMq;
+using Mediator.RabbitMq.Pipes;
+using Mediator.Redis;
+using Mediator.Redis.Pipes;
 using Microsoft.Extensions.DependencyInjection;
 using Samples.Events;
 using Samples.Handlers;

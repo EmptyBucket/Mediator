@@ -1,4 +1,4 @@
-namespace Mediator.Pipes.RedisMq;
+namespace Mediator.Redis.Pipes;
 
 internal static class RedisMqWellKnown
 {

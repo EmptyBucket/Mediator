@@ -1,10 +1,10 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
-using Mediator.Utils;
+using Mediator.Pipes;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 
-namespace Mediator.Pipes.RedisMq;
+namespace Mediator.Redis.Pipes;
 
 public class RedisMqPipeConnector : IPipeConnector
 {

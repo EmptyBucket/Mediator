@@ -1,6 +1,4 @@
 using Mediator.Pipes;
-using Mediator.Pipes.RabbitMq;
-using Mediator.Pipes.RedisMq;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator;
@@ -12,20 +10,15 @@ public static class ServiceCollectionExtensions
         AddMediator(serviceCollection, (IServiceProvider _, IPipeConnector _) => Task.CompletedTask, lifetime);
 
     public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
-        Func<IPipeFactory, IPipeConnector, Task> builder,
-        ServiceLifetime lifetime = ServiceLifetime.Singleton) =>
+        Func<IPipeFactory, IPipeConnector, Task> builder, ServiceLifetime lifetime = ServiceLifetime.Singleton) =>
         AddMediator(serviceCollection, (s, p) => builder(s.GetRequiredService<IPipeFactory>(), p), lifetime);
 
     public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
-        Func<IServiceProvider, IPipeConnector, Task> builder,
-        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        Func<IServiceProvider, IPipeConnector, Task> builder, ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
         serviceCollection.AddTransient(typeof(HandlingPipe<>));
         serviceCollection.AddTransient(typeof(HandlingPipe<,>));
-        serviceCollection.AddTransient<Pipe>();
-        serviceCollection.AddTransient<RabbitMqPipe>();
-        serviceCollection.AddTransient<RedisMqPipe>();
-
+        serviceCollection.AddTransient<BranchingPipe>();
         serviceCollection.AddSingleton<IPipeFactory, PipeFactory>();
 
         serviceCollection.Add(

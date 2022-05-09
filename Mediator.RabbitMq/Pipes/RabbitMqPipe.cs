@@ -1,9 +1,9 @@
 using EasyNetQ;
-using Mediator.Utils;
+using Mediator.Pipes;
 
-namespace Mediator.Pipes.RabbitMq;
+namespace Mediator.RabbitMq.Pipes;
 
-public class RabbitMqPipe : IPipe, IPipeConnector
+public class RabbitMqPipe : IBranchingPipe
 {
     private readonly IBus _bus;
     private readonly IPipeConnector _pipeConnector;

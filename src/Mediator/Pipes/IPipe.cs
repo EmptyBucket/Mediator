@@ -1,5 +1,3 @@
-using Mediator.Utils;
-
 namespace Mediator.Pipes;
 
 public interface IPipe

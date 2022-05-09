@@ -1,17 +1,16 @@
 using Mediator.Pipes;
-using Mediator.Utils;
 
 namespace Mediator;
 
-public class Mediator : IMediator
+internal class Mediator : IMediator
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly Pipe _pipe;
+    private readonly IBranchingPipe _branchingPipe;
 
     public Mediator(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
-        _pipe = new Pipe();
+        _branchingPipe = new BranchingPipe();
     }
 
     public async Task PublishAsync<TMessage>(TMessage message,
@@ -19,7 +18,7 @@ public class Mediator : IMediator
     {
         var messageContext = new MessageContext(_serviceProvider);
         contextBuilder?.Invoke(messageContext);
-        await _pipe.PassAsync(message, messageContext, token);
+        await _branchingPipe.PassAsync(message, messageContext, token);
     }
 
     public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message,
@@ -27,16 +26,16 @@ public class Mediator : IMediator
     {
         var messageContext = new MessageContext(_serviceProvider);
         contextBuilder?.Invoke(messageContext);
-        return await _pipe.PassAsync<TMessage, TResult>(message, messageContext, token);
+        return await _branchingPipe.PassAsync<TMessage, TResult>(message, messageContext, token);
     }
 
     public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default) =>
-        _pipe.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
+        _branchingPipe.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
 
     public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        _pipe.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
+        _branchingPipe.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 
-    public ValueTask DisposeAsync() => _pipe.DisposeAsync();
+    public ValueTask DisposeAsync() => _branchingPipe.DisposeAsync();
 }

@@ -1,8 +1,6 @@
-using Mediator.Utils;
-
 namespace Mediator.Pipes;
 
-public class Pipe : IPipe, IPipeConnector
+public class BranchingPipe : IBranchingPipe
 {
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, List<PipeConnection>> _pipeConnections = new();
