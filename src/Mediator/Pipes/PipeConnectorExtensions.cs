@@ -21,6 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Mediator.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Pipes;

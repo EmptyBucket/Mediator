@@ -22,13 +22,12 @@
 // SOFTWARE.
 
 using Mediator.Configurations;
-using Mediator.Pipes;
 using Mediator.RabbitMq.Pipes;
 
 namespace Mediator.RabbitMq.Configurations;
 
-public static class PipeBindsBuilderExtensions
+public static class PipeBinderExtensions
 {
-    public static IPipeBindsBuilder AddRabbitMq(this IPipeBindsBuilder pipeBindsBuilder, string pipeName = "rabbit") =>
-        pipeBindsBuilder.BindPipe<RabbitMqPipe>(pipeName);
+    public static IPipeBinder BindRabbitMq(this IPipeBinder pipeBinder, string pipeName = "rabbit") =>
+        pipeBinder.BindPipe<RabbitMqPipe>(pipeName);
 }

@@ -21,17 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator;
+namespace Mediator.Configurations;
 
-public interface IHandler<in TMessage>
+public interface IPipeBinder
 {
-    Task HandleAsync(TMessage message, MessageContext context, CancellationToken token);
-}
-
-public interface IHandler<in TMessage, TResult> : IHandler<TMessage>
-{
-    new Task<TResult> HandleAsync(TMessage message, MessageContext context, CancellationToken token);
-
-    Task IHandler<TMessage>.HandleAsync(TMessage message, MessageContext context, CancellationToken token) =>
-        HandleAsync(message, context, token);
+    IPipeBinder BindPipe(Type pipeType, string pipeName = "");
 }
