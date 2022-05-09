@@ -1,4 +1,6 @@
 using FlexMediator.Pipes;
+using FlexMediator.Pipes.RabbitMq;
+using FlexMediator.Pipes.RedisMq;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace FlexMediator;

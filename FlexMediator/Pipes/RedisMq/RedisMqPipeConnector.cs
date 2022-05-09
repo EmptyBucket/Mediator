@@ -4,7 +4,7 @@ using FlexMediator.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 
-namespace FlexMediator.Pipes;
+namespace FlexMediator.Pipes.RedisMq;
 
 public class RedisMqPipeConnector : IPipeConnector
 {

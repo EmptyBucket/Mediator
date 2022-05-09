@@ -3,7 +3,7 @@ using EasyNetQ;
 using FlexMediator.Utils;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace FlexMediator.Pipes;
+namespace FlexMediator.Pipes.RabbitMq;
 
 public class RabbitMqPipeConnector : IPipeConnector
 {

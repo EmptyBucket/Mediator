@@ -1,7 +1,7 @@
 using EasyNetQ;
 using FlexMediator.Utils;
 
-namespace FlexMediator.Pipes;
+namespace FlexMediator.Pipes.RabbitMq;
 
 public class RabbitMqPipe : IPipe, IPipeConnector
 {

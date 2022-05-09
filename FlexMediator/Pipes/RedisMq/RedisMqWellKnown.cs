@@ -1,4 +1,4 @@
-namespace FlexMediator.Pipes;
+namespace FlexMediator.Pipes.RedisMq;
 
 internal static class RedisMqWellKnown
 {
