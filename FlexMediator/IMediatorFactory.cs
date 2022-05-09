@@ -21,18 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Microsoft.Extensions.DependencyInjection;
+namespace FlexMediator;
 
-namespace FlexMediator.Pipes;
-
-internal class PipeFactory : IPipeFactory
+public interface IMediatorFactory
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public PipeFactory(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
-    public TPipe Create<TPipe>() where TPipe : IPipe => _serviceProvider.GetRequiredService<TPipe>();
+    Task<IMediator> CreateAsync();
 }

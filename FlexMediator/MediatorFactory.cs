@@ -21,18 +21,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Microsoft.Extensions.DependencyInjection;
+using FlexMediator.Pipes;
 
-namespace FlexMediator.Pipes;
+namespace FlexMediator;
 
-internal class PipeFactory : IPipeFactory
+internal class MediatorFactory : IMediatorFactory
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly Lazy<Task<IMediator>> _mediator;
 
-    public PipeFactory(IServiceProvider serviceProvider)
+    public MediatorFactory(Func<IServiceProvider, IPipeConnector, Task> builder, IServiceProvider serviceProvider)
     {
-        _serviceProvider = serviceProvider;
+        _mediator = new Lazy<Task<IMediator>>(async () =>
+        {
+            var mediator = new Mediator(serviceProvider);
+
+            await builder(serviceProvider, mediator);
+
+            return mediator;
+        });
     }
 
-    public TPipe Create<TPipe>() where TPipe : IPipe => _serviceProvider.GetRequiredService<TPipe>();
+    public async Task<IMediator> CreateAsync() => await _mediator.Value;
 }
