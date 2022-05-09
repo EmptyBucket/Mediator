@@ -25,9 +25,7 @@ using Mediator;
 using Mediator.Configurations;
 using Mediator.Pipes;
 using Mediator.RabbitMq.Configurations;
-using Mediator.RabbitMq.Pipes;
 using Mediator.Redis.Configurations;
-using Mediator.Redis.Pipes;
 using Microsoft.Extensions.DependencyInjection;
 using Samples.Events;
 using Samples.Handlers;
@@ -41,6 +39,7 @@ serviceCollection
 serviceCollection
     .AddMediator(b => b.BindRabbitMq().BindRedisMq(), async (p, c) =>
     {
+        // configuration can also be done dynamically on IMediator
         var pipeFactory = p.GetRequiredService<IPipeFactory>();
 
         // configure rabbitMq pipeline
@@ -48,15 +47,15 @@ serviceCollection
         await rabbitMqPipe.ConnectInAsync<Event>(c);
         await rabbitMqPipe.ConnectInAsync<Event, EventResult>(c);
         await rabbitMqPipe.ConnectInAsync<AnotherEvent>(c);
-        await rabbitMqPipe.ConnectOutAsync(_ => new EventHandler(), subscriptionId: "1");
-        await rabbitMqPipe.ConnectOutAsync(_ => new EventHandler(), subscriptionId: "2");
+        await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
+        await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "2");
 
         // configure redisMq pipeline
         var redisMqPipe = pipeFactory.Create<IBranchingPipe>("redis");
         await redisMqPipe.ConnectInAsync<Event, EventResult>(rabbitMqPipe);
         await redisMqPipe.ConnectInAsync<AnotherEvent>(c);
-        await redisMqPipe.ConnectOutAsync(_ => new EventHandlerWithResult());
-        await redisMqPipe.ConnectOutAsync(_ => new AnotherEventHandler());
+        await redisMqPipe.ConnectOutAsync(new EventHandlerWithResult());
+        await redisMqPipe.ConnectOutAsync(new AnotherEventHandler());
     });
 var serviceProvider = serviceCollection.BuildServiceProvider();
 var mediator = await serviceProvider.GetRequiredService<IMediatorFactory>().CreateAsync();
