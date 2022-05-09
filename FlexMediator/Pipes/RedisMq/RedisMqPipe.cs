@@ -68,13 +68,15 @@ public class RedisMqPipe : IPipe, IPipeConnector
 
         var correlationId = Guid.NewGuid().ToString();
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        cts.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
         _responseActions.TryAdd(correlationId, r =>
         {
             var response = JsonSerializer.Deserialize<RedisMqMessage<TResult>>(r);
 
-            if (response.Value is not null) tcs.SetResult(response.Value);
-            else if (response.Exception is not null) tcs.SetException(new Exception(response.Exception));
-            else tcs.SetException(new InvalidOperationException("Message was not be processed"));
+            if (response.Value is not null) tcs.TrySetResult(response.Value);
+            else if (response.Exception is not null) tcs.TrySetException(new Exception(response.Exception));
+            else tcs.TrySetException(new InvalidOperationException("Message was not be processed"));
         });
 
         var route = Route.For<TMessage, TResult>(context.RoutingKey);
@@ -85,12 +87,11 @@ public class RedisMqPipe : IPipe, IPipeConnector
     }
 
     public async Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
-        string subscriptionName = "", CancellationToken token = default) =>
-        await _pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionName, token);
+        string subscriptionId = "", CancellationToken token = default) =>
+        await _pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
 
-    public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
-        string subscriptionName = "", CancellationToken token = default) =>
-        await _pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, subscriptionName, token);
+    public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "", CancellationToken token = default) =>
+        await _pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 
     public async ValueTask DisposeAsync()
     {

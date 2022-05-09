@@ -42,7 +42,7 @@ public class RedisMqPipeConnector : IPipeConnector
     }
 
     public async Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
-        string subscriptionName = "", CancellationToken token = default)
+        string subscriptionId = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
         var channelMq = await _subscriber.SubscribeAsync(route.ToString()).ConfigureAwait(false);
@@ -58,8 +58,7 @@ public class RedisMqPipeConnector : IPipeConnector
         return pipeConnection;
     }
 
-    public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
-        string subscriptionName = "", CancellationToken token = default)
+    public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         var channelMq = await _subscriber.SubscribeAsync(route.ToString()).ConfigureAwait(false);

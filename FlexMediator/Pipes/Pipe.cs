@@ -45,7 +45,7 @@ public class Pipe : IPipe, IPipeConnector
     }
 
     public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
-        string subscriptionName = "", CancellationToken token = default)
+        string subscriptionId = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
         var pipeConnection = new PipeConnection(route, pipe, Disconnect);
@@ -53,8 +53,7 @@ public class Pipe : IPipe, IPipeConnector
         return Task.FromResult(pipeConnection);
     }
 
-    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
-        string subscriptionName = "", CancellationToken token = default)
+    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         var pipeConnection = new PipeConnection(route, pipe, Disconnect);

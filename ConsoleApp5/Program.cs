@@ -40,15 +40,16 @@ var mediator = serviceProvider.GetRequiredService<Mediator>();
 var pipeFactory = serviceProvider.GetRequiredService<IPipeFactory>();
 
 var rabbitMqPipe = pipeFactory.Create<RabbitMqPipe>();
-await rabbitMqPipe.ConnectInAsync<Event, EventResult>(mediator);
+await rabbitMqPipe.ConnectInAsync<Event>(mediator);
+await rabbitMqPipe.ConnectInAsync<AnotherEvent>(mediator);
+await rabbitMqPipe.ConnectOutAsync(_ => new EventHandler(), subscriptionName: "1");
+await rabbitMqPipe.ConnectOutAsync(_ => new EventHandler(), subscriptionName: "2");
 
-var redisMqPipe = pipeFactory.Create<RedisMqPipe>();
-await redisMqPipe.ConnectInAsync<Event, EventResult>(rabbitMqPipe);
-
-await redisMqPipe.ConnectOutAsync(_ => new EventHandler());
-await redisMqPipe.ConnectOutAsync(_ => new EventHandler());
+// var redisMqPipe = pipeFactory.Create<RedisMqPipe>();
+// await redisMqPipe.ConnectInAsync<Event, EventResult>(rabbitMqPipe);
+// await redisMqPipe.ConnectOutAsync(_ => new EventHandlerWithResult());
 
 await mediator.PublishAsync(new Event("qwe"));
-var result = await mediator.SendAsync<Event, EventResult>(new Event("qwe"));
+// var result = await mediator.SendAsync<Event>(new Event("qwe"));
 
 await Task.Delay(TimeSpan.FromHours(1));
