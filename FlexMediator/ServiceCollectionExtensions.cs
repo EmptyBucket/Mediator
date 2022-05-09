@@ -9,15 +9,15 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
         ServiceLifetime lifetime = ServiceLifetime.Singleton) =>
-        AddMediator(serviceCollection, (_, _, _) => { }, lifetime);
+        AddMediator(serviceCollection, (IServiceProvider _, IPipeConnector _) => Task.CompletedTask, lifetime);
 
     public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
-        Action<IPipeFactory, IPipeConnector> builder,
+        Func<IPipeFactory, IPipeConnector, Task> builder,
         ServiceLifetime lifetime = ServiceLifetime.Singleton) =>
-        AddMediator(serviceCollection, (_, f, p) => builder(f, p), lifetime);
+        AddMediator(serviceCollection, (s, p) => builder(s.GetRequiredService<IPipeFactory>(), p), lifetime);
 
     public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
-        Action<IServiceProvider, IPipeFactory, IPipeConnector> builder,
+        Func<IServiceProvider, IPipeConnector, Task> builder,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
         serviceCollection.AddTransient(typeof(HandlingPipe<>));
@@ -28,15 +28,8 @@ public static class ServiceCollectionExtensions
 
         serviceCollection.AddSingleton<IPipeFactory, PipeFactory>();
 
-        serviceCollection.Add(new ServiceDescriptor(typeof(IMediator), p =>
-        {
-            var mediator = new Mediator(p);
-
-            var pipeFactory = p.GetRequiredService<IPipeFactory>();
-            builder(p, pipeFactory, mediator);
-
-            return mediator;
-        }, lifetime));
+        serviceCollection.Add(
+            new ServiceDescriptor(typeof(IMediatorFactory), p => new MediatorFactory(builder, p), lifetime));
 
         return serviceCollection;
     }

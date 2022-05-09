@@ -11,8 +11,5 @@ internal class PipeFactory : IPipeFactory
         _serviceProvider = serviceProvider;
     }
 
-    public TPipe Create<TPipe>() where TPipe : IPipe
-    {
-        return _serviceProvider.GetRequiredService<TPipe>();
-    }
+    public TPipe Create<TPipe>() where TPipe : IPipe => _serviceProvider.GetRequiredService<TPipe>();
 }
