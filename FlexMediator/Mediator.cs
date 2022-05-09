@@ -31,12 +31,11 @@ public class Mediator : IMediator, IPipeConnector
     }
 
     public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
-        string subscriptionName = "", CancellationToken token = default) =>
-        _pipe.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionName, token);
+        string subscriptionId = "", CancellationToken token = default) =>
+        _pipe.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
 
-    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
-        string subscriptionName = "", CancellationToken token = default) =>
-        _pipe.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, subscriptionName, token);
+    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "", CancellationToken token = default) =>
+        _pipe.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 
     public ValueTask DisposeAsync() => _pipe.DisposeAsync();
 }
