@@ -9,7 +9,7 @@ using EventHandler = ConsoleApp5.EventHandler;
 
 var serviceProvider = new ServiceCollection()
     .RegisterEasyNetQ("host=localhost")
-    .AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect("localhost"))
+    .AddSingleton<ISubscriber>(_ => ConnectionMultiplexer.Connect("localhost").GetSubscriber())
     .AddMediator()
     .BuildServiceProvider();
 
