@@ -21,15 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using FlexMediator.Utils;
+namespace FlexMediator.Utils;
 
-namespace FlexMediator;
-
-public interface IMediator
+public record MessageContext(IServiceProvider ServiceProvider, string RoutingKey = "")
 {
-    Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Action<MessageContext>? optionsBuilder = null,
-        CancellationToken token = default);
-
-    Task PublishAsync<TMessage>(TMessage message, Action<MessageContext>? optionsBuilder = null,
-        CancellationToken token = default);
 }

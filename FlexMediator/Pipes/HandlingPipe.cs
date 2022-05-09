@@ -37,24 +37,24 @@ public class HandlingPipe<THandlerMessage> : IPipe
         _serviceProvider = serviceProvider;
     }
 
-    public Task PassAsync<TMessage>(TMessage message, MessageOptions options,
+    public Task PassAsync<TMessage>(TMessage message, MessageContext context,
         CancellationToken token = default)
     {
         if (message is THandlerMessage handlerMessage)
         {
             var handler = _factory(_serviceProvider);
-            return handler.HandleAsync(handlerMessage, options, token);
+            return handler.HandleAsync(handlerMessage, context, token);
         }
 
         throw new InvalidOperationException(
-            $"Message with {Route.For<TMessage>(options.RoutingKey)} cannot be processed");
+            $"Message with {Route.For<TMessage>(context.RoutingKey)} cannot be processed");
     }
 
-    public Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageOptions options,
+    public Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
         CancellationToken token = default)
     {
         throw new InvalidOperationException(
-            $"Message with {Route.For<TMessage, TResult>(options.RoutingKey)} cannot be processed");
+            $"Message with {Route.For<TMessage, TResult>(context.RoutingKey)} cannot be processed");
     }
 }
 
@@ -70,27 +70,27 @@ public class HandlingPipe<THandlerMessage, THandlerResult> : IPipe
         _serviceProvider = serviceProvider;
     }
 
-    public Task PassAsync<TMessage>(TMessage message, MessageOptions options,
+    public Task PassAsync<TMessage>(TMessage message, MessageContext context,
         CancellationToken token = default)
     {
         throw new InvalidOperationException(
-            $"Message with {Route.For<TMessage>(options.RoutingKey)} cannot be processed");
+            $"Message with {Route.For<TMessage>(context.RoutingKey)} cannot be processed");
     }
 
-    public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageOptions options,
+    public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
         CancellationToken token = default)
     {
         if (message is THandlerMessage handlerMessage)
         {
             using var scope = _serviceProvider.CreateScope();
             var handler = _factory(scope.ServiceProvider);
-            return await handler.HandleAsync(handlerMessage, options, token) is TResult result
+            return await handler.HandleAsync(handlerMessage, context, token) is TResult result
                 ? result
                 : throw new InvalidOperationException(
-                    $"Message with {Route.For<TMessage>(options.RoutingKey)} cannot be processed");
+                    $"Message with {Route.For<TMessage>(context.RoutingKey)} cannot be processed");
         }
 
         throw new InvalidOperationException(
-            $"Message with {Route.For<TMessage>(options.RoutingKey)} cannot be processed");
+            $"Message with {Route.For<TMessage>(context.RoutingKey)} cannot be processed");
     }
 }

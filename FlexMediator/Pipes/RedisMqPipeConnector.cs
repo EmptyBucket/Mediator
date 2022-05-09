@@ -50,7 +50,7 @@ public class RedisMqPipeConnector : IPipeConnector
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
             var message = JsonSerializer.Deserialize<TMessage>(r.Message)!;
-            await pipe.PassAsync<TMessage>(message, new MessageOptions(scope.ServiceProvider, routingKey), token);
+            await pipe.PassAsync<TMessage>(message, new MessageContext(scope.ServiceProvider, routingKey), token);
         });
         var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, () => channelMq.UnsubscribeAsync()));
         Connect(pipeConnection);
@@ -64,19 +64,19 @@ public class RedisMqPipeConnector : IPipeConnector
         var channelMq = await _subscriber.SubscribeAsync(route.ToString());
         channelMq.OnMessage(async r =>
         {
-            var request = JsonSerializer.Deserialize<RedisMessage<TMessage>>(r.Message);
+            var request = JsonSerializer.Deserialize<RedisMqMessage<TMessage>>(r.Message);
 
             try
             {
                 await using var scope = _serviceProvider.CreateAsyncScope();
                 var result = await pipe.PassAsync<TMessage, TResult>(request.Value!,
-                    new MessageOptions(scope.ServiceProvider, routingKey), token);
-                var response = new RedisMessage<TResult>(request.CorrelationId, result);
+                    new MessageContext(scope.ServiceProvider, routingKey), token);
+                var response = new RedisMqMessage<TResult>(request.CorrelationId, result);
                 await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
             }
             catch (Exception e)
             {
-                var response = new RedisMessage<TResult>(request.CorrelationId, Exception: e.Message);
+                var response = new RedisMqMessage<TResult>(request.CorrelationId, Exception: e.Message);
                 await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
                 throw;
             }

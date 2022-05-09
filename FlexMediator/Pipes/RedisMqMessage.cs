@@ -21,8 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace FlexMediator.Utils;
+namespace FlexMediator.Pipes;
 
-public record MessageOptions(IServiceProvider ServiceProvider, string RoutingKey = "")
-{
-}
+internal readonly record struct RedisMqMessage<T>(string CorrelationId, T? Value = default, string? Exception = null);
