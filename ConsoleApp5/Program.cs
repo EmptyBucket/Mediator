@@ -23,6 +23,7 @@ var redisMqPipe = pipeFactory.Create<RedisMqPipe>();
 await redisMqPipe.ConnectInAsync<Event, EventResult>(rabbitMqPipe);
 
 await redisMqPipe.ConnectOutAsync(_ => new EventHandler());
+await redisMqPipe.ConnectOutAsync(_ => new EventHandler());
 
 await mediator.PublishAsync(new Event("qwe"));
 var result = await mediator.SendAsync<Event, EventResult>(new Event("qwe"));

@@ -18,7 +18,7 @@ public class Pipe : IPipe, IPipeConnector
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(context.RoutingKey);
-        return await GetPipes(route).Single().PassAsync<TMessage, TResult>(message, context, token);
+        return await GetPipes(route).First().PassAsync<TMessage, TResult>(message, context, token);
     }
 
     public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
