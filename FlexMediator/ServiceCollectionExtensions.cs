@@ -12,28 +12,31 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
         Action<IPipeFactory, IPipeConnector> builder,
         ServiceLifetime lifetime = ServiceLifetime.Singleton) =>
-        AddMediator(serviceCollection, (_, f, p) => builder.Invoke(f, p), lifetime);
+        AddMediator(serviceCollection, (_, f, p) => builder(f, p), lifetime);
 
     public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
         Action<IServiceProvider, IPipeFactory, IPipeConnector> builder,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
+        serviceCollection.AddTransient(typeof(HandlingPipe<>));
+        serviceCollection.AddTransient(typeof(HandlingPipe<,>));
         serviceCollection.AddTransient<Pipe>();
-        serviceCollection.AddTransient<HandlingPipe>();
         serviceCollection.AddTransient<RabbitMqPipe>();
         serviceCollection.AddTransient<RedisMqPipe>();
 
         serviceCollection.AddSingleton<IPipeFactory, PipeFactory>();
 
-        serviceCollection.Add(new ServiceDescriptor(typeof(IMediator), p =>
+        serviceCollection.Add(new ServiceDescriptor(typeof(Mediator), p =>
         {
-            var mediator = new Mediator();
+            var mediator = new Mediator(p);
 
             var pipeFactory = p.GetRequiredService<IPipeFactory>();
-            builder.Invoke(p, pipeFactory, mediator);
+            builder(p, pipeFactory, mediator);
 
             return mediator;
         }, lifetime));
+        serviceCollection.Add(
+            new ServiceDescriptor(typeof(IMediator), p => p.GetRequiredService<Mediator>(), lifetime));
 
         return serviceCollection;
     }

@@ -10,22 +10,23 @@ public class RedisMqPipe : IPipe, IPipeConnector
     private readonly ISubscriber _subscriber;
     private readonly IPipeConnector _pipeConnector;
     private ulong _responsesMqIsSubscribed;
+    private ChannelMessageQueue? _responsesMq;
     private readonly ConcurrentDictionary<string, Action<string>> _responseActions = new();
 
-    public RedisMqPipe(ISubscriber subscriber)
+    public RedisMqPipe(ISubscriber subscriber, IServiceProvider serviceProvider)
     {
         _subscriber = subscriber;
-        _pipeConnector = new RedisMqPipeConnector(subscriber);
+        _pipeConnector = new RedisMqPipeConnector(subscriber, serviceProvider);
     }
 
-    public async Task Handle<TMessage>(TMessage message, MessageOptions options,
+    public async Task PassAsync<TMessage>(TMessage message, MessageOptions options,
         CancellationToken token = default)
     {
         var route = Route.For<TMessage>(options.RoutingKey);
         await _subscriber.PublishAsync(route.ToString(), new RedisValue(JsonSerializer.Serialize(message)));
     }
 
-    public async Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
+    public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token = default)
     {
         await EnsureResponsesMqIsSubscribed();
@@ -57,23 +58,32 @@ public class RedisMqPipe : IPipe, IPipeConnector
     private async Task EnsureResponsesMqIsSubscribed()
     {
         if (Interlocked.CompareExchange(ref _responsesMqIsSubscribed, 1, 0) == 0)
-            await _subscriber.SubscribeAsync("responses", (_, r) =>
+        {
+            _responsesMq = await _subscriber.SubscribeAsync("responses");
+            _responsesMq.OnMessage(r =>
             {
                 var correlationId =
                     JsonDocument.Parse(r.ToString()).RootElement.GetProperty("CorrelationId").ToString();
-                _responseActions[correlationId].Invoke(r);
+                _responseActions[correlationId](r.Message);
             });
+        }
     }
 
-    public async Task<PipeConnection> Into<TMessage>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> ConnectInAsync<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        await _pipeConnector.Into<TMessage>(pipe, routingKey, token);
+        await _pipeConnector.ConnectInAsync<TMessage>(pipe, routingKey, token);
 
-    public async Task<PipeConnection> Into<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> ConnectInAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        await _pipeConnector.Into<TMessage, TResult>(pipe, routingKey, token);
+        await _pipeConnector.ConnectInAsync<TMessage, TResult>(pipe, routingKey, token);
 
-    public ValueTask DisposeAsync() => _pipeConnector.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        if (Interlocked.CompareExchange(ref _responsesMqIsSubscribed, 0, 1) == 1)
+            await _responsesMq!.UnsubscribeAsync();
+
+        await _pipeConnector.DisposeAsync();
+    }
 }
 
 internal readonly record struct RedisMessage<T>(string CorrelationId, T? Value = default, string? Exception = null);

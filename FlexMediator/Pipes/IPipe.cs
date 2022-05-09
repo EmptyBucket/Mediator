@@ -4,9 +4,9 @@ namespace FlexMediator.Pipes;
 
 public interface IPipe
 {
-    Task Handle<TMessage>(TMessage message, MessageOptions options,
+    Task PassAsync<TMessage>(TMessage message, MessageOptions options,
         CancellationToken token = default);
 
-    Task<TResult> Handle<TMessage, TResult>(TMessage message, MessageOptions options,
+    Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageOptions options,
         CancellationToken token = default);
 }

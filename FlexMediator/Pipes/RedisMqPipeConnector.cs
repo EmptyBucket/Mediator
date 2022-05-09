@@ -1,5 +1,7 @@
+using System.Collections.Concurrent;
 using System.Text.Json;
 using FlexMediator.Utils;
+using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 
 namespace FlexMediator.Pipes;
@@ -7,46 +9,45 @@ namespace FlexMediator.Pipes;
 public class RedisMqPipeConnector : IPipeConnector
 {
     private readonly ISubscriber _subscriber;
-    private readonly Dictionary<Route, PipeConnection> _pipeConnections = new();
+    private readonly IServiceProvider _serviceProvider;
+    private readonly ConcurrentDictionary<PipeConnection, PipeConnection> _pipeConnections = new();
 
-    public RedisMqPipeConnector(ISubscriber subscriber)
+    public RedisMqPipeConnector(ISubscriber subscriber, IServiceProvider serviceProvider)
     {
         _subscriber = subscriber;
+        _serviceProvider = serviceProvider;
     }
 
-    public async Task<PipeConnection> Into<TMessage>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> ConnectInAsync<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
-
-        if (_pipeConnections.TryGetValue(route, out var pipeConnection)) return pipeConnection;
-
-        var channelMessageQueue = await _subscriber.SubscribeAsync(route.ToString());
-        channelMessageQueue.OnMessage(async r =>
+        var channelMq = await _subscriber.SubscribeAsync(route.ToString());
+        channelMq.OnMessage(async r =>
         {
+            await using var scope = _serviceProvider.CreateAsyncScope();
             var message = JsonSerializer.Deserialize<TMessage>(r.Message)!;
-            await pipe.Handle<TMessage>(message, new MessageOptions(routingKey), token);
+            await pipe.PassAsync<TMessage>(message, new MessageOptions(scope.ServiceProvider, routingKey), token);
         });
-        return _pipeConnections[route] =
-            new PipeConnection(route, pipe, p => Disconnect(p, () => _subscriber.UnsubscribeAsync(route.ToString())));
+        var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, () => channelMq.UnsubscribeAsync()));
+        Connect(pipeConnection);
+        return pipeConnection;
     }
 
-    public async Task<PipeConnection> Into<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> ConnectInAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
-
-        if (_pipeConnections.TryGetValue(route, out var pipeConnection)) return pipeConnection;
-
-        var channelMessageQueue = await _subscriber.SubscribeAsync(route.ToString());
-        channelMessageQueue.OnMessage(async r =>
+        var channelMq = await _subscriber.SubscribeAsync(route.ToString());
+        channelMq.OnMessage(async r =>
         {
             var request = JsonSerializer.Deserialize<RedisMessage<TMessage>>(r.Message);
 
             try
             {
-                var result =
-                    await pipe.Handle<TMessage, TResult>(request.Value!, new MessageOptions(routingKey), token);
+                await using var scope = _serviceProvider.CreateAsyncScope();
+                var result = await pipe.PassAsync<TMessage, TResult>(request.Value!,
+                    new MessageOptions(scope.ServiceProvider, routingKey), token);
                 var response = new RedisMessage<TResult>(request.CorrelationId, result);
                 await _subscriber.PublishAsync("responses", new RedisValue(JsonSerializer.Serialize(response)));
             }
@@ -57,13 +58,18 @@ public class RedisMqPipeConnector : IPipeConnector
                 throw;
             }
         });
-        return _pipeConnections[route] =
-            new PipeConnection(route, pipe, p => Disconnect(p, () => _subscriber.UnsubscribeAsync(route.ToString())));
+        var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, () => channelMq.UnsubscribeAsync()));
+        Connect(pipeConnection);
+        return pipeConnection;
     }
 
-    private async ValueTask Disconnect(PipeConnection pipeConnection, Func<Task> unsubscribe)
+    private void Connect(PipeConnection pipeConnection) => _pipeConnections.TryAdd(pipeConnection, pipeConnection);
+
+    private ValueTask Disconnect(PipeConnection pipeConnection, Func<Task> unsubscribe)
     {
-        if (_pipeConnections.Remove(pipeConnection.Route)) await unsubscribe.Invoke();
+        if (_pipeConnections.TryRemove(pipeConnection, out _)) unsubscribe();
+
+        return ValueTask.CompletedTask;
     }
 
     public async ValueTask DisposeAsync()
