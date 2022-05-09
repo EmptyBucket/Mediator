@@ -34,7 +34,8 @@ public class RabbitMqPipeConnector : IPipeConnector
         return pipeConnection;
     }
 
-    public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "", CancellationToken token = default)
+    public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+        CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(async (m, c) =>

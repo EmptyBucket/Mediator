@@ -67,7 +67,8 @@ public class RedisMqPipe : IPipe, IPipeConnector
         string subscriptionId = "", CancellationToken token = default) =>
         await _pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
 
-    public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "", CancellationToken token = default) =>
+    public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+        CancellationToken token = default) =>
         await _pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 
     public async ValueTask DisposeAsync()

@@ -34,7 +34,8 @@ public class RabbitMqPipe : IPipe, IPipeConnector
         string subscriptionId = "", CancellationToken token = default) =>
         _pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
 
-    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "", CancellationToken token = default) =>
+    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+        CancellationToken token = default) =>
         _pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 
     public ValueTask DisposeAsync() => _pipeConnector.DisposeAsync();
