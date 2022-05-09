@@ -46,12 +46,13 @@ public class RabbitMqPipeConnector : IPipeConnector
         var route = Route.For<TMessage>(routingKey);
         //todo нужно сделать subscriptionId
         var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(string.Empty, async (m, c) =>
-            {
-                await using var scope = _serviceProvider.CreateAsyncScope();
-                var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
-                await pipe.PassAsync(m, messageContext, c);
-            },
-            c => c.WithQueueName(route).WithTopic(route), token);
+                {
+                    await using var scope = _serviceProvider.CreateAsyncScope();
+                    var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
+                    await pipe.PassAsync(m, messageContext, c);
+                },
+                c => c.WithQueueName(route).WithTopic(route), token)
+            .ConfigureAwait(false);
         var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, subscription));
         Connect(pipeConnection);
         return pipeConnection;
@@ -62,12 +63,13 @@ public class RabbitMqPipeConnector : IPipeConnector
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(async (m, c) =>
-            {
-                await using var scope = _serviceProvider.CreateAsyncScope();
-                var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
-                return await pipe.PassAsync<TMessage, TResult>(m, messageContext, c);
-            },
-            c => c.WithQueueName(route), token);
+                {
+                    await using var scope = _serviceProvider.CreateAsyncScope();
+                    var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
+                    return await pipe.PassAsync<TMessage, TResult>(m, messageContext, c);
+                },
+                c => c.WithQueueName(route), token)
+            .ConfigureAwait(false);
         var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, subscription));
         Connect(pipeConnection);
         return pipeConnection;
