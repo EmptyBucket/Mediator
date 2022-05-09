@@ -26,7 +26,7 @@ using System.Text.Json;
 using FlexMediator.Utils;
 using StackExchange.Redis;
 
-namespace FlexMediator.Pipes;
+namespace FlexMediator.Pipes.RedisMq;
 
 public class RedisMqPipe : IPipe, IPipeConnector
 {

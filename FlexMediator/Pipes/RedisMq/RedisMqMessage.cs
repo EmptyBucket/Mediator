@@ -21,9 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace FlexMediator.Pipes;
+namespace FlexMediator.Pipes.RedisMq;
 
-internal static class RedisMqWellKnown
-{
-    public const string ResponsesMq = "responses";
-}
+internal readonly record struct RedisMqMessage<T>(string CorrelationId, T? Value = default, string? Exception = null);
