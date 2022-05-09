@@ -30,13 +30,13 @@ public class Mediator : IMediator, IPipeConnector
         return await _pipe.PassAsync<TMessage, TResult>(message, messageContext, token);
     }
 
-    public Task<PipeConnection> ConnectInAsync<TMessage>(IPipe pipe, string routingKey = "",
+    public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        _pipe.ConnectInAsync<TMessage>(pipe, routingKey, token);
+        _pipe.ConnectOutAsync<TMessage>(pipe, routingKey, token);
 
-    public Task<PipeConnection> ConnectInAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        _pipe.ConnectInAsync<TMessage, TResult>(pipe, routingKey, token);
+        _pipe.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 
     public ValueTask DisposeAsync() => _pipe.DisposeAsync();
 }

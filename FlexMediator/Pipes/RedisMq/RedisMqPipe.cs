@@ -67,13 +67,13 @@ public class RedisMqPipe : IPipe, IPipeConnector
         }
     }
 
-    public async Task<PipeConnection> ConnectInAsync<TMessage>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        await _pipeConnector.ConnectInAsync<TMessage>(pipe, routingKey, token);
+        await _pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, token);
 
-    public async Task<PipeConnection> ConnectInAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        await _pipeConnector.ConnectInAsync<TMessage, TResult>(pipe, routingKey, token);
+        await _pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 
     public async ValueTask DisposeAsync()
     {

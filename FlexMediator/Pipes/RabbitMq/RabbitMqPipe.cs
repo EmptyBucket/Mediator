@@ -30,13 +30,13 @@ public class RabbitMqPipe : IPipe, IPipeConnector
             .ConfigureAwait(false);
     }
 
-    public Task<PipeConnection> ConnectInAsync<TMessage>(IPipe pipe, string routingKey = "",
+    public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        _pipeConnector.ConnectInAsync<TMessage>(pipe, routingKey, token);
+        _pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, token);
 
-    public Task<PipeConnection> ConnectInAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        _pipeConnector.ConnectInAsync<TMessage, TResult>(pipe, routingKey, token);
+        _pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 
     public ValueTask DisposeAsync() => _pipeConnector.DisposeAsync();
 }
