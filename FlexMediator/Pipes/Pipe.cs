@@ -44,7 +44,7 @@ public class Pipe : IPipe, IPipeConnector
         return await GetPipes(route).Single().PassAsync<TMessage, TResult>(message, context, token);
     }
 
-    public Task<PipeConnection> ConnectInAsync<TMessage>(IPipe pipe, string routingKey = "",
+    public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
@@ -53,7 +53,7 @@ public class Pipe : IPipe, IPipeConnector
         return Task.FromResult(pipeConnection);
     }
 
-    public Task<PipeConnection> ConnectInAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);

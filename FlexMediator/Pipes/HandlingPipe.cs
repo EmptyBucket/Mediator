@@ -22,19 +22,16 @@
 // SOFTWARE.
 
 using FlexMediator.Utils;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FlexMediator.Pipes;
 
 public class HandlingPipe<THandlerMessage> : IPipe
 {
     private readonly Func<IServiceProvider, IHandler<THandlerMessage>> _factory;
-    private readonly IServiceProvider _serviceProvider;
 
-    public HandlingPipe(Func<IServiceProvider, IHandler<THandlerMessage>> factory, IServiceProvider serviceProvider)
+    public HandlingPipe(Func<IServiceProvider, IHandler<THandlerMessage>> factory)
     {
         _factory = factory;
-        _serviceProvider = serviceProvider;
     }
 
     public Task PassAsync<TMessage>(TMessage message, MessageContext context,
@@ -43,7 +40,7 @@ public class HandlingPipe<THandlerMessage> : IPipe
         if (message is not THandlerMessage handlerMessage)
             throw new MessageCannotBeProcessedException(Route.For<TMessage>(context.RoutingKey));
 
-        var handler = _factory(_serviceProvider);
+        var handler = _factory(context.ServiceProvider);
         return handler.HandleAsync(handlerMessage, context, token);
     }
 
@@ -55,13 +52,10 @@ public class HandlingPipe<THandlerMessage> : IPipe
 public class HandlingPipe<THandlerMessage, THandlerResult> : IPipe
 {
     private readonly Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> _factory;
-    private readonly IServiceProvider _serviceProvider;
 
-    public HandlingPipe(Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> factory,
-        IServiceProvider serviceProvider)
+    public HandlingPipe(Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> factory)
     {
         _factory = factory;
-        _serviceProvider = serviceProvider;
     }
 
     public Task PassAsync<TMessage>(TMessage message, MessageContext context,
@@ -76,8 +70,7 @@ public class HandlingPipe<THandlerMessage, THandlerResult> : IPipe
         if (message is not THandlerMessage handlerMessage || !typeof(THandlerResult).IsAssignableTo(typeof(TResult)))
             throw new MessageCannotBeProcessedException(route);
 
-        using var scope = _serviceProvider.CreateScope();
-        var handler = _factory(scope.ServiceProvider);
+        var handler = _factory(context.ServiceProvider);
         var result = await handler.HandleAsync(handlerMessage, context, token);
         return (TResult)(object)result!;
     }
