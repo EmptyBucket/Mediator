@@ -21,15 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.Pipes;
+using Mediator.Handlers;
 
-public static class PipeExtensions
+namespace Mediator.Pipes.RequestResponse;
+
+public interface ISendPipe
 {
-    public static Task<PipeConnection> ConnectInAsync<TMessage>(this IPipe pipe, IPipeConnector pipeConnector,
-        string routingKey = "", string subscriptionId = "", CancellationToken token = default) =>
-        pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
-
-    public static Task<PipeConnection> ConnectInAsync<TMessage, TResult>(this IPipe pipe, IPipeConnector pipeConnector,
-        string routingKey = "", CancellationToken token = default) =>
-        pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
+    Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
+        CancellationToken token = default);
 }

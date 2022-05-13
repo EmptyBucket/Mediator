@@ -23,33 +23,9 @@
 
 using Mediator.Handlers;
 
-namespace Mediator.Pipes;
+namespace Mediator.Pipes.RequestResponse;
 
-public class HandlingPipe<THandlerMessage> : IPipe
-{
-    private readonly Func<IServiceProvider, IHandler<THandlerMessage>> _factory;
-
-    public HandlingPipe(Func<IServiceProvider, IHandler<THandlerMessage>> factory)
-    {
-        _factory = factory;
-    }
-
-    public Task PassAsync<TMessage>(TMessage message, MessageContext context,
-        CancellationToken token = default)
-    {
-        if (message is not THandlerMessage handlerMessage)
-            throw new MessageCannotBeProcessedException(Route.For<TMessage>(context.RoutingKey));
-
-        var handler = _factory(context.ServiceProvider);
-        return handler.HandleAsync(handlerMessage, context, token);
-    }
-
-    public Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
-        CancellationToken token = default) =>
-        throw new MessageCannotBeProcessedException(Route.For<TMessage, TResult>(context.RoutingKey));
-}
-
-public class HandlingPipe<THandlerMessage, THandlerResult> : IPipe
+public class HandlingPipe<THandlerMessage, THandlerResult> : ISendPipe
 {
     private readonly Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> _factory;
 
@@ -58,27 +34,16 @@ public class HandlingPipe<THandlerMessage, THandlerResult> : IPipe
         _factory = factory;
     }
 
-    public Task PassAsync<TMessage>(TMessage message, MessageContext context,
-        CancellationToken token = default) =>
-        throw new MessageCannotBeProcessedException(Route.For<TMessage>(context.RoutingKey));
-
     public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
         CancellationToken token = default)
     {
-        var route = Route.For<TMessage>(context.RoutingKey);
+        var route = Route.For<TMessage, TResult>(context.RoutingKey);
 
         if (message is not THandlerMessage handlerMessage || !typeof(THandlerResult).IsAssignableTo(typeof(TResult)))
-            throw new MessageCannotBeProcessedException(route);
+            throw new InvalidOperationException($"Message with route: {route} cannot be processed");
 
         var handler = _factory(context.ServiceProvider);
         var result = await handler.HandleAsync(handlerMessage, context, token);
         return (TResult)(object)result!;
-    }
-}
-
-public class MessageCannotBeProcessedException : InvalidOperationException
-{
-    public MessageCannotBeProcessedException(Route route) : base($"Message with route: {route} cannot be processed")
-    {
     }
 }

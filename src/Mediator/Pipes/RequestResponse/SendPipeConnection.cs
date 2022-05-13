@@ -21,15 +21,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Handlers;
+namespace Mediator.Pipes.RequestResponse;
 
-namespace Mediator.Pipes;
-
-public interface IPipe
+public record struct SendPipeConnection : IAsyncDisposable
 {
-    Task PassAsync<TMessage>(TMessage message, MessageContext context,
-        CancellationToken token = default);
+    private int _isDisposed = 0;
+    private readonly Func<SendPipeConnection, ValueTask> _disconnect;
 
-    Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
-        CancellationToken token = default);
+    public SendPipeConnection(SendRoute route, ISendPipe pipe, Func<SendPipeConnection, ValueTask> disconnect)
+    {
+        Route = route;
+        Pipe = pipe;
+        _disconnect = disconnect;
+    }
+
+    public SendRoute Route { get; }
+
+    public ISendPipe Pipe { get; }
+
+    public ValueTask DisposeAsync() => Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1
+        ? ValueTask.CompletedTask
+        : _disconnect(this);
 }

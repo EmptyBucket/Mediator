@@ -21,15 +21,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Mediator.Pipes.PubSub;
+using Mediator.Pipes.RequestResponse;
+
 namespace Mediator.Pipes;
 
-public readonly record struct Route(Type MessageType, string RoutingKey = "", Type? ResultType = null)
+public static class Route
 {
-    public static Route For<TMessage>(string routingKey = "") =>
-        new(typeof(TMessage), routingKey);
+    public static PublishRoute For<TMessage>(string routingKey = "") => new(typeof(TMessage), routingKey);
 
-    public static Route For<TMessage, TResult>(string routingKey = "") =>
-        new(typeof(TMessage), routingKey, typeof(TResult));
-
-    public static implicit operator string(Route route) => route.ToString();
-};
+    public static SendRoute For<TMessage, TResult>(string routingKey = "") =>
+        new(typeof(TMessage), typeof(TResult), routingKey);
+}
