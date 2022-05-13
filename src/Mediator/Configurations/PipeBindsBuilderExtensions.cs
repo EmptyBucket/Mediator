@@ -1,4 +1,5 @@
-using Mediator.Pipes;
+using Mediator.Pipes.PubSub;
+using Mediator.Pipes.RequestResponse;
 
 namespace Mediator.Configurations;
 
@@ -12,7 +13,7 @@ public static class PipeBindsBuilderExtensions
 
     public static IPipeBinder BindInterfaces(this IPipeBinder pipeBinder, Type pipeType, string pipeName = "") =>
         pipeType.GetInterfaces()
-            .Where(i => i.IsAssignableTo(typeof(IPipe)))
+            .Where(i => i.IsAssignableTo(typeof(IPublishPipe)) || i.IsAssignableTo(typeof(ISendPipe)))
             .Aggregate(pipeBinder, (b, i) => b.Bind(i, pipeType, pipeName));
 
     public static IPipeBinder BindInterfaces<TPipe>(this IPipeBinder pipeBinder, string pipeName = "") =>

@@ -1,4 +1,5 @@
 using Mediator.Pipes;
+using Mediator.Pipes.RequestResponse;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Configurations;

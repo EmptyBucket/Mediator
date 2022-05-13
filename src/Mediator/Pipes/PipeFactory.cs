@@ -14,7 +14,7 @@ internal class PipeFactory : IPipeFactory
         _serviceProvider = serviceProvider;
     }
 
-    public TPipe Create<TPipe>(string pipeName = "") where TPipe : IPipe
+    public TPipe Create<TPipe>(string pipeName = "")
     {
         var pipeType = typeof(TPipe);
 

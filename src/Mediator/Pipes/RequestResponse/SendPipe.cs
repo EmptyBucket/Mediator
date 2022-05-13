@@ -1,19 +1,11 @@
 using Mediator.Handlers;
 
-namespace Mediator.Pipes;
+namespace Mediator.Pipes.RequestResponse;
 
-public class ConnectablePipe : IConnectablePipe
+public class SendPipe : IConnectableSendPipe
 {
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<Route, List<PipeConnection>> _pipeConnections = new();
-
-    public async Task PassAsync<TMessage>(TMessage message, MessageContext context,
-        CancellationToken token = default)
-    {
-        var route = Route.For<TMessage>(context.RoutingKey);
-        var pipes = GetPipes(route);
-        await Task.WhenAll(pipes.Select(p => p.PassAsync(message, context, token)));
-    }
+    private readonly Dictionary<SendRoute, List<SendPipeConnection>> _pipeConnections = new();
 
     public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
         CancellationToken token = default)
@@ -26,42 +18,33 @@ public class ConnectablePipe : IConnectablePipe
         return await pipes.First().PassAsync<TMessage, TResult>(message, context, token);
     }
 
-    public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
-        string subscriptionId = "", CancellationToken token = default)
-    {
-        var route = Route.For<TMessage>(routingKey);
-        var pipeConnection = new PipeConnection(route, pipe, Disconnect);
-        Connect(pipeConnection);
-        return Task.FromResult(pipeConnection);
-    }
-
-    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public Task<SendPipeConnection> ConnectOutAsync<TMessage, TResult>(ISendPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
-        var pipeConnection = new PipeConnection(route, pipe, Disconnect);
+        var pipeConnection = new SendPipeConnection(route, pipe, Disconnect);
         Connect(pipeConnection);
         return Task.FromResult(pipeConnection);
     }
 
-    private IPipe[] GetPipes(Route route)
+    private ISendPipe[] GetPipes(SendRoute route)
     {
         _lock.EnterReadLock();
-        var pipeConnections = _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection>();
+        var pipeConnections = _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<SendPipeConnection>();
         var pipes = pipeConnections.Select(c => c.Pipe).ToArray();
         _lock.ExitReadLock();
         return pipes;
     }
 
-    private void Connect(PipeConnection pipeConnection)
+    private void Connect(SendPipeConnection pipeConnection)
     {
         _lock.EnterWriteLock();
-        _pipeConnections.TryAdd(pipeConnection.Route, new List<PipeConnection>());
+        _pipeConnections.TryAdd(pipeConnection.Route, new List<SendPipeConnection>());
         _pipeConnections[pipeConnection.Route].Add(pipeConnection);
         _lock.ExitWriteLock();
     }
 
-    private ValueTask Disconnect(PipeConnection pipeConnection)
+    private ValueTask Disconnect(SendPipeConnection pipeConnection)
     {
         _lock.EnterWriteLock();
         if (_pipeConnections.TryGetValue(pipeConnection.Route, out var list) &&
