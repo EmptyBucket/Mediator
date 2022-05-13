@@ -25,5 +25,5 @@ namespace Mediator.Configurations;
 
 public interface IPipeBinder
 {
-    IPipeBinder BindPipe(Type pipeType, string pipeName = "");
+    IPipeBinder Bind(Type pipeType, Type pipeImplType, string pipeName = "");
 }

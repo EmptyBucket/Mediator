@@ -28,6 +28,8 @@ namespace Mediator.RabbitMq.Configurations;
 
 public static class PipeBinderExtensions
 {
-    public static IPipeBinder BindRabbitMq(this IPipeBinder pipeBinder, string pipeName = "rabbit") =>
-        pipeBinder.BindPipe<RabbitMqPipe>(pipeName);
+    public static IPipeBinder BindRabbitMq(this IPipeBinder pipeBinder) =>
+        pipeBinder
+            .Bind<RabbitMqPipe>()
+            .BindInterfaces<RabbitMqPipe>(nameof(RabbitMqPipe));
 }
