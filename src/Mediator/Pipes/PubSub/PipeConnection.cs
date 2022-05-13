@@ -21,24 +21,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.Pipes.PubSub;
+namespace Mediator.PubSub;
 
-public record struct PublishPipeConnection : IAsyncDisposable
+public record struct PipeConnection : IAsyncDisposable
 {
     private int _isDisposed = 0;
-    private readonly Func<PublishPipeConnection, ValueTask> _disconnect;
+    private readonly Func<PipeConnection, ValueTask> _disconnect;
 
-    public PublishPipeConnection(PublishRoute route, IPublishPipe pipe,
-        Func<PublishPipeConnection, ValueTask> disconnect)
+    public PipeConnection(Route route, IPipe pipe, Func<PipeConnection, ValueTask> disconnect)
     {
         Route = route;
         Pipe = pipe;
         _disconnect = disconnect;
     }
 
-    public PublishRoute Route { get; }
+    public Route Route { get; }
 
-    public IPublishPipe Pipe { get; }
+    public IPipe Pipe { get; }
 
     public ValueTask DisposeAsync() => Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1
         ? ValueTask.CompletedTask

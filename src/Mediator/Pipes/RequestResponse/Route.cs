@@ -21,12 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Handlers;
+namespace Mediator.RequestResponse;
 
-namespace Mediator.Pipes.RequestResponse;
-
-public interface ISendPipe
+public readonly record struct Route(Type MessageType, Type ResultType, string RoutingKey = "")
 {
-    Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
-        CancellationToken token = default);
+    public static Route For<TMessage, TResult>(string routingKey = "") =>
+        new(typeof(TMessage), typeof(TResult), routingKey);
+
+    public static implicit operator string(Route route) => route.ToString();
 }

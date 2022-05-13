@@ -21,8 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.Pipes.PubSub;
+namespace Mediator.PubSub;
 
-public interface IConnectablePublishPipe : IPublishPipe, IPublishPipeConnector
+public readonly record struct Route(Type MessageType, string RoutingKey = "")
 {
+    public static Route For<TMessage>(string routingKey = "") => new(typeof(TMessage), routingKey);
+
+    public static implicit operator string(Route route) => route.ToString();
 }

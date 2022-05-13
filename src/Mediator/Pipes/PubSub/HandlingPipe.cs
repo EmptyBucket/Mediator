@@ -21,11 +21,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Handlers;
+namespace Mediator.PubSub;
 
-namespace Mediator.Pipes.PubSub;
-
-public class HandlingPipe<THandlerMessage> : IPublishPipe
+public class HandlingPipe<THandlerMessage> : IPipe
 {
     private readonly Func<IServiceProvider, IHandler<THandlerMessage>> _factory;
 

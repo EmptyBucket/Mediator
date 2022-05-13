@@ -21,15 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Pipes.PubSub;
-using Mediator.Pipes.RequestResponse;
+namespace Mediator.RequestResponse;
 
-namespace Mediator.Pipes;
-
-public static class Route
+public interface IPipe
 {
-    public static PublishRoute For<TMessage>(string routingKey = "") => new(typeof(TMessage), routingKey);
-
-    public static SendRoute For<TMessage, TResult>(string routingKey = "") =>
-        new(typeof(TMessage), typeof(TResult), routingKey);
+    Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
+        CancellationToken token = default);
 }

@@ -22,7 +22,6 @@
 // SOFTWARE.
 
 using System.Collections.Immutable;
-using Mediator.Pipes;
 
 namespace Mediator.Configurations;
 

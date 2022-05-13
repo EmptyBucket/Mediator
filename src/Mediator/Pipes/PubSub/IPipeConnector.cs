@@ -21,11 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Handlers;
+namespace Mediator.PubSub;
 
-namespace Mediator.Pipes.PubSub;
-
-public interface IPublishPipe
+public interface IPipeConnector : IAsyncDisposable
 {
-    Task PassAsync<TMessage>(TMessage message, MessageContext context, CancellationToken token = default);
+    Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
+        string subscriptionId = "", CancellationToken token = default);
 }

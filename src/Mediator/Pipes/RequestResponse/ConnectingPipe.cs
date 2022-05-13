@@ -21,14 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Handlers;
+namespace Mediator.RequestResponse;
 
-namespace Mediator.Pipes.RequestResponse;
-
-public class SendPipe : IConnectableSendPipe
+public class ConnectingPipe : IConnectingPipe
 {
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<SendRoute, List<SendPipeConnection>> _pipeConnections = new();
+    private readonly Dictionary<Route, List<PipeConnection>> _pipeConnections = new();
 
     public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
         CancellationToken token = default)
@@ -41,33 +39,33 @@ public class SendPipe : IConnectableSendPipe
         return await pipes.First().PassAsync<TMessage, TResult>(message, context, token);
     }
 
-    public Task<SendPipeConnection> ConnectOutAsync<TMessage, TResult>(ISendPipe pipe, string routingKey = "",
+    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
-        var pipeConnection = new SendPipeConnection(route, pipe, Disconnect);
+        var pipeConnection = new PipeConnection(route, pipe, Disconnect);
         Connect(pipeConnection);
         return Task.FromResult(pipeConnection);
     }
 
-    private ISendPipe[] GetPipes(SendRoute route)
+    private IPipe[] GetPipes(Route route)
     {
         _lock.EnterReadLock();
-        var pipeConnections = _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<SendPipeConnection>();
+        var pipeConnections = _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection>();
         var pipes = pipeConnections.Select(c => c.Pipe).ToArray();
         _lock.ExitReadLock();
         return pipes;
     }
 
-    private void Connect(SendPipeConnection pipeConnection)
+    private void Connect(PipeConnection pipeConnection)
     {
         _lock.EnterWriteLock();
-        _pipeConnections.TryAdd(pipeConnection.Route, new List<SendPipeConnection>());
+        _pipeConnections.TryAdd(pipeConnection.Route, new List<PipeConnection>());
         _pipeConnections[pipeConnection.Route].Add(pipeConnection);
         _lock.ExitWriteLock();
     }
 
-    private ValueTask Disconnect(SendPipeConnection pipeConnection)
+    private ValueTask Disconnect(PipeConnection pipeConnection)
     {
         _lock.EnterWriteLock();
         if (_pipeConnections.TryGetValue(pipeConnection.Route, out var list) &&

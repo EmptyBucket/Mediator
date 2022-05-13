@@ -21,8 +21,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.Pipes.RequestResponse;
+namespace Mediator.RequestResponse;
 
-public interface IConnectableSendPipe : ISendPipe, ISendPipeConnector
+public interface IPipeConnector : IAsyncDisposable
 {
+    Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+        CancellationToken token = default);
 }

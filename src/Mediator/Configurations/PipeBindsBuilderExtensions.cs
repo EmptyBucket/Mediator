@@ -21,8 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Pipes.PubSub;
-using Mediator.Pipes.RequestResponse;
+using IPipe = Mediator.RequestResponse.IPipe;
 
 namespace Mediator.Configurations;
 
@@ -36,7 +35,7 @@ public static class PipeBindsBuilderExtensions
 
     public static IPipeBinder BindInterfaces(this IPipeBinder pipeBinder, Type pipeType, string pipeName = "") =>
         pipeType.GetInterfaces()
-            .Where(i => i.IsAssignableTo(typeof(IPublishPipe)) || i.IsAssignableTo(typeof(ISendPipe)))
+            .Where(i => i.IsAssignableTo(typeof(PubSub.IPipe)) || i.IsAssignableTo(typeof(IPipe)))
             .Aggregate(pipeBinder, (b, i) => b.Bind(i, pipeType, pipeName));
 
     public static IPipeBinder BindInterfaces<TPipe>(this IPipeBinder pipeBinder, string pipeName = "") =>
