@@ -42,8 +42,8 @@ public static class ServiceCollectionExtensions
             .BindInterfaces(typeof(HandlingPipe<>), "HandlingPipe<>")
             .Bind(typeof(HandlingPipe<,>))
             .BindInterfaces(typeof(HandlingPipe<,>), "HandlingPipe<,>")
-            .Bind<BranchingPipe>()
-            .BindInterfaces<BranchingPipe>(nameof(BranchingPipe)));
+            .Bind<ConnectablePipe>()
+            .BindInterfaces<ConnectablePipe>(nameof(ConnectablePipe)));
         var pipeBinds = pipeBinder.Build();
         serviceCollection.AddSingleton<IPipeFactory>(p => new PipeFactory(pipeBinds, p));
 

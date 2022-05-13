@@ -25,7 +25,7 @@ using Mediator.Handlers;
 
 namespace Mediator.Pipes;
 
-public class BranchingPipe : IBranchingPipe
+public class ConnectablePipe : IConnectablePipe
 {
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, List<PipeConnection>> _pipeConnections = new();

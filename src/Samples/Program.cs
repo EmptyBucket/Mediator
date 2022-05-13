@@ -50,8 +50,8 @@ serviceCollection
         var pipeFactory = p.GetRequiredService<IPipeFactory>();
 
         // bindings usage
-        var rabbitMqPipe = pipeFactory.Create<IBranchingPipe>("rabbit");
-        var redisMqPipe = pipeFactory.Create<IBranchingPipe>("redis");
+        var rabbitMqPipe = pipeFactory.Create<IConnectablePipe>("rabbit");
+        var redisMqPipe = pipeFactory.Create<IConnectablePipe>("redis");
 
         // mediator =[Event]> EventHandler
         await c.ConnectOutAsync(new EventHandler());

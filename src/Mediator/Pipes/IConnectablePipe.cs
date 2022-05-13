@@ -23,6 +23,6 @@
 
 namespace Mediator.Pipes;
 
-public interface IBranchingPipe : IPipe, IPipeConnector
+public interface IConnectablePipe : IPipe, IPipeConnector
 {
 }
