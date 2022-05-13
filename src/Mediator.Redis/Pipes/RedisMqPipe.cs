@@ -6,7 +6,7 @@ using StackExchange.Redis;
 
 namespace Mediator.Redis.Pipes;
 
-public class RedisMqPipe : IBranchingPipe
+public class RedisMqPipe : IConnectablePipe
 {
     private int _isDisposed;
     private readonly ISubscriber _subscriber;
