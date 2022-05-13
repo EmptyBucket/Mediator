@@ -1,4 +1,4 @@
-using Mediator.Handlers;
+using Mediator;
 
 namespace Samples.Events;
 

@@ -1,4 +1,4 @@
-namespace Mediator.Handlers;
+namespace Mediator;
 
 public record MessageContext(IServiceProvider ServiceProvider, string RoutingKey = "")
 {

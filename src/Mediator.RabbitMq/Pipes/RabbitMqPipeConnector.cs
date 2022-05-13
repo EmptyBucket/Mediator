@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
 using EasyNetQ;
-using Mediator.Handlers;
-using Mediator.Pipes;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.RabbitMq.Pipes;

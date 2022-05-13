@@ -1,4 +1,4 @@
-namespace Mediator.Handlers;
+namespace Mediator;
 
 public interface IHandler<in TMessage>
 {

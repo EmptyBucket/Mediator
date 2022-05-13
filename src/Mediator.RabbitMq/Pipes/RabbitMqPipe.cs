@@ -1,6 +1,4 @@
 using EasyNetQ;
-using Mediator.Handlers;
-using Mediator.Pipes;
 
 namespace Mediator.RabbitMq.Pipes;
 

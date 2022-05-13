@@ -1,8 +1,6 @@
-using Mediator.Handlers;
+namespace Mediator.PubSub;
 
-namespace Mediator.Pipes.PubSub;
-
-public interface IPublishPipe
+public interface IPipe
 {
     Task PassAsync<TMessage>(TMessage message, MessageContext context, CancellationToken token = default);
 }
