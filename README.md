@@ -32,7 +32,6 @@ serviceCollection
 
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#1
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#2
-        // specify subscriptionId for persistent queues/streams
         await rabbitMqPipe.ConnectInAsync<Event>(c);
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "2");
@@ -42,10 +41,12 @@ serviceCollection
         await redisMqPipe.ConnectOutAsync(new EventHandler());
         
         // mediator =[Event]> redisStream =[Event]> EventHandler
+        // specify subscriptionId for persistent queues/streams
         await redisStreamPipe.ConnectInAsync<Event>(c);
         await redisStreamPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
 
         // mediator =[Event]> rabbitMq =[Event]> redisMq =[Event]> EventHandler =[EventResult]> result
+        // you can connect any pipes with each other, building the necessary topology
         await rabbitMqPipe.ConnectInAsync<Event, EventResult>(c);
         await redisMqPipe.ConnectInAsync<Event, EventResult>(rabbitMqPipe);
         await redisMqPipe.ConnectOutAsync(new EventHandlerWithResult());
