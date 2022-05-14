@@ -32,8 +32,8 @@ serviceCollection
 
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#1
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#2
-        await rabbitMqPipe.ConnectInAsync<Event>(c);
         // specify subscriptionId for persistent queues/streams
+        await rabbitMqPipe.ConnectInAsync<Event>(c);
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "2");
 
