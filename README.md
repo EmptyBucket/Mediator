@@ -1,5 +1,5 @@
 # Mediator
-Transparent mediator, allows messages to be routed according to the configured topology. Can integrate with ```rabbitmq``` or ```redismq```. Supports ```pub/sub```, ```request/response``` models and dynamic configuration
+Transparent mediator, allows messages to be routed according to the configured topology. Can integrate with ```RabbitMq```, ```RedisMq```, ```RedisStream```. Supports ```pub/sub```, ```request/response``` models and dynamic configuration
 ### Usage
 An example of how a pipelines can be configured:
 ```csharp
@@ -14,7 +14,8 @@ serviceCollection
 serviceCollection
     .AddMediator(b =>
     {
-        // pipe bindings are needed in order not to have an explicit dependency on rabbitMq or redis
+        // pipe bindings are needed in order not to have an explicit dependency on libs
+        // bindings register a type to itself and all its pipe interfaces
         b.BindRabbitMq().BindRedisMq();
     }, async (p, c) =>
     {
@@ -23,6 +24,8 @@ serviceCollection
         // bindings usage
         var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
         var redisMqPipe = pipeFactory.Create<IConnectingPipe>("RedisMqPipe");
+        // notice stream support only pubsub, so its use IConnectingPubPipe
+        var redisStreamPipe = pipeFactory.Create<IConnectingPubPipe>("RedisStreamPipe");
 
         // mediator =[Event]> EventHandler
         await c.ConnectOutAsync(new EventHandler());
@@ -30,15 +33,20 @@ serviceCollection
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#1
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#2
         await rabbitMqPipe.ConnectInAsync<Event>(c);
-        // specify subscriptionId for persistent queues
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "2");
 
-        // mediator =[AnotherEvent]> redisMq =[AnotherEvent]> AnotherEventHandler
-        await redisMqPipe.ConnectInAsync<AnotherEvent>(c);
-        await redisMqPipe.ConnectOutAsync(new AnotherEventHandler());
+        // mediator =[Event]> redisMq =[Event]> EventHandler
+        await redisMqPipe.ConnectInAsync<Event>(c);
+        await redisMqPipe.ConnectOutAsync(new EventHandler());
+        
+        // mediator =[Event]> redisStream =[Event]> EventHandler
+        // specify subscriptionId for persistent queues/streams
+        await redisStreamPipe.ConnectInAsync<Event>(c);
+        await redisStreamPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
 
-        // mediator =[Event]> rabbitMq =[Event]> redisMq =[Event]> EventHandler#result =[EventResult]> result
+        // mediator =[Event]> rabbitMq =[Event]> redisMq =[Event]> EventHandler =[EventResult]> result
+        // you can connect any pipes with each other, building the necessary topology
         await rabbitMqPipe.ConnectInAsync<Event, EventResult>(c);
         await redisMqPipe.ConnectInAsync<Event, EventResult>(rabbitMqPipe);
         await redisMqPipe.ConnectOutAsync(new EventHandlerWithResult());
@@ -48,6 +56,5 @@ var mediator = await serviceProvider.GetRequiredService<IMediatorFactory>().Crea
 
 // publish and send events
 await mediator.PublishAsync(new Event());
-await mediator.PublishAsync(new AnotherEvent());
 var result = await mediator.SendAsync<Event, EventResult>(new Event());
 ```
