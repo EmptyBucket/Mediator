@@ -45,7 +45,7 @@ serviceCollection
         await redisStreamPipe.ConnectInAsync<Event>(c);
         await redisStreamPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
 
-        // mediator =[Event]> rabbitMq =[Event]> redisMq =[Event]> EventHandler#result =[EventResult]> result
+        // mediator =[Event]> rabbitMq =[Event]> redisMq =[Event]> EventHandler =[EventResult]> result
         await rabbitMqPipe.ConnectInAsync<Event, EventResult>(c);
         await redisMqPipe.ConnectInAsync<Event, EventResult>(rabbitMqPipe);
         await redisMqPipe.ConnectOutAsync(new EventHandlerWithResult());
