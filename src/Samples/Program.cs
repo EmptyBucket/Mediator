@@ -54,6 +54,7 @@ serviceCollection
         // bindings usage
         var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
         var redisMqPipe = pipeFactory.Create<IConnectingPipe>("RedisMqPipe");
+        var redisStreamPipe = pipeFactory.Create<IConnectingPubPipe>("RedisStreamPipe");
 
         // mediator =[Event]> EventHandler
         await c.ConnectOutAsync(new EventHandler());
@@ -61,13 +62,17 @@ serviceCollection
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#1
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#2
         await rabbitMqPipe.ConnectInAsync<Event>(c);
-        // specify subscriptionId for persistent queues
+        // specify subscriptionId for persistent queues/streams
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "2");
 
-        // mediator =[AnotherEvent]> redisMq =[AnotherEvent]> AnotherEventHandler
-        await redisMqPipe.ConnectInAsync<AnotherEvent>(c);
-        await redisMqPipe.ConnectOutAsync(new AnotherEventHandler());
+        // mediator =[Event]> redisMq =[Event]> EventHandler
+        await redisMqPipe.ConnectInAsync<Event>(c);
+        await redisMqPipe.ConnectOutAsync(new EventHandler());
+        
+        // mediator =[Event]> redisStream =[Event]> EventHandler
+        await redisStreamPipe.ConnectInAsync<Event>(c);
+        await redisStreamPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
 
         // mediator =[Event]> rabbitMq =[Event]> redisMq =[Event]> EventHandler#result =[EventResult]> result
         await rabbitMqPipe.ConnectInAsync<Event, EventResult>(c);
@@ -79,7 +84,6 @@ var mediator = await serviceProvider.GetRequiredService<IMediatorFactory>().Crea
 
 // publish and send events
 await mediator.PublishAsync(new Event());
-await mediator.PublishAsync(new AnotherEvent());
 var result = await mediator.SendAsync<Event, EventResult>(new Event());
 
 await Task.Delay(TimeSpan.FromHours(1));
