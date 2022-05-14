@@ -1,6 +1,10 @@
 # Mediator
 Transparent mediator, allows messages to be routed according to the configured topology. Can integrate with ```RabbitMq```, ```RedisMq```, ```RedisStream```. Supports ```pub/sub```, ```request/response``` models and dynamic configuration
-### Usage
+#### Nuget:
+* https://www.nuget.org/packages/ap.Mediator/
+* https://www.nuget.org/packages/ap.Mediator.RabbitMq/
+* https://www.nuget.org/packages/ap.Mediator.Redis/
+## Usage
 An example of how a pipelines can be configured:
 ```csharp
 var serviceCollection = new ServiceCollection();
