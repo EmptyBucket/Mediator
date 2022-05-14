@@ -44,7 +44,8 @@ public class RabbitMqPipe : IConnectingPipe
         CancellationToken token = default)
     {
         var route = Route.For<TMessage>(context.RoutingKey);
-        await _bus.PubSub.PublishAsync(message, c => c.WithTopic(route), token)
+        await _bus.PubSub
+            .PublishAsync(message, c => c.WithTopic(route), token)
             .ConfigureAwait(false);
     }
 
@@ -52,7 +53,8 @@ public class RabbitMqPipe : IConnectingPipe
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(context.RoutingKey);
-        return await _bus.Rpc.RequestAsync<TMessage, TResult>(message, c => c.WithQueueName(route), token)
+        return await _bus.Rpc
+            .RequestAsync<TMessage, TResult>(message, c => c.WithQueueName(route), token)
             .ConfigureAwait(false);
     }
 
