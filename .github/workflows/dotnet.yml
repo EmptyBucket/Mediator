@@ -25,9 +25,10 @@ jobs:
       uses: actions/setup-dotnet@v2.1.0
 
     - name: Create Release NuGet package
-      run: dotnet pack -c Release -o packages src/Mediator && \
-            dotnet pack -c Release -o packages src/Mediator.RabbitMq && \
-            dotnet pack -c Release -o packages src/Mediator.Redis
+      run: |
+        dotnet pack -c Release -o packages src/Mediator
+        dotnet pack -c Release -o packages src/Mediator.RabbitMq
+        dotnet pack -c Release -o packages src/Mediator.Redis
       
     - name: Push to GitHub Feed
       run: |
