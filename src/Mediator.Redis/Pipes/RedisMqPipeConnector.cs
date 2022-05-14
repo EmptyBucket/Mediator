@@ -56,7 +56,7 @@ public class RedisMqPipeConnector : IPipeConnector
             var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
             await pipe.PassAsync<TMessage>(message, messageContext, token);
         });
-        var pipeConnection = new PipeConnection(p => Disconnect(p, channelMq));
+        var pipeConnection = new PipeConnection(channelMq, Disconnect);
         Connect(pipeConnection);
         return pipeConnection;
     }
@@ -87,17 +87,14 @@ public class RedisMqPipeConnector : IPipeConnector
                 throw;
             }
         });
-        var pipeConnection = new PipeConnection(p => Disconnect(p, channelMq));
+        var pipeConnection = new PipeConnection(channelMq, Disconnect);
         Connect(pipeConnection);
         return pipeConnection;
     }
 
     private void Connect(PipeConnection pipeConnection) => _pipeConnections.TryAdd(pipeConnection, pipeConnection);
 
-    private async Task Disconnect(PipeConnection pipeConnection, ChannelMessageQueue channelMessageQueue)
-    {
-        if (_pipeConnections.TryRemove(pipeConnection, out _)) await channelMessageQueue.UnsubscribeAsync();
-    }
+    private void Disconnect(PipeConnection pipeConnection) => _pipeConnections.TryRemove(pipeConnection, out _);
 
     public async ValueTask DisposeAsync()
     {
@@ -106,13 +103,19 @@ public class RedisMqPipeConnector : IPipeConnector
 
     private class PipeConnection : IAsyncDisposable
     {
-        private readonly Func<PipeConnection, Task> _disconnect;
+        private readonly ChannelMessageQueue _channelMessageQueue;
+        private readonly Action<PipeConnection> _callback;
 
-        public PipeConnection(Func<PipeConnection, Task> disconnect)
+        public PipeConnection(ChannelMessageQueue channelMessageQueue, Action<PipeConnection> callback)
         {
-            _disconnect = disconnect;
+            _channelMessageQueue = channelMessageQueue;
+            _callback = callback;
         }
 
-        public async ValueTask DisposeAsync() => await _disconnect(this);
+        public async ValueTask DisposeAsync()
+        {
+            await _channelMessageQueue.UnsubscribeAsync();
+            _callback(this);
+        }
     }
 }

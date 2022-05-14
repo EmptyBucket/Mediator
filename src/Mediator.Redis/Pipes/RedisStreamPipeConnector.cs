@@ -22,24 +22,24 @@
 // SOFTWARE.
 
 using System.Collections.Concurrent;
-using EasyNetQ;
+using System.Text.Json;
 using Mediator.Handlers;
 using Mediator.Pipes;
 using Mediator.Pipes.PublishSubscribe;
-using Mediator.Pipes.RequestResponse;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
-namespace Mediator.RabbitMq.Pipes;
+namespace Mediator.Redis.Pipes;
 
-public class RabbitMqPipeConnector : IPipeConnector
+public class RedisStreamPipeConnector : IPubPipeConnector
 {
-    private readonly IBus _bus;
+    private readonly IDatabase _database;
     private readonly IServiceProvider _serviceProvider;
     private readonly ConcurrentDictionary<PipeConnection, PipeConnection> _pipeConnections = new();
 
-    public RabbitMqPipeConnector(IBus bus, IServiceProvider serviceProvider)
+    public RedisStreamPipeConnector(IConnectionMultiplexer connectionMultiplexer, IServiceProvider serviceProvider)
     {
-        _bus = bus;
+        _database = connectionMultiplexer.GetDatabase();
         _serviceProvider = serviceProvider;
     }
 
@@ -47,32 +47,24 @@ public class RabbitMqPipeConnector : IPipeConnector
         string subscriptionId = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
-        var subscription = await _bus.PubSub.SubscribeAsync<TMessage>(subscriptionId, async (m, c) =>
-                {
-                    await using var scope = _serviceProvider.CreateAsyncScope();
-                    var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
-                    await pipe.PassAsync(m, messageContext, c);
-                },
-                c => c.WithTopic(route), token)
-            .ConfigureAwait(false);
-        var pipeConnection = new PipeConnection(subscription, Disconnect);
-        Connect(pipeConnection);
-        return pipeConnection;
-    }
+        await _database.StreamCreateConsumerGroupAsync(route.ToString(), subscriptionId, "0");
+        var cts = new CancellationTokenSource();
+        Task.Run(async () =>
+        {
+            while (cts.IsCancellationRequested)
+            {
+                var entries =
+                    await _database.StreamReadGroupAsync(route.ToString(), subscriptionId, subscriptionId, ">");
 
-    public async Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
-        CancellationToken token = default)
-    {
-        var route = Route.For<TMessage, TResult>(routingKey);
-        var subscription = await _bus.Rpc.RespondAsync<TMessage, TResult>(async (m, c) =>
+                foreach (var entry in entries)
                 {
                     await using var scope = _serviceProvider.CreateAsyncScope();
-                    var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
-                    return await pipe.PassAsync<TMessage, TResult>(m, messageContext, c);
-                },
-                c => c.WithQueueName(route), token)
-            .ConfigureAwait(false);
-        var pipeConnection = new PipeConnection(subscription, Disconnect);
+                    var message = JsonSerializer.Deserialize<TMessage>(entry["message"]);
+                    await pipe.PassAsync(message, new MessageContext(scope.ServiceProvider, routingKey), cts.Token);
+                }
+            }
+        }, token);
+        var pipeConnection = new PipeConnection(cts, Disconnect);
         Connect(pipeConnection);
         return pipeConnection;
     }
@@ -88,18 +80,19 @@ public class RabbitMqPipeConnector : IPipeConnector
 
     private class PipeConnection : IAsyncDisposable
     {
-        private readonly IDisposable _subscription;
+        private readonly CancellationTokenSource _cts;
         private readonly Action<PipeConnection> _callback;
 
-        public PipeConnection(IDisposable subscription, Action<PipeConnection> callback)
+        public PipeConnection(CancellationTokenSource cts, Action<PipeConnection> callback)
         {
-            _subscription = subscription;
+            _cts = cts;
             _callback = callback;
         }
 
         public ValueTask DisposeAsync()
         {
-            _subscription.Dispose();
+            _cts.Cancel();
+            _cts.Dispose();
             _callback(this);
             return ValueTask.CompletedTask;
         }
