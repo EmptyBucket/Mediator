@@ -4,9 +4,13 @@
         <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        
-        <PackageId>Mediator.Redis</PackageId>
-        <PackageVersion>1.0.1</PackageVersion>
+
+        <PackageId>eb.Mediator.Redis</PackageId>
+        <Version>1.0.1</Version>
+        <Authors>Alexey Politov</Authors>
+        <PackageDescription>Transparent mediator, allows messages to be routed according to the configured topology. Can integrate with RabbitMq, RedisMq, RedisStream. Supports pub/sub, request/response models and dynamic configuration</PackageDescription>
+        <RepositoryUrl>https://github.com/EmptyBucket/Mediator</RepositoryUrl>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup>
