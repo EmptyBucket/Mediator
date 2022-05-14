@@ -5,7 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
 
-        <PackageId>eb.Mediator.RabbitMq</PackageId>
+        <PackageId>ap.Mediator.RabbitMq</PackageId>
         <Version>1.0.1</Version>
         <Authors>Alexey Politov</Authors>
         <PackageDescription>Transparent mediator, allows messages to be routed according to the configured topology. Can integrate with RabbitMq, RedisMq, RedisStream. Supports pub/sub, request/response models and dynamic configuration</PackageDescription>
