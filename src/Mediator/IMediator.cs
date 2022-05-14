@@ -1,6 +1,9 @@
+using Mediator.Handlers;
+using Mediator.Pipes;
+
 namespace Mediator;
 
-public interface IMediator : PubSub.IPipeConnector, RequestResponse.IPipeConnector
+public interface IMediator : IPipeConnector
 {
     Task PublishAsync<TMessage>(TMessage message, Action<MessageContext>? contextBuilder = null,
         CancellationToken token = default);

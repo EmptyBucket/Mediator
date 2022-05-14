@@ -1,6 +1,7 @@
-using Mediator;
+using Mediator.Handlers;
+using Samples.Events;
 
-namespace Samples.Events;
+namespace Samples.Handlers;
 
 public class EventHandlerWithResult : IHandler<Event, EventResult>
 {

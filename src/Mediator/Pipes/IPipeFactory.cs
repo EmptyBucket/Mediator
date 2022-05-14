@@ -1,4 +1,4 @@
-namespace Mediator;
+namespace Mediator.Pipes;
 
 public interface IPipeFactory
 {

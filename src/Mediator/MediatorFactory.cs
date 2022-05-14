@@ -1,10 +1,12 @@
+using Mediator.Pipes;
+
 namespace Mediator;
 
 internal class MediatorFactory : IMediatorFactory
 {
     private readonly Lazy<Task<IMediator>> _mediator;
 
-    public MediatorFactory(Func<IServiceProvider, IMediator, Task> builder, IServiceProvider serviceProvider)
+    public MediatorFactory(Func<IServiceProvider, IPipeConnector, Task> builder, IServiceProvider serviceProvider)
     {
         _mediator = new Lazy<Task<IMediator>>(async () =>
         {

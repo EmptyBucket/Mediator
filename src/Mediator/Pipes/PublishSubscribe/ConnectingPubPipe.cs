@@ -1,6 +1,8 @@
-namespace Mediator.PubSub;
+using Mediator.Handlers;
 
-public class ConnectingPipe : IConnectingPipe
+namespace Mediator.Pipes.PublishSubscribe;
+
+internal class ConnectingPubPipe : IConnectingPubPipe
 {
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, List<PipeConnection>> _pipeConnections = new();
@@ -12,16 +14,16 @@ public class ConnectingPipe : IConnectingPipe
         await Task.WhenAll(pipes.Select(p => p.PassAsync(message, context, token)));
     }
 
-    public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
+    public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
         var pipeConnection = new PipeConnection(route, pipe, Disconnect);
         Connect(pipeConnection);
-        return Task.FromResult(pipeConnection);
+        return Task.FromResult((IAsyncDisposable)pipeConnection);
     }
 
-    private IEnumerable<IPipe> GetPipes(Route route)
+    private IEnumerable<IPubPipe> GetPipes(Route route)
     {
         _lock.EnterReadLock();
         var pipeConnections = _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection>();
@@ -52,5 +54,26 @@ public class ConnectingPipe : IConnectingPipe
     public async ValueTask DisposeAsync()
     {
         foreach (var pipeConnection in _pipeConnections.SelectMany(c => c.Value)) await pipeConnection.DisposeAsync();
+    }
+
+    private record struct PipeConnection : IAsyncDisposable
+    {
+        private int _isDisposed = 0;
+        private readonly Func<PipeConnection, ValueTask> _disconnect;
+
+        public PipeConnection(Route route, IPubPipe pipe, Func<PipeConnection, ValueTask> disconnect)
+        {
+            Route = route;
+            Pipe = pipe;
+            _disconnect = disconnect;
+        }
+
+        public Route Route { get; }
+
+        public IPubPipe Pipe { get; }
+
+        public ValueTask DisposeAsync() => Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1
+            ? ValueTask.CompletedTask
+            : _disconnect(this);
     }
 }

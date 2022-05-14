@@ -1,5 +1,4 @@
-using Mediator.PubSub;
-using Mediator.RequestResponse;
+using Mediator.Pipes;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Configurations;
@@ -8,7 +7,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
         Action<IPipeBinder>? pipeBinderBuilder = null,
-        Func<IServiceProvider, IMediator, Task>? pipeConnectorBuilder = null,
+        Func<IServiceProvider, IPipeConnector, Task>? pipeConnectorBuilder = null,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
         pipeBinderBuilder ??= _ => { };
@@ -20,10 +19,8 @@ public static class ServiceCollectionExtensions
             .BindInterfaces(typeof(HandlingPipe<>), "HandlingPipe<>")
             .Bind(typeof(HandlingPipe<,>))
             .BindInterfaces(typeof(HandlingPipe<,>), "HandlingPipe<,>")
-            .Bind<PubSub.ConnectingPipe>()
-            .BindInterfaces<PubSub.ConnectingPipe>(nameof(PubSub.ConnectingPipe))
-            .Bind<RequestResponse.ConnectingPipe>()
-            .BindInterfaces<RequestResponse.ConnectingPipe>(nameof(RequestResponse.ConnectingPipe)));
+            .Bind<ConnectingPipe>()
+            .BindInterfaces<ConnectingPipe>(nameof(ConnectingPipe)));
         var pipeBinds = pipeBinder.Build();
         serviceCollection.AddSingleton<IPipeFactory>(p => new PipeFactory(pipeBinds, p));
 

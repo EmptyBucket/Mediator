@@ -1,8 +1,12 @@
 using EasyNetQ;
+using Mediator.Handlers;
+using Mediator.Pipes;
+using Mediator.Pipes.PublishSubscribe;
+using Mediator.Pipes.RequestResponse;
 
 namespace Mediator.RabbitMq.Pipes;
 
-public class RabbitMqPipe : IConnectablePipe
+public class RabbitMqPipe : IConnectingPipe
 {
     private readonly IBus _bus;
     private readonly IPipeConnector _pipeConnector;
@@ -29,11 +33,11 @@ public class RabbitMqPipe : IConnectablePipe
             .ConfigureAwait(false);
     }
 
-    public Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
+    public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default) =>
         _pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
 
-    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
         _pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 

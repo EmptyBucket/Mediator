@@ -1,6 +1,8 @@
-namespace Mediator.RequestResponse;
+using Mediator.Handlers;
 
-public interface IPipe
+namespace Mediator.Pipes.RequestResponse;
+
+public interface IReqPipe
 {
     Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
         CancellationToken token = default);

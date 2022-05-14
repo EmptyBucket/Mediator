@@ -1,7 +1,7 @@
 using Mediator.Configurations;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Mediator;
+namespace Mediator.Pipes;
 
 internal class PipeFactory : IPipeFactory
 {

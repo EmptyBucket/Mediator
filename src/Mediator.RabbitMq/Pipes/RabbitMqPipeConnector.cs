@@ -1,5 +1,9 @@
 using System.Collections.Concurrent;
 using EasyNetQ;
+using Mediator.Handlers;
+using Mediator.Pipes;
+using Mediator.Pipes.PublishSubscribe;
+using Mediator.Pipes.RequestResponse;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.RabbitMq.Pipes;
@@ -16,7 +20,7 @@ public class RabbitMqPipeConnector : IPipeConnector
         _serviceProvider = serviceProvider;
     }
 
-    public async Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
+    public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
@@ -28,12 +32,12 @@ public class RabbitMqPipeConnector : IPipeConnector
                 },
                 c => c.WithTopic(route), token)
             .ConfigureAwait(false);
-        var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, subscription));
+        var pipeConnection = new PipeConnection(p => Disconnect(p, subscription));
         Connect(pipeConnection);
         return pipeConnection;
     }
 
-    public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public async Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
@@ -45,22 +49,36 @@ public class RabbitMqPipeConnector : IPipeConnector
                 },
                 c => c.WithQueueName(route), token)
             .ConfigureAwait(false);
-        var pipeConnection = new PipeConnection(route, pipe, p => Disconnect(p, subscription));
+        var pipeConnection = new PipeConnection(p => Disconnect(p, subscription));
         Connect(pipeConnection);
         return pipeConnection;
     }
 
     private void Connect(PipeConnection pipeConnection) => _pipeConnections.TryAdd(pipeConnection, pipeConnection);
 
-    private ValueTask Disconnect(PipeConnection pipeConnection, IDisposable unsubscribe)
+    private void Disconnect(PipeConnection pipeConnection, IDisposable subscription)
     {
-        if (_pipeConnections.TryRemove(pipeConnection, out _)) unsubscribe.Dispose();
-
-        return ValueTask.CompletedTask;
+        if (_pipeConnections.TryRemove(pipeConnection, out _)) subscription.Dispose();
     }
 
     public async ValueTask DisposeAsync()
     {
         foreach (var pipeConnection in _pipeConnections.Values) await pipeConnection.DisposeAsync();
+    }
+
+    private class PipeConnection : IAsyncDisposable
+    {
+        private readonly Action<PipeConnection> _disconnect;
+
+        public PipeConnection(Action<PipeConnection> disconnect)
+        {
+            _disconnect = disconnect;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            _disconnect(this);
+            return ValueTask.CompletedTask;
+        }
     }
 }

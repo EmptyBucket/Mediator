@@ -1,6 +1,8 @@
-namespace Mediator.RequestResponse;
+using Mediator.Handlers;
 
-public class ConnectingPipe : IConnectingPipe
+namespace Mediator.Pipes.RequestResponse;
+
+internal class ConnectingReqPipe : IConnectingReqPipe
 {
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, List<PipeConnection>> _pipeConnections = new();
@@ -10,22 +12,22 @@ public class ConnectingPipe : IConnectingPipe
     {
         var route = Route.For<TMessage, TResult>(context.RoutingKey);
         var pipes = GetPipes(route);
-        
+
         if (!pipes.Any()) throw new InvalidOperationException($"Message with route: {route} has not registered pipes");
-        
+
         return await pipes.First().PassAsync<TMessage, TResult>(message, context, token);
     }
 
-    public Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         var pipeConnection = new PipeConnection(route, pipe, Disconnect);
         Connect(pipeConnection);
-        return Task.FromResult(pipeConnection);
+        return Task.FromResult((IAsyncDisposable)pipeConnection);
     }
 
-    private IPipe[] GetPipes(Route route)
+    private IReqPipe[] GetPipes(Route route)
     {
         _lock.EnterReadLock();
         var pipeConnections = _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection>();
@@ -56,5 +58,26 @@ public class ConnectingPipe : IConnectingPipe
     public async ValueTask DisposeAsync()
     {
         foreach (var pipeConnection in _pipeConnections.SelectMany(c => c.Value)) await pipeConnection.DisposeAsync();
+    }
+
+    private record struct PipeConnection : IAsyncDisposable
+    {
+        private int _isDisposed = 0;
+        private readonly Func<PipeConnection, ValueTask> _disconnect;
+
+        public PipeConnection(Route route, IReqPipe pipe, Func<PipeConnection, ValueTask> disconnect)
+        {
+            Route = route;
+            Pipe = pipe;
+            _disconnect = disconnect;
+        }
+
+        public Route Route { get; }
+
+        public IReqPipe Pipe { get; }
+
+        public ValueTask DisposeAsync() => Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1
+            ? ValueTask.CompletedTask
+            : _disconnect(this);
     }
 }
