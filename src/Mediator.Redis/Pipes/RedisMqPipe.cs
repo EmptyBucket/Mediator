@@ -48,7 +48,7 @@ public class RedisMqPipe : IConnectingPipe
 
         var correlationId = Guid.NewGuid().ToString();
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         cts.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
         _responseActions.TryAdd(correlationId, r =>
         {

@@ -32,7 +32,7 @@ public class RabbitMqPipeConnector : IPipeConnector
                 },
                 c => c.WithTopic(route), token)
             .ConfigureAwait(false);
-        var pipeConnection = new PipeConnection(p => Disconnect(p, subscription));
+        var pipeConnection = new PipeConnection(subscription, Disconnect);
         Connect(pipeConnection);
         return pipeConnection;
     }
@@ -49,17 +49,14 @@ public class RabbitMqPipeConnector : IPipeConnector
                 },
                 c => c.WithQueueName(route), token)
             .ConfigureAwait(false);
-        var pipeConnection = new PipeConnection(p => Disconnect(p, subscription));
+        var pipeConnection = new PipeConnection(subscription, Disconnect);
         Connect(pipeConnection);
         return pipeConnection;
     }
 
     private void Connect(PipeConnection pipeConnection) => _pipeConnections.TryAdd(pipeConnection, pipeConnection);
 
-    private void Disconnect(PipeConnection pipeConnection, IDisposable subscription)
-    {
-        if (_pipeConnections.TryRemove(pipeConnection, out _)) subscription.Dispose();
-    }
+    private void Disconnect(PipeConnection pipeConnection) => _pipeConnections.TryRemove(pipeConnection, out _);
 
     public async ValueTask DisposeAsync()
     {
@@ -68,16 +65,19 @@ public class RabbitMqPipeConnector : IPipeConnector
 
     private class PipeConnection : IAsyncDisposable
     {
-        private readonly Action<PipeConnection> _disconnect;
+        private readonly IDisposable _subscription;
+        private readonly Action<PipeConnection> _callback;
 
-        public PipeConnection(Action<PipeConnection> disconnect)
+        public PipeConnection(IDisposable subscription, Action<PipeConnection> callback)
         {
-            _disconnect = disconnect;
+            _subscription = subscription;
+            _callback = callback;
         }
 
         public ValueTask DisposeAsync()
         {
-            _disconnect(this);
+            _subscription.Dispose();
+            _callback(this);
             return ValueTask.CompletedTask;
         }
     }
