@@ -2,10 +2,10 @@ name: CI
 
 env:
   GITHUB_FEED: https://nuget.pkg.github.com/EmptyBucket/index.json
-  GITHUB_KEY: ${{ secrets.GITHUB_PAT }}
+  GITHUB_KEY: ${{ secrets.MEDIATOR_GITHUB_PAT }}
 
   NUGET_FEED: https://api.nuget.org/v3/index.json
-  NUGET_KEY: ${{ secrets.NUGET_PAT }}
+  NUGET_KEY: ${{ secrets.MEDIATOR_NUGET_PAT }}
 
 on:
   push:
