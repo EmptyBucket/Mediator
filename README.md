@@ -14,7 +14,8 @@ serviceCollection
 serviceCollection
     .AddMediator(b =>
     {
-        // pipe bindings are needed in order not to have an explicit dependency on rabbitMq or redis
+        // pipe bindings are needed in order not to have an explicit dependency on libs
+        // bindings register a type to itself and all its pipe interfaces
         b.BindRabbitMq().BindRedisMq();
     }, async (p, c) =>
     {
