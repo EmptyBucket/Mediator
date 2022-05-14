@@ -21,14 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator;
+using Mediator.Handlers;
 
-namespace Samples.Events;
+namespace Mediator.Pipes.PublishSubscribe;
 
-public class EventHandlerWithResult : IHandler<Event, EventResult>
+public interface IPubPipe
 {
-    public Task<EventResult> HandleAsync(Event message, MessageContext context, CancellationToken token)
-    {
-        return Task.FromResult(new EventResult());
-    }
+    Task PassAsync<TMessage>(TMessage message, MessageContext context, CancellationToken token = default);
 }

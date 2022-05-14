@@ -21,10 +21,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.RequestResponse;
+namespace Mediator.Pipes;
 
-public readonly record struct Route(Type MessageType, Type ResultType, string RoutingKey = "")
+public readonly record struct Route(Type MessageType, Type? ResultType = null, string RoutingKey = "")
 {
+    public static Route For<TMessage>(string routingKey = "") =>
+        new(typeof(TMessage), RoutingKey: routingKey);
+
     public static Route For<TMessage, TResult>(string routingKey = "") =>
         new(typeof(TMessage), typeof(TResult), routingKey);
 

@@ -21,48 +21,42 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using EasyNetQ;
 using Mediator.Handlers;
-using Mediator.Pipes;
 using Mediator.Pipes.PublishSubscribe;
 using Mediator.Pipes.RequestResponse;
 
-namespace Mediator.RabbitMq.Pipes;
+namespace Mediator.Pipes;
 
-public class RabbitMqPipe : IConnectingPipe
+public class ConnectingPipe : IConnectingPipe
 {
-    private readonly IBus _bus;
-    private readonly IPipeConnector _pipeConnector;
+    private readonly ConnectingPubPipe _connectingPubPipe;
+    private readonly ConnectingReqPipe _connectingReqPipe;
 
-    public RabbitMqPipe(IBus bus, IServiceProvider serviceProvider)
+    public ConnectingPipe()
     {
-        _bus = bus;
-        _pipeConnector = new RabbitMqPipeConnector(bus, serviceProvider);
+        _connectingPubPipe = new ConnectingPubPipe();
+        _connectingReqPipe = new ConnectingReqPipe();
     }
 
-    public async Task PassAsync<TMessage>(TMessage message, MessageContext context,
-        CancellationToken token = default)
-    {
-        var route = Route.For<TMessage>(context.RoutingKey);
-        await _bus.PubSub.PublishAsync(message, c => c.WithTopic(route), token)
-            .ConfigureAwait(false);
-    }
+    public Task PassAsync<TMessage>(TMessage message, MessageContext context,
+        CancellationToken token = default) =>
+        _connectingPubPipe.PassAsync(message, context, token);
 
-    public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
-        CancellationToken token = default)
-    {
-        var route = Route.For<TMessage, TResult>(context.RoutingKey);
-        return await _bus.Rpc.RequestAsync<TMessage, TResult>(message, c => c.WithQueueName(route), token)
-            .ConfigureAwait(false);
-    }
+    public Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
+        CancellationToken token = default) =>
+        _connectingReqPipe.PassAsync<TMessage, TResult>(message, context, token);
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default) =>
-        _pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
+        _connectingPubPipe.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
-        _pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
+        _connectingReqPipe.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 
-    public ValueTask DisposeAsync() => _pipeConnector.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await _connectingPubPipe.DisposeAsync();
+        await _connectingReqPipe.DisposeAsync();
+    }
 }

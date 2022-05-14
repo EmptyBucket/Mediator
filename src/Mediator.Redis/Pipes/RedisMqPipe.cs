@@ -23,11 +23,15 @@
 
 using System.Collections.Concurrent;
 using System.Text.Json;
+using Mediator.Handlers;
+using Mediator.Pipes;
+using Mediator.Pipes.PublishSubscribe;
+using Mediator.Pipes.RequestResponse;
 using StackExchange.Redis;
 
 namespace Mediator.Redis.Pipes;
 
-public class RedisMqPipe : IConnectablePipe
+public class RedisMqPipe : IConnectingPipe
 {
     private int _isDisposed;
     private readonly ISubscriber _subscriber;
@@ -85,11 +89,11 @@ public class RedisMqPipe : IConnectablePipe
         return result;
     }
 
-    public async Task<PipeConnection> ConnectOutAsync<TMessage>(IPipe pipe, string routingKey = "",
+    public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default) =>
         await _pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
 
-    public async Task<PipeConnection> ConnectOutAsync<TMessage, TResult>(IPipe pipe, string routingKey = "",
+    public async Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
         await _pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
 

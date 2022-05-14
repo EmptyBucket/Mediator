@@ -23,7 +23,9 @@
 
 using Mediator;
 using Mediator.Configurations;
-using Mediator.PubSub;
+using Mediator.Pipes;
+using Mediator.Pipes.PublishSubscribe;
+using Mediator.Pipes.RequestResponse;
 using Mediator.RabbitMq.Configurations;
 using Mediator.Redis.Configurations;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,8 +52,8 @@ serviceCollection
         var pipeFactory = p.GetRequiredService<IPipeFactory>();
 
         // bindings usage
-        var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("rabbit");
-        var redisMqPipe = pipeFactory.Create<IConnectingPipe>("redis");
+        var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
+        var redisMqPipe = pipeFactory.Create<IConnectingPipe>("RedisMqPipe");
 
         // mediator =[Event]> EventHandler
         await c.ConnectOutAsync(new EventHandler());

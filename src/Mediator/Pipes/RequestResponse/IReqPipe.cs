@@ -21,9 +21,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.PubSub;
+using Mediator.Handlers;
 
-public interface IPipe
+namespace Mediator.Pipes.RequestResponse;
+
+public interface IReqPipe
 {
-    Task PassAsync<TMessage>(TMessage message, MessageContext context, CancellationToken token = default);
+    Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
+        CancellationToken token = default);
 }
