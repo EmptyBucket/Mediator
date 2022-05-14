@@ -22,7 +22,8 @@ serviceCollection
 serviceCollection
     .AddMediator(b =>
     {
-        // pipe bindings are needed in order not to have an explicit dependency on rabbitMq or redis
+        // pipe bindings are needed in order not to have an explicit dependency on libs
+        // bindings register a type to itself and all its pipe interfaces
         b.BindRabbitMq().BindRedisMq();
     }, async (p, c) =>
     {
@@ -40,7 +41,6 @@ serviceCollection
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#1
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#2
         await rabbitMqPipe.ConnectInAsync<Event>(c);
-        // specify subscriptionId for persistent queues/streams
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
         await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "2");
 
@@ -49,10 +49,12 @@ serviceCollection
         await redisMqPipe.ConnectOutAsync(new EventHandler());
         
         // mediator =[Event]> redisStream =[Event]> EventHandler
+        // specify subscriptionId for persistent queues/streams
         await redisStreamPipe.ConnectInAsync<Event>(c);
         await redisStreamPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
 
-        // mediator =[Event]> rabbitMq =[Event]> redisMq =[Event]> EventHandler#result =[EventResult]> result
+        // mediator =[Event]> rabbitMq =[Event]> redisMq =[Event]> EventHandler =[EventResult]> result
+        // you can connect any pipes with each other, building the necessary topology
         await rabbitMqPipe.ConnectInAsync<Event, EventResult>(c);
         await redisMqPipe.ConnectInAsync<Event, EventResult>(rabbitMqPipe);
         await redisMqPipe.ConnectOutAsync(new EventHandlerWithResult());
@@ -63,5 +65,4 @@ var mediator = await serviceProvider.GetRequiredService<IMediatorFactory>().Crea
 // publish and send events
 await mediator.PublishAsync(new Event());
 var result = await mediator.SendAsync<Event, EventResult>(new Event());
-
 await Task.Delay(TimeSpan.FromHours(1));
