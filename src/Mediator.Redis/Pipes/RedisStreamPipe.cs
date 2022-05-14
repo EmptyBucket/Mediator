@@ -20,7 +20,8 @@ public class RedisStreamPipe : IConnectingPubPipe
     public async Task PassAsync<TMessage>(TMessage message, MessageContext context, CancellationToken token = default)
     {
         var route = Route.For<TMessage>(context.RoutingKey);
-        await _database.StreamAddAsync(route.ToString(), "message", JsonSerializer.Serialize(message))
+        await _database
+            .StreamAddAsync(route.ToString(), RedisWellKnown.MessageKey, JsonSerializer.Serialize(message))
             .ConfigureAwait(false);
     }
 

@@ -31,6 +31,7 @@ serviceCollection
         // bindings usage
         var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
         var redisMqPipe = pipeFactory.Create<IConnectingPipe>("RedisMqPipe");
+        // notice stream support only pubsub, so its use IConnectingPubPipe
         var redisStreamPipe = pipeFactory.Create<IConnectingPubPipe>("RedisStreamPipe");
 
         // mediator =[Event]> EventHandler
