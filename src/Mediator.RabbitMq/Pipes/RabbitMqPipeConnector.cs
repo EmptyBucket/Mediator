@@ -23,16 +23,16 @@ public class RabbitMqPipeConnector : IPipeConnector
     public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default)
     {
-        async Task Handle(TMessage m, CancellationToken c)
+        async Task Handle(MessageContext<TMessage> m, CancellationToken c)
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
-            var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
-            await pipe.PassAsync(m, messageContext, c);
+            var context = m with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+            await pipe.PassAsync(context, c);
         }
 
         var route = Route.For<TMessage>(routingKey);
         var subscription = await _bus.PubSub
-            .SubscribeAsync<TMessage>(subscriptionId, Handle, c => c.WithTopic(route), token)
+            .SubscribeAsync<MessageContext<TMessage>>(subscriptionId, Handle, c => c.WithQueueName(route), token)
             .ConfigureAwait(false);
         var pipeConnection = new PipeConnection(subscription, p => _pipeConnections.TryRemove(p, out _));
         _pipeConnections.TryAdd(pipeConnection, pipeConnection);
@@ -42,16 +42,16 @@ public class RabbitMqPipeConnector : IPipeConnector
     public async Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
-        async Task<TResult> Handle(TMessage m, CancellationToken c)
+        async Task<TResult> Handle(MessageContext<TMessage> m, CancellationToken c)
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
-            var messageContext = new MessageContext(scope.ServiceProvider, routingKey);
-            return await pipe.PassAsync<TMessage, TResult>(m, messageContext, c);
+            var context = m with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+            return await pipe.PassAsync<TMessage, TResult>(context, c);
         }
 
         var route = Route.For<TMessage, TResult>(routingKey);
         var subscription = await _bus.Rpc
-            .RespondAsync<TMessage, TResult>(Handle, c => c.WithQueueName(route), token)
+            .RespondAsync<MessageContext<TMessage>, TResult>(Handle, c => c.WithQueueName(route), token)
             .ConfigureAwait(false);
         var pipeConnection = new PipeConnection(subscription, p => _pipeConnections.TryRemove(p, out _));
         _pipeConnections.TryAdd(pipeConnection, pipeConnection);

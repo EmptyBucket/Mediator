@@ -9,19 +9,18 @@ public class ConnectingPipe : IConnectingPipe
     private readonly ConnectingPubPipe _connectingPubPipe;
     private readonly ConnectingReqPipe _connectingReqPipe;
 
-    public ConnectingPipe()
+    public ConnectingPipe(IServiceProvider serviceProvider)
     {
-        _connectingPubPipe = new ConnectingPubPipe();
-        _connectingReqPipe = new ConnectingReqPipe();
+        _connectingPubPipe = new ConnectingPubPipe(serviceProvider);
+        _connectingReqPipe = new ConnectingReqPipe(serviceProvider);
     }
 
-    public Task PassAsync<TMessage>(TMessage message, MessageContext context,
-        CancellationToken token = default) =>
-        _connectingPubPipe.PassAsync(message, context, token);
+    public Task PassAsync<TMessage>(MessageContext<TMessage> context, CancellationToken token = default) =>
+        _connectingPubPipe.PassAsync(context, token);
 
-    public Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
+    public Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> context,
         CancellationToken token = default) =>
-        _connectingReqPipe.PassAsync<TMessage, TResult>(message, context, token);
+        _connectingReqPipe.PassAsync<TMessage, TResult>(context, token);
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default) =>

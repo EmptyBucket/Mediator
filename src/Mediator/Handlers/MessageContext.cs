@@ -1,14 +1,19 @@
+using System.Text.Json.Serialization;
+using Mediator.Pipes;
+
 namespace Mediator.Handlers;
 
-public class MessageContext
+public record MessageContext<TMessage>(Route Route, string MessageId, string CorrelationId, DateTimeOffset CreatedAt)
 {
-	public MessageContext(IServiceProvider serviceProvider, string routingKey = "")
-	{
-		ServiceProvider = serviceProvider;
-		RoutingKey = routingKey;
-	}
+    public DateTimeOffset? DeliveredAt { get; init; }
 
-	public IServiceProvider ServiceProvider { get; set; }
-	
-	public string RoutingKey { get; set; }
+    public TimeSpan? DeliveryTime => DeliveredAt is not null ? DeliveredAt.Value - CreatedAt : null;
+
+    public TMessage? Message { get; init; }
+
+    public string? ExMessage { get; init; }
+
+    [Newtonsoft.Json.JsonIgnore]
+    [JsonIgnore]
+    public IServiceProvider? ServiceProvider { get; init; }
 }

@@ -7,29 +7,32 @@ namespace Mediator;
 
 internal class Mediator : IMediator
 {
-    private readonly IServiceProvider _serviceProvider;
     private readonly ConnectingPipe _pipe;
 
     public Mediator(IServiceProvider serviceProvider)
     {
-        _serviceProvider = serviceProvider;
-        _pipe = new ConnectingPipe();
+        _pipe = new ConnectingPipe(serviceProvider);
     }
 
     public async Task PublishAsync<TMessage>(TMessage message,
-        Action<MessageContext>? contextBuilder = null, CancellationToken token = default)
+        Action<MessageContext<TMessage>>? contextBuilder = null, CancellationToken token = default)
     {
-        var messageContext = new MessageContext(_serviceProvider);
-        contextBuilder?.Invoke(messageContext);
-        await _pipe.PassAsync(message, messageContext, token);
+        var messageId = Guid.NewGuid().ToString();
+        var correlationId = Guid.NewGuid().ToString();
+        var context = new MessageContext<TMessage>(Route.For<TMessage>(), messageId, correlationId, DateTimeOffset.Now);
+        contextBuilder?.Invoke(context);
+        await _pipe.PassAsync(context, token);
     }
 
     public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message,
-        Action<MessageContext>? contextBuilder = null, CancellationToken token = default)
+        Action<MessageContext<TMessage>>? contextBuilder = null, CancellationToken token = default)
     {
-        var messageContext = new MessageContext(_serviceProvider);
-        contextBuilder?.Invoke(messageContext);
-        return await _pipe.PassAsync<TMessage, TResult>(message, messageContext, token);
+        var messageId = Guid.NewGuid().ToString();
+        var correlationId = Guid.NewGuid().ToString();
+        var context =
+            new MessageContext<TMessage>(Route.For<TMessage, TResult>(), messageId, correlationId, DateTimeOffset.Now);
+        contextBuilder?.Invoke(context);
+        return await _pipe.PassAsync<TMessage, TResult>(context, token);
     }
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",

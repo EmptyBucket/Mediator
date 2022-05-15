@@ -32,8 +32,9 @@ public class RedisStreamPipeConnector : IPubPipeConnector
             foreach (var entry in entries)
             {
                 await using var scope = _serviceProvider.CreateAsyncScope();
-                var message = JsonSerializer.Deserialize<TMessage>(entry[RedisWellKnown.MessageKey]);
-                await pipe.PassAsync(message, new MessageContext(scope.ServiceProvider, routingKey), c);
+                var context = JsonSerializer.Deserialize<MessageContext<TMessage>>(entry[RedisWellKnown.MessageKey])!;
+                context = context with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+                await pipe.PassAsync(context, c);
                 await _database.StreamAcknowledgeAsync(r.ToString(), subscriptionId, entry.Id);
             }
         }

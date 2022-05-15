@@ -1,21 +1,31 @@
 using Mediator.Handlers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Pipes.RequestResponse;
 
 internal class ConnectingReqPipe : IConnectingReqPipe
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, List<PipeConnection>> _pipeConnections = new();
 
-    public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
+    public ConnectingReqPipe(IServiceProvider serviceProvider)
+    {
+        _serviceProvider = serviceProvider;
+    }
+
+    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> context,
         CancellationToken token = default)
     {
-        var route = Route.For<TMessage, TResult>(context.RoutingKey);
-        var pipes = GetPipes(route);
+        var pipes = GetPipes(context.Route);
 
-        if (!pipes.Any()) throw new InvalidOperationException($"Message with route: {route} has not registered pipes");
+        if (pipes.Length != 1)
+            throw new InvalidOperationException(
+                $"Message with route: {context.Route} must have only one registered pipe");
 
-        return await pipes.First().PassAsync<TMessage, TResult>(message, context, token);
+        using var scope = _serviceProvider.CreateScope();
+        context = context with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider};
+        return await pipes.First().PassAsync<TMessage, TResult>(context, token);
     }
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
@@ -47,8 +57,7 @@ internal class ConnectingReqPipe : IConnectingReqPipe
     private ValueTask Disconnect(PipeConnection pipeConnection)
     {
         _lock.EnterWriteLock();
-        if (_pipeConnections.TryGetValue(pipeConnection.Route, out var list) &&
-            list.Remove(pipeConnection) && !list.Any())
+        if (_pipeConnections.TryGetValue(pipeConnection.Route, out var l) && l.Remove(pipeConnection) && !l.Any())
             _pipeConnections.Remove(pipeConnection.Route);
         _lock.ExitWriteLock();
 
@@ -76,8 +85,7 @@ internal class ConnectingReqPipe : IConnectingReqPipe
 
         public IReqPipe Pipe { get; }
 
-        public ValueTask DisposeAsync() => Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1
-            ? ValueTask.CompletedTask
-            : _disconnect(this);
+        public ValueTask DisposeAsync() =>
+            Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1 ? ValueTask.CompletedTask : _disconnect(this);
     }
 }
