@@ -22,21 +22,29 @@
 // SOFTWARE.
 
 using Mediator.Handlers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Pipes.PublishSubscribe;
 
 internal class ConnectingPubPipe : IConnectingPubPipe
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, List<PipeConnection>> _pipeConnections = new();
 
-    public Task PassAsync<TMessage>(TMessage message, MessageContext context, CancellationToken token = default)
+    public ConnectingPubPipe(IServiceProvider serviceProvider)
     {
-        var route = Route.For<TMessage>(context.RoutingKey);
-        var pipes = GetPipes(route);
-        
-        foreach (var pipe in pipes) pipe.PassAsync(message, context, token);
-        
+        _serviceProvider = serviceProvider;
+    }
+
+    public Task PassAsync<TMessage>(MessageContext<TMessage> context, CancellationToken token = default)
+    {
+        var pipes = GetPipes(context.Route);
+
+        using var scope = _serviceProvider.CreateScope();
+        context = context with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+        foreach (var pipe in pipes) pipe.PassAsync(context, token);
+
         return Task.CompletedTask;
     }
 
@@ -69,8 +77,7 @@ internal class ConnectingPubPipe : IConnectingPubPipe
     private ValueTask Disconnect(PipeConnection pipeConnection)
     {
         _lock.EnterWriteLock();
-        if (_pipeConnections.TryGetValue(pipeConnection.Route, out var list) &&
-            list.Remove(pipeConnection) && !list.Any())
+        if (_pipeConnections.TryGetValue(pipeConnection.Route, out var l) && l.Remove(pipeConnection) && !l.Any())
             _pipeConnections.Remove(pipeConnection.Route);
         _lock.ExitWriteLock();
 
@@ -98,8 +105,7 @@ internal class ConnectingPubPipe : IConnectingPubPipe
 
         public IPubPipe Pipe { get; }
 
-        public ValueTask DisposeAsync() => Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1
-            ? ValueTask.CompletedTask
-            : _disconnect(this);
+        public ValueTask DisposeAsync() =>
+            Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1 ? ValueTask.CompletedTask : _disconnect(this);
     }
 }

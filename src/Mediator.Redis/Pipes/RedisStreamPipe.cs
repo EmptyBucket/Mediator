@@ -23,7 +23,6 @@
 
 using System.Text.Json;
 using Mediator.Handlers;
-using Mediator.Pipes;
 using Mediator.Pipes.PublishSubscribe;
 using StackExchange.Redis;
 
@@ -40,13 +39,10 @@ public class RedisStreamPipe : IConnectingPubPipe
         _redisStreamPipeConnector = new RedisStreamPipeConnector(connectionMultiplexer, serviceProvider);
     }
 
-    public async Task PassAsync<TMessage>(TMessage message, MessageContext context, CancellationToken token = default)
-    {
-        var route = Route.For<TMessage>(context.RoutingKey);
+    public async Task PassAsync<TMessage>(MessageContext<TMessage> context, CancellationToken token = default) =>
         await _database
-            .StreamAddAsync(route.ToString(), RedisWellKnown.MessageKey, JsonSerializer.Serialize(message))
+            .StreamAddAsync(context.Route.ToString(), RedisWellKnown.MessageKey, JsonSerializer.Serialize(context))
             .ConfigureAwait(false);
-    }
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default) =>

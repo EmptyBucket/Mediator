@@ -46,37 +46,32 @@ public class RedisMqPipe : IConnectingPipe
         _responseMq = new Lazy<Task<ChannelMessageQueue>>(CreateResponseMq);
     }
 
-    public async Task PassAsync<TMessage>(TMessage message, MessageContext context,
-        CancellationToken token = default)
-    {
-        var route = Route.For<TMessage>(context.RoutingKey);
-        await _subscriber.PublishAsync(route.ToString(), JsonSerializer.Serialize(message)).ConfigureAwait(false);
-    }
+    public async Task PassAsync<TMessage>(MessageContext<TMessage> context,
+        CancellationToken token = default) =>
+        await _subscriber
+            .PublishAsync(context.Route.ToString(), JsonSerializer.Serialize(context))
+            .ConfigureAwait(false);
 
-    public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
+    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> context,
         CancellationToken token = default)
     {
         await _responseMq.Value;
 
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        cts.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
 
         void Handle(ChannelMessage m)
         {
-            var response = JsonSerializer.Deserialize<RedisMqMessage<TResult>>(m.Message);
+            var responseContext = JsonSerializer.Deserialize<MessageContext<TResult>>(m.Message)!;
 
-            if (response.Value is not null) tcs.TrySetResult(response.Value);
-            else if (response.Exception is not null) tcs.TrySetException(new Exception(response.Exception));
+            if (responseContext.Message != null) tcs.TrySetResult(responseContext.Message);
+            else if (responseContext.ExMessage != null) tcs.TrySetException(new Exception(responseContext.ExMessage));
             else tcs.TrySetException(new InvalidOperationException("Message was not be processed"));
         }
 
-        var correlationId = Guid.NewGuid().ToString();
-        _responseHandlers.TryAdd(correlationId, Handle);
-        var request = new RedisMqMessage<TMessage>(correlationId, message);
-        
-        var route = Route.For<TMessage, TResult>(context.RoutingKey);
-        await _subscriber.PublishAsync(route.ToString(), JsonSerializer.Serialize(request)).ConfigureAwait(false);
+        _responseHandlers.TryAdd(context.CorrelationId, Handle);
+        await _subscriber
+            .PublishAsync(context.Route.ToString(), JsonSerializer.Serialize(context))
+            .ConfigureAwait(false);
         return await tcs.Task;
     }
 
@@ -93,7 +88,7 @@ public class RedisMqPipe : IConnectingPipe
         void Handle(ChannelMessage m)
         {
             var jsonElement = JsonDocument.Parse(m.Message.ToString()).RootElement;
-            var correlationId = jsonElement.GetProperty(nameof(RedisMqMessage<int>.CorrelationId)).ToString();
+            var correlationId = jsonElement.GetProperty("CorrelationId").ToString();
 
             if (_responseHandlers.TryRemove(correlationId, out var handle)) handle(m);
         }

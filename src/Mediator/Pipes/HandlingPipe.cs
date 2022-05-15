@@ -36,16 +36,13 @@ public class HandlingPipe<THandlerMessage> : IPubPipe
         _factory = factory;
     }
 
-    public Task PassAsync<TMessage>(TMessage message, MessageContext context,
-        CancellationToken token = default)
+    public Task PassAsync<TMessage>(MessageContext<TMessage> context, CancellationToken token = default)
     {
-        var route = Route.For<TMessage>(context.RoutingKey);
+        if (context is not MessageContext<THandlerMessage> handlerMessageContext)
+            throw new InvalidOperationException($"Message with route: {context.Route} cannot be processed");
 
-        if (message is not THandlerMessage handlerMessage)
-            throw new InvalidOperationException($"Message with route: {route} cannot be processed");
-
-        var handler = _factory(context.ServiceProvider);
-        return handler.HandleAsync(handlerMessage, context, token);
+        var handler = _factory(context.ServiceProvider!);
+        return handler.HandleAsync(handlerMessageContext.Message!, handlerMessageContext, token);
     }
 }
 
@@ -58,16 +55,15 @@ public class HandlingPipe<THandlerMessage, THandlerResult> : IReqPipe
         _factory = factory;
     }
 
-    public async Task<TResult> PassAsync<TMessage, TResult>(TMessage message, MessageContext context,
+    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> context,
         CancellationToken token = default)
     {
-        var route = Route.For<TMessage, TResult>(context.RoutingKey);
+        if (context is not MessageContext<THandlerMessage> handlerMessageContext ||
+            !typeof(THandlerResult).IsAssignableTo(typeof(TResult)))
+            throw new InvalidOperationException($"Message with route: {context.Route} cannot be processed");
 
-        if (message is not THandlerMessage handlerMessage || !typeof(THandlerResult).IsAssignableTo(typeof(TResult)))
-            throw new InvalidOperationException($"Message with route: {route} cannot be processed");
-
-        var handler = _factory(context.ServiceProvider);
-        var result = await handler.HandleAsync(handlerMessage, context, token);
+        var handler = _factory(context.ServiceProvider!);
+        var result = await handler.HandleAsync(handlerMessageContext.Message!, handlerMessageContext, token);
         return (TResult)(object)result!;
     }
 }

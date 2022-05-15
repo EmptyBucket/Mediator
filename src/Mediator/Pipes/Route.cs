@@ -33,6 +33,6 @@ public readonly record struct Route(Type MessageType, string RoutingKey = "", Ty
 
     public static implicit operator string(Route route) => route.ToString();
 
-    public override string ToString() => 
-        $"{MessageType.FullName}:{RoutingKey}{(ResultType is not null ? ResultType.FullName : "")}";
+    public override string ToString() =>
+        $"{MessageType.FullName}:{RoutingKey}{(ResultType is not null ? $":{ResultType.FullName}" : string.Empty)}";
 }

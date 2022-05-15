@@ -23,15 +23,15 @@
 
 namespace Mediator.Handlers;
 
-public interface IHandler<in TMessage>
+public interface IHandler<TMessage>
 {
-    Task HandleAsync(TMessage message, MessageContext context, CancellationToken token);
+    Task HandleAsync(TMessage message, MessageContext<TMessage> context, CancellationToken token);
 }
 
-public interface IHandler<in TMessage, TResult> : IHandler<TMessage>
+public interface IHandler<TMessage, TResult> : IHandler<TMessage>
 {
-    new Task<TResult> HandleAsync(TMessage message, MessageContext context, CancellationToken token);
+    new Task<TResult> HandleAsync(TMessage message, MessageContext<TMessage> context, CancellationToken token);
 
-    Task IHandler<TMessage>.HandleAsync(TMessage message, MessageContext context, CancellationToken token) =>
+    Task IHandler<TMessage>.HandleAsync(TMessage message, MessageContext<TMessage> context, CancellationToken token) =>
         HandleAsync(message, context, token);
 }
