@@ -13,7 +13,7 @@ public record MessageContext<TMessage>(Route Route, string MessageId, string Cor
 
     public string? ExMessage { get; init; }
 
-    [Newtonsoft.Json.JsonIgnore]
     [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     public IServiceProvider? ServiceProvider { get; init; }
 }
