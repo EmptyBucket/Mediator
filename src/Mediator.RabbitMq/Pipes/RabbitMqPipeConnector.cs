@@ -32,7 +32,7 @@ public class RabbitMqPipeConnector : IPipeConnector
 
         var route = Route.For<TMessage>(routingKey);
         var subscription = await _bus.PubSub
-            .SubscribeAsync<MessageContext<TMessage>>(subscriptionId, Handle, c => c.WithQueueName(route), token)
+            .SubscribeAsync<MessageContext<TMessage>>(subscriptionId, Handle, c => c.WithTopic(route), token)
             .ConfigureAwait(false);
         var pipeConnection = new PipeConnection(subscription, p => _pipeConnections.TryRemove(p, out _));
         _pipeConnections.TryAdd(pipeConnection, pipeConnection);
