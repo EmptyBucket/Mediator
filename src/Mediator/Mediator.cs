@@ -38,7 +38,8 @@ internal class Mediator : IMediator
     }
 
     public async Task PublishAsync<TMessage>(TMessage message,
-        Action<MessageContext<TMessage>>? contextBuilder = null, CancellationToken token = default)
+        Func<MessageContext<TMessage>, MessageContext<TMessage>>? contextBuilder = null,
+        CancellationToken token = default)
     {
         var messageId = Guid.NewGuid().ToString();
         var correlationId = Guid.NewGuid().ToString();
@@ -48,7 +49,8 @@ internal class Mediator : IMediator
     }
 
     public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message,
-        Action<MessageContext<TMessage>>? contextBuilder = null, CancellationToken token = default)
+        Func<MessageContext<TMessage>, MessageContext<TMessage>>? contextBuilder = null,
+        CancellationToken token = default)
     {
         var messageId = Guid.NewGuid().ToString();
         var correlationId = Guid.NewGuid().ToString();
