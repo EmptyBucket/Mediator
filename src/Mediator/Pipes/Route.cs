@@ -1,9 +1,9 @@
 namespace Mediator.Pipes;
 
-public readonly record struct Route(string MessageType, string RoutingKey = "", string? ResultType = null)
+public readonly record struct Route(string MessageType, string RoutingKey = "", string ResultType = "")
 {
     public Route(Type messageType, string routingKey = "", Type? resultType = null)
-        : this(messageType.FullName ?? messageType.Name, routingKey, resultType?.FullName ?? resultType?.Name)
+        : this(messageType.FullName ?? messageType.Name, routingKey, resultType?.FullName ?? resultType?.Name ?? "")
     {
     }
 
@@ -15,6 +15,5 @@ public readonly record struct Route(string MessageType, string RoutingKey = "", 
 
     public static implicit operator string(Route route) => route.ToString();
 
-    public override string ToString() =>
-        $"{MessageType}:{RoutingKey}{(ResultType is not null ? $":{ResultType}" : string.Empty)}";
+    public override string ToString() => $"{MessageType}:{RoutingKey}:{ResultType}";
 }
