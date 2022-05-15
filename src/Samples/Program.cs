@@ -59,28 +59,28 @@ serviceCollection
         var redisStreamPipe = pipeFactory.Create<IConnectingPubPipe>("RedisStreamPipe");
 
         // mediator =[Event]> EventHandler
-        await c.ConnectOutAsync(new EventHandler());
+        await c.ConnectHandlerAsync(new EventHandler());
 
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#1
         // mediator =[Event]> rabbitMq =[Event]> EventHandler#2
         await rabbitMqPipe.ConnectInAsync<Event>(c);
-        await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
-        await rabbitMqPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "2");
+        await rabbitMqPipe.ConnectHandlerAsync(new EventHandler(), subscriptionId: "1");
+        await rabbitMqPipe.ConnectHandlerAsync(new EventHandler(), subscriptionId: "2");
 
         // mediator =[Event]> redisMq =[Event]> EventHandler
         await redisMqPipe.ConnectInAsync<Event>(c);
-        await redisMqPipe.ConnectOutAsync(new EventHandler());
+        await redisMqPipe.ConnectHandlerAsync(new EventHandler());
         
         // mediator =[Event]> redisStream =[Event]> EventHandler
         // specify subscriptionId for persistent queues/streams
         await redisStreamPipe.ConnectInAsync<Event>(c);
-        await redisStreamPipe.ConnectOutAsync(new EventHandler(), subscriptionId: "1");
+        await redisStreamPipe.ConnectHandlerAsync(new EventHandler(), subscriptionId: "1");
 
         // mediator =[Event]> rabbitMq =[Event]> redisMq =[Event]> EventHandler =[EventResult]> result
         // you can connect any pipes with each other, building the necessary topology
         await rabbitMqPipe.ConnectInAsync<Event, EventResult>(c);
         await redisMqPipe.ConnectInAsync<Event, EventResult>(rabbitMqPipe);
-        await redisMqPipe.ConnectOutAsync(new EventHandlerWithResult());
+        await redisMqPipe.ConnectHandlerAsync(new EventHandlerWithResult());
     });
 var serviceProvider = serviceCollection.BuildServiceProvider();
 var mediator = await serviceProvider.GetRequiredService<IMediatorFactory>().CreateAsync();

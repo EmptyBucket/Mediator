@@ -30,11 +30,14 @@ internal class ConnectingPubPipe : IConnectingPubPipe
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, List<PipeConnection>> _pipeConnections = new();
 
-    public async Task PassAsync<TMessage>(TMessage message, MessageContext context, CancellationToken token = default)
+    public Task PassAsync<TMessage>(TMessage message, MessageContext context, CancellationToken token = default)
     {
         var route = Route.For<TMessage>(context.RoutingKey);
         var pipes = GetPipes(route);
-        await Task.WhenAll(pipes.Select(p => p.PassAsync(message, context, token)));
+        
+        foreach (var pipe in pipes) pipe.PassAsync(message, context, token);
+        
+        return Task.CompletedTask;
     }
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
