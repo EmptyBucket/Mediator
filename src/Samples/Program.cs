@@ -2,7 +2,6 @@ using Mediator;
 using Mediator.Configurations;
 using Mediator.Pipes;
 using Mediator.Pipes.PublishSubscribe;
-using Mediator.Pipes.RequestResponse;
 using Mediator.RabbitMq.Configurations;
 using Mediator.Redis.Configurations;
 using Microsoft.Extensions.DependencyInjection;
