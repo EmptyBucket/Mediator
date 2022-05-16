@@ -37,18 +37,17 @@ internal class ConnectingReqPipe : IConnectingReqPipe
         _serviceProvider = serviceProvider;
     }
 
-    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> context,
+    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
         CancellationToken token = default)
     {
-        var pipes = GetPipes(context.Route);
+        var pipes = GetPipes(ctx.Route);
 
         if (pipes.Length != 1)
-            throw new InvalidOperationException(
-                $"Message with route: {context.Route} must have only one registered pipe");
+            throw new InvalidOperationException($"Message with route: {ctx.Route} must have only one registered pipe");
 
         using var scope = _serviceProvider.CreateScope();
-        context = context with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider};
-        return await pipes.First().PassAsync<TMessage, TResult>(context, token);
+        ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider};
+        return await pipes.First().PassAsync<TMessage, TResult>(ctx, token);
     }
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",

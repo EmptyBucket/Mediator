@@ -50,9 +50,9 @@ public class RedisMqPipeConnector : IPipeConnector
         async Task Handle(ChannelMessage m)
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
-            var context = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message)!;
-            context = context with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
-            await pipe.PassAsync(context, token);
+            var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message)!;
+            ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+            await pipe.PassAsync(ctx, token);
         }
 
         var route = Route.For<TMessage>(routingKey);
@@ -68,26 +68,26 @@ public class RedisMqPipeConnector : IPipeConnector
     {
         async Task Handle(ChannelMessage m)
         {
-            var requestContext = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message)!;
+            var messageCtx = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message)!;
 
             try
             {
                 await using var scope = _serviceProvider.CreateAsyncScope();
-                requestContext =
-                    requestContext with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
-                var result = await pipe.PassAsync<TMessage, TResult>(requestContext, token);
-                var responseContext = new MessageContext<TResult>(requestContext.Route, Guid.NewGuid().ToString(),
-                    requestContext.CorrelationId, DateTimeOffset.Now) { Message = result };
+                messageCtx =
+                    messageCtx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+                var result = await pipe.PassAsync<TMessage, TResult>(messageCtx, token);
+                var resultCtx = new ResultContext<TResult>(messageCtx.Route, Guid.NewGuid().ToString(),
+                    messageCtx.CorrelationId, DateTimeOffset.Now) { Result = result };
                 await _subscriber
-                    .PublishAsync(RedisWellKnown.ResponseMq, JsonSerializer.Serialize(responseContext))
+                    .PublishAsync(RedisWellKnown.ResponseMq, JsonSerializer.Serialize(resultCtx))
                     .ConfigureAwait(false);
             }
             catch (Exception e)
             {
-                var responseContext = new MessageContext<TResult>(requestContext.Route, Guid.NewGuid().ToString(),
-                    requestContext.CorrelationId, DateTimeOffset.Now) { ExMessage = e.Message };
+                var resultCtx = new ResultContext<TResult>(messageCtx.Route, Guid.NewGuid().ToString(),
+                    messageCtx.CorrelationId, DateTimeOffset.Now) { Exception = e };
                 await _subscriber
-                    .PublishAsync(RedisWellKnown.ResponseMq, JsonSerializer.Serialize(responseContext))
+                    .PublishAsync(RedisWellKnown.ResponseMq, JsonSerializer.Serialize(resultCtx))
                     .ConfigureAwait(false);
                 throw;
             }

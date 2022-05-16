@@ -38,26 +38,25 @@ internal class Mediator : IMediator
     }
 
     public async Task PublishAsync<TMessage>(TMessage message,
-        Func<MessageContext<TMessage>, MessageContext<TMessage>>? contextBuilder = null,
-        CancellationToken token = default)
+        Func<MessageContext<TMessage>, MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default)
     {
+        var route = Route.For<TMessage>();
         var messageId = Guid.NewGuid().ToString();
         var correlationId = Guid.NewGuid().ToString();
-        var context = new MessageContext<TMessage>(Route.For<TMessage>(), messageId, correlationId, DateTimeOffset.Now);
-        contextBuilder?.Invoke(context);
-        await _pipe.PassAsync(context, token);
+        var ctx = new MessageContext<TMessage>(route, messageId, correlationId, DateTimeOffset.Now, message);
+        ctxBuilder?.Invoke(ctx);
+        await _pipe.PassAsync(ctx, token);
     }
 
     public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message,
-        Func<MessageContext<TMessage>, MessageContext<TMessage>>? contextBuilder = null,
-        CancellationToken token = default)
+        Func<MessageContext<TMessage>, MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default)
     {
+        var route = Route.For<TMessage, TResult>();
         var messageId = Guid.NewGuid().ToString();
         var correlationId = Guid.NewGuid().ToString();
-        var context =
-            new MessageContext<TMessage>(Route.For<TMessage, TResult>(), messageId, correlationId, DateTimeOffset.Now);
-        contextBuilder?.Invoke(context);
-        return await _pipe.PassAsync<TMessage, TResult>(context, token);
+        var ctx = new MessageContext<TMessage>(route, messageId, correlationId, DateTimeOffset.Now, message);
+        ctxBuilder?.Invoke(ctx);
+        return await _pipe.PassAsync<TMessage, TResult>(ctx, token);
     }
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",

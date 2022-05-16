@@ -36,13 +36,16 @@ public class HandlingPipe<THandlerMessage> : IPubPipe
         _factory = factory;
     }
 
-    public Task PassAsync<TMessage>(MessageContext<TMessage> context, CancellationToken token = default)
+    public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
     {
-        if (context is not MessageContext<THandlerMessage> handlerMessageContext)
-            throw new InvalidOperationException($"Message with route: {context.Route} cannot be processed");
+        if (ctx is not MessageContext<THandlerMessage> handlerMessageContext)
+            throw new InvalidOperationException($"Message with route: {ctx.Route} cannot be processed");
 
-        var handler = _factory(context.ServiceProvider!);
-        return handler.HandleAsync(handlerMessageContext.Message!, handlerMessageContext, token);
+        if (ctx.ServiceProvider is null)
+            throw new InvalidOperationException($"{nameof(ctx.ServiceProvider)} missing. Handler not constructed");
+
+        var handler = _factory(ctx.ServiceProvider);
+        return handler.HandleAsync(handlerMessageContext.Message, handlerMessageContext, token);
     }
 }
 
@@ -55,15 +58,18 @@ public class HandlingPipe<THandlerMessage, THandlerResult> : IReqPipe
         _factory = factory;
     }
 
-    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> context,
+    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
         CancellationToken token = default)
     {
-        if (context is not MessageContext<THandlerMessage> handlerMessageContext ||
+        if (ctx is not MessageContext<THandlerMessage> handlerCtx ||
             !typeof(THandlerResult).IsAssignableTo(typeof(TResult)))
-            throw new InvalidOperationException($"Message with route: {context.Route} cannot be processed");
+            throw new InvalidOperationException($"Message with route: {ctx.Route} cannot be processed");
 
-        var handler = _factory(context.ServiceProvider!);
-        var result = await handler.HandleAsync(handlerMessageContext.Message!, handlerMessageContext, token);
+        if (ctx.ServiceProvider is null)
+            throw new InvalidOperationException($"{nameof(ctx.ServiceProvider)} missing. Handler not constructed");
+
+        var handler = _factory(ctx.ServiceProvider);
+        var result = await handler.HandleAsync(handlerCtx.Message, handlerCtx, token);
         return (TResult)(object)result!;
     }
 }

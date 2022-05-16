@@ -21,11 +21,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Handlers;
+using Mediator.Pipes;
 
-namespace Mediator.Pipes.RequestResponse;
+namespace Mediator.Handlers;
 
-public interface IReqPipe
+public record ResultContext<TResult>(Route Route, string MessageId, string CorrelationId, DateTimeOffset CreatedAt)
 {
-    Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx, CancellationToken token = default);
-}
+    public DateTimeOffset? DeliveredAt { get; init; }
+
+    public TimeSpan? DeliveryTime => DeliveredAt is not null ? DeliveredAt.Value - CreatedAt : null;
+
+    public TResult? Result { get; set; }
+
+    public Exception? Exception { get; set; }
+};

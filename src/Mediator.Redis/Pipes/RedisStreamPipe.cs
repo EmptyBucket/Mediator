@@ -39,9 +39,9 @@ public class RedisStreamPipe : IConnectingPubPipe
         _redisStreamPipeConnector = new RedisStreamPipeConnector(connectionMultiplexer, serviceProvider);
     }
 
-    public async Task PassAsync<TMessage>(MessageContext<TMessage> context, CancellationToken token = default) =>
+    public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default) =>
         await _database
-            .StreamAddAsync(context.Route.ToString(), RedisWellKnown.MessageKey, JsonSerializer.Serialize(context))
+            .StreamAddAsync(ctx.Route.ToString(), RedisWellKnown.MessageKey, JsonSerializer.Serialize(ctx))
             .ConfigureAwait(false);
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
