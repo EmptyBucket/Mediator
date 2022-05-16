@@ -17,15 +17,15 @@ public class RabbitMqPipe : IConnectingPipe
         _pipeConnector = new RabbitMqPipeConnector(bus, serviceProvider);
     }
 
-    public async Task PassAsync<TMessage>(MessageContext<TMessage> context, CancellationToken token = default) =>
+    public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default) =>
         await _bus.PubSub
-            .PublishAsync(context, c => c.WithTopic(context.Route), token)
+            .PublishAsync(ctx, c => c.WithTopic(ctx.Route), token)
             .ConfigureAwait(false);
 
-    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> context,
+    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
         CancellationToken token = default) =>
         await _bus.Rpc
-            .RequestAsync<MessageContext<TMessage>, TResult>(context, c => c.WithQueueName(context.Route), token)
+            .RequestAsync<MessageContext<TMessage>, TResult>(ctx, c => c.WithQueueName(ctx.Route), token)
             .ConfigureAwait(false);
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",

@@ -15,12 +15,12 @@ public class ConnectingPipe : IConnectingPipe
         _connectingReqPipe = new ConnectingReqPipe(serviceProvider);
     }
 
-    public Task PassAsync<TMessage>(MessageContext<TMessage> context, CancellationToken token = default) =>
-        _connectingPubPipe.PassAsync(context, token);
+    public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default) =>
+        _connectingPubPipe.PassAsync(ctx, token);
 
-    public Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> context,
+    public Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
         CancellationToken token = default) =>
-        _connectingReqPipe.PassAsync<TMessage, TResult>(context, token);
+        _connectingReqPipe.PassAsync<TMessage, TResult>(ctx, token);
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default) =>

@@ -14,13 +14,13 @@ internal class ConnectingPubPipe : IConnectingPubPipe
         _serviceProvider = serviceProvider;
     }
 
-    public Task PassAsync<TMessage>(MessageContext<TMessage> context, CancellationToken token = default)
+    public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
     {
-        var pipes = GetPipes(context.Route);
+        var pipes = GetPipes(ctx.Route);
 
         using var scope = _serviceProvider.CreateScope();
-        context = context with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
-        foreach (var pipe in pipes) pipe.PassAsync(context, token);
+        ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+        foreach (var pipe in pipes) pipe.PassAsync(ctx, token);
 
         return Task.CompletedTask;
     }

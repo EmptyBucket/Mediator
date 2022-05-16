@@ -26,8 +26,8 @@ public class RabbitMqPipeConnector : IPipeConnector
         async Task Handle(MessageContext<TMessage> m, CancellationToken c)
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
-            var context = m with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
-            await pipe.PassAsync(context, c);
+            var ctx = m with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+            await pipe.PassAsync(ctx, c);
         }
 
         var route = Route.For<TMessage>(routingKey);
@@ -46,8 +46,8 @@ public class RabbitMqPipeConnector : IPipeConnector
         async Task<TResult> Handle(MessageContext<TMessage> m, CancellationToken c)
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
-            var context = m with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
-            return await pipe.PassAsync<TMessage, TResult>(context, c);
+            var ctx = m with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+            return await pipe.PassAsync<TMessage, TResult>(ctx, c);
         }
 
         var route = Route.For<TMessage, TResult>(routingKey);

@@ -23,13 +23,13 @@ public class RedisMqPipe : IConnectingPipe
         _responseMq = new Lazy<Task<ChannelMessageQueue>>(CreateResponseMq);
     }
 
-    public async Task PassAsync<TMessage>(MessageContext<TMessage> context,
+    public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx,
         CancellationToken token = default) =>
         await _subscriber
-            .PublishAsync(context.Route.ToString(), JsonSerializer.Serialize(context))
+            .PublishAsync(ctx.Route.ToString(), JsonSerializer.Serialize(ctx))
             .ConfigureAwait(false);
 
-    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> context,
+    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
         CancellationToken token = default)
     {
         await _responseMq.Value;
@@ -38,16 +38,16 @@ public class RedisMqPipe : IConnectingPipe
 
         void Handle(ChannelMessage m)
         {
-            var responseContext = JsonSerializer.Deserialize<MessageContext<TResult>>(m.Message)!;
+            var resultCtx = JsonSerializer.Deserialize<ResultContext<TResult>>(m.Message)!;
 
-            if (responseContext.Message != null) tcs.TrySetResult(responseContext.Message);
-            else if (responseContext.ExMessage != null) tcs.TrySetException(new Exception(responseContext.ExMessage));
+            if (resultCtx.Result != null) tcs.TrySetResult(resultCtx.Result);
+            else if (resultCtx.Exception != null) tcs.TrySetException(resultCtx.Exception);
             else tcs.TrySetException(new InvalidOperationException("Message was not be processed"));
         }
 
-        _responseHandlers.TryAdd(context.CorrelationId, Handle);
+        _responseHandlers.TryAdd(ctx.CorrelationId, Handle);
         await _subscriber
-            .PublishAsync(context.Route.ToString(), JsonSerializer.Serialize(context))
+            .PublishAsync(ctx.Route.ToString(), JsonSerializer.Serialize(ctx))
             .ConfigureAwait(false);
         return await tcs.Task;
     }

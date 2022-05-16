@@ -3,15 +3,12 @@ using Mediator.Pipes;
 
 namespace Mediator.Handlers;
 
-public record MessageContext<TMessage>(Route Route, string MessageId, string CorrelationId, DateTimeOffset CreatedAt)
+public record MessageContext<TMessage>(Route Route, string MessageId, string CorrelationId, DateTimeOffset CreatedAt,
+    TMessage Message)
 {
     public DateTimeOffset? DeliveredAt { get; init; }
 
     public TimeSpan? DeliveryTime => DeliveredAt is not null ? DeliveredAt.Value - CreatedAt : null;
-
-    public TMessage? Message { get; init; }
-
-    public string? ExMessage { get; init; }
 
     [JsonIgnore]
     [Newtonsoft.Json.JsonIgnore]
