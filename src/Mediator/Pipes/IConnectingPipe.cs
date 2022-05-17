@@ -3,6 +3,6 @@ using Mediator.Pipes.RequestResponse;
 
 namespace Mediator.Pipes;
 
-public interface IConnectingPipe : IConnectingPubPipe, IConnectingReqPipe
+public interface IConnectingPipe : IPipe, IPipeConnector, IConnectingPubPipe, IConnectingReqPipe
 {
 }
