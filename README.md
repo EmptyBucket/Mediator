@@ -45,7 +45,7 @@ serviceCollection
         await redisMqPipe.ConnectHandlerAsync(new EventHandler());
         
         // mediator =[Event]> redisStream =[Event]> EventHandler
-        // specify subscriptionId for persistent queues/streams
+        // specify subscriptionId for persistent queues/streams, when has several consumers
         await redisStreamPipe.ConnectInAsync<Event>(c);
         await redisStreamPipe.ConnectHandlerAsync(new EventHandler(), subscriptionId: "1");
 
