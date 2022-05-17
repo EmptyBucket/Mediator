@@ -41,7 +41,8 @@ public static class ServiceCollectionExtensions
         var pipeBinds = pipeBinder.Build();
         serviceCollection.TryAddScoped<IPipeFactory>(p => new PipeFactory(pipeBinds, p));
 
-        serviceCollection.TryAdd(new ServiceDescriptor(typeof(IMediator), typeof(Mediator), lifetime));
+        serviceCollection.TryAdd(new ServiceDescriptor(typeof(IMediator),
+            p => new MediatorFactory(p).CreateAsync().Result, lifetime));
 
         return serviceCollection;
     }
@@ -51,7 +52,6 @@ public static class ServiceCollectionExtensions
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
         bindPipes ??= _ => { };
-        connectPipes ??= (_, _) => Task.CompletedTask;
 
         var pipeBinder = new PipeBinder();
         BindDefaults(pipeBinder);
@@ -59,8 +59,8 @@ public static class ServiceCollectionExtensions
         var pipeBinds = pipeBinder.Build();
         serviceCollection.TryAddScoped<IPipeFactory>(p => new PipeFactory(pipeBinds, p));
 
-        serviceCollection.TryAdd(
-            new ServiceDescriptor(typeof(IMediatorFactory), p => new MediatorFactory(connectPipes, p), lifetime));
+        serviceCollection.TryAdd(new ServiceDescriptor(typeof(IMediatorFactory),
+            p => new MediatorFactory(p, connectPipes), lifetime));
 
         return serviceCollection;
     }

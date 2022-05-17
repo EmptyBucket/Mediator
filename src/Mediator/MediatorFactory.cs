@@ -30,14 +30,18 @@ internal class MediatorFactory : IMediatorFactory
 {
     private readonly Lazy<Task<IMediator>> _mediator;
 
-    public MediatorFactory(Func<IServiceProvider, IMediator, Task> connectPipes, IServiceProvider serviceProvider)
+    public MediatorFactory(IServiceProvider serviceProvider,
+        Func<IServiceProvider, IMediator, Task>? connectPipes = null)
     {
+        connectPipes ??= (_, _) => Task.CompletedTask;
+
         _mediator = new Lazy<Task<IMediator>>(async () =>
         {
             var pipeFactory = serviceProvider.GetRequiredService<IPipeFactory>();
             var dispatchPipe = pipeFactory.Create<ConnectingPipe>();
             var receivePipe = pipeFactory.Create<ConnectingPipe>();
-            var mediator = new Mediator(dispatchPipe, receivePipe);
+            var mediatorTopology = new MediatorTopology(dispatchPipe, receivePipe);
+            var mediator = new Mediator(mediatorTopology);
 
             await connectPipes(serviceProvider, mediator);
 

@@ -21,17 +21,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Handlers;
+using Mediator.Pipes;
 
 namespace Mediator;
 
-public interface IMediator : IAsyncDisposable
+public class MediatorTopology : IAsyncDisposable
 {
-    Task PublishAsync<TMessage>(TMessage message,
-        Func<MessageContext<TMessage>, MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default);
+    public MediatorTopology(IConnectingPipe dispatch, IConnectingPipe receive)
+    {
+        Dispatch = dispatch;
+        Receive = receive;
+    }
 
-    Task<TResult> SendAsync<TMessage, TResult>(TMessage message,
-        Func<MessageContext<TMessage>, MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default);
+    public void Deconstruct(out IConnectingPipe dispatch, out IConnectingPipe receive)
+    {
+        dispatch = Dispatch;
+        receive = Receive;
+    }
 
-    MediatorTopology Topology { get; }
+    public IConnectingPipe Dispatch { get; set; }
+
+    public IConnectingPipe Receive { get; set; }
+    
+    public async ValueTask DisposeAsync()
+    {
+        await Dispatch.DisposeAsync();
+        await Receive.DisposeAsync();
+    }
 }

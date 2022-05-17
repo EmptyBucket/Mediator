@@ -28,13 +28,9 @@ namespace Mediator;
 
 internal class Mediator : IMediator
 {
-    private readonly ConnectingPipe _dispatchPipe;
-    private readonly ConnectingPipe _receivePipe;
-
-    public Mediator(ConnectingPipe dispatchPipe, ConnectingPipe receivePipe)
+    public Mediator(MediatorTopology topology)
     {
-        _dispatchPipe = dispatchPipe;
-        _receivePipe = receivePipe;
+        Topology = topology;
     }
 
     public async Task PublishAsync<TMessage>(TMessage message,
@@ -45,7 +41,7 @@ internal class Mediator : IMediator
         var correlationId = Guid.NewGuid().ToString();
         var ctx = new MessageContext<TMessage>(route, messageId, correlationId, DateTimeOffset.Now, message);
         ctxBuilder?.Invoke(ctx);
-        await _dispatchPipe.PassAsync(ctx, token);
+        await Topology.Dispatch.PassAsync(ctx, token);
     }
 
     public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message,
@@ -56,14 +52,10 @@ internal class Mediator : IMediator
         var correlationId = Guid.NewGuid().ToString();
         var ctx = new MessageContext<TMessage>(route, messageId, correlationId, DateTimeOffset.Now, message);
         ctxBuilder?.Invoke(ctx);
-        return await _dispatchPipe.PassAsync<TMessage, TResult>(ctx, token);
+        return await Topology.Dispatch.PassAsync<TMessage, TResult>(ctx, token);
     }
 
-    public (IConnectingPipe Dispatch, IConnectingPipe Receive) Topology => (_dispatchPipe, _receivePipe);
+    public MediatorTopology Topology { get; }
 
-    public async ValueTask DisposeAsync()
-    {
-        await _dispatchPipe.DisposeAsync();
-        await _receivePipe.DisposeAsync();
-    }
+    public ValueTask DisposeAsync() => Topology.DisposeAsync();
 }

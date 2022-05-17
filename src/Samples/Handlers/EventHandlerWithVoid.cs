@@ -22,16 +22,15 @@
 // SOFTWARE.
 
 using Mediator.Handlers;
+using Samples.Events;
+using Void = Mediator.Void;
 
-namespace Mediator;
+namespace Samples.Handlers;
 
-public interface IMediator : IAsyncDisposable
+public class EventHandlerWithVoid : IHandler<Event, Void>
 {
-    Task PublishAsync<TMessage>(TMessage message,
-        Func<MessageContext<TMessage>, MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default);
-
-    Task<TResult> SendAsync<TMessage, TResult>(TMessage message,
-        Func<MessageContext<TMessage>, MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default);
-
-    MediatorTopology Topology { get; }
+    public Task<Void> HandleAsync(MessageContext<Event> ctx, CancellationToken token)
+    {
+        return Task.FromResult(new Void());
+    }
 }
