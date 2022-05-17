@@ -6,7 +6,7 @@
         <Nullable>enable</Nullable>
 
         <PackageId>ap.Mediator</PackageId>
-        <Version>1.2.0</Version>
+        <Version>1.2.1</Version>
         <Authors>Alexey Politov</Authors>
         <PackageDescription>Transparent mediator, allows messages to be routed according to the configured topology. Can integrate with RabbitMq, RedisMq, RedisStream. Supports pub/sub, request/response models and dynamic configuration</PackageDescription>
         <RepositoryUrl>https://github.com/EmptyBucket/Mediator</RepositoryUrl>
