@@ -47,7 +47,7 @@ public static class ServiceCollectionExtensions
     }
 
     public static IServiceCollection AddMediatorFactory(this IServiceCollection serviceCollection,
-        Action<IPipeBinder>? bindPipes = null, Func<IServiceProvider, IPipeConnector, Task>? connectPipes = null,
+        Action<IPipeBinder>? bindPipes = null, Func<IServiceProvider, IMediator, Task>? connectPipes = null,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
         bindPipes ??= _ => { };
