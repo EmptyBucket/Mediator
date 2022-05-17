@@ -22,7 +22,7 @@ public class HandlingPipe<THandlerMessage> : IPubPipe
             throw new InvalidOperationException($"{nameof(ctx.ServiceProvider)} missing. Handler not constructed");
 
         var handler = _factory(ctx.ServiceProvider);
-        return handler.HandleAsync(handlerMessageContext.Message, handlerMessageContext, token);
+        return handler.HandleAsync(handlerMessageContext, token);
     }
 }
 
@@ -46,7 +46,7 @@ public class HandlingPipe<THandlerMessage, THandlerResult> : IReqPipe
             throw new InvalidOperationException($"{nameof(ctx.ServiceProvider)} missing. Handler not constructed");
 
         var handler = _factory(ctx.ServiceProvider);
-        var result = await handler.HandleAsync(handlerCtx.Message, handlerCtx, token);
+        var result = await handler.HandleAsync(handlerCtx, token);
         return (TResult)(object)result!;
     }
 }
