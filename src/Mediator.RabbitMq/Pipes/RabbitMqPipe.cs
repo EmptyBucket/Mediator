@@ -48,7 +48,8 @@ public class RabbitMqPipe : IConnectingPipe
     public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
         CancellationToken token = default) =>
         await _bus.Rpc
-            .RequestAsync<MessageContext<TMessage>, TResult>(ctx, c => c.WithQueueName(ctx.Route), token)
+            .RequestAsync<MessageContext<TMessage>, TResult>(ctx,
+                c => c.WithQueueName(ctx.Route).WithExpiration(TimeSpan.MaxValue), token)
             .ConfigureAwait(false);
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",

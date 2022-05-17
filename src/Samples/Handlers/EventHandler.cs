@@ -28,7 +28,7 @@ namespace Samples.Handlers;
 
 public class EventHandler : IHandler<Event>
 {
-    public Task HandleAsync(Event message, MessageContext<Event> ctx, CancellationToken token)
+    public Task HandleAsync(MessageContext<Event> ctx, CancellationToken token)
     {
         return Task.CompletedTask;
     }

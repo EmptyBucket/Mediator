@@ -42,7 +42,7 @@ serviceCollection
 
 // configure mediator (configuration can also be done dynamically on IMediator)
 serviceCollection
-    .AddMediator(b =>
+    .AddMediatorFactory(b =>
     {
         // pipe bindings are needed in order not to have an explicit dependency on libs
         // bindings register a type to itself and all its pipe interfaces
