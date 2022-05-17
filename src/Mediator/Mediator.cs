@@ -1,17 +1,17 @@
 using Mediator.Handlers;
 using Mediator.Pipes;
-using Mediator.Pipes.PublishSubscribe;
-using Mediator.Pipes.RequestResponse;
 
 namespace Mediator;
 
 internal class Mediator : IMediator
 {
-    private readonly ConnectingPipe _pipe;
+    private readonly ConnectingPipe _dispatchPipe;
+    private readonly ConnectingPipe _receivePipe;
 
-    public Mediator(IServiceProvider serviceProvider)
+    public Mediator(ConnectingPipe dispatchPipe, ConnectingPipe receivePipe)
     {
-        _pipe = new ConnectingPipe(serviceProvider);
+        _dispatchPipe = dispatchPipe;
+        _receivePipe = receivePipe;
     }
 
     public async Task PublishAsync<TMessage>(TMessage message,
@@ -22,7 +22,7 @@ internal class Mediator : IMediator
         var correlationId = Guid.NewGuid().ToString();
         var ctx = new MessageContext<TMessage>(route, messageId, correlationId, DateTimeOffset.Now, message);
         ctxBuilder?.Invoke(ctx);
-        await _pipe.PassAsync(ctx, token);
+        await _dispatchPipe.PassAsync(ctx, token);
     }
 
     public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message,
@@ -33,16 +33,14 @@ internal class Mediator : IMediator
         var correlationId = Guid.NewGuid().ToString();
         var ctx = new MessageContext<TMessage>(route, messageId, correlationId, DateTimeOffset.Now, message);
         ctxBuilder?.Invoke(ctx);
-        return await _pipe.PassAsync<TMessage, TResult>(ctx, token);
+        return await _dispatchPipe.PassAsync<TMessage, TResult>(ctx, token);
     }
 
-    public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
-        string subscriptionId = "", CancellationToken token = default) =>
-        _pipe.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
+    public (IConnectingPipe Dispatch, IConnectingPipe Receive) Topology => (_dispatchPipe, _receivePipe);
 
-    public Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
-        CancellationToken token = default) =>
-        _pipe.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
-
-    public async ValueTask DisposeAsync() => await _pipe.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        await _dispatchPipe.DisposeAsync();
+        await _receivePipe.DisposeAsync();
+    }
 }
