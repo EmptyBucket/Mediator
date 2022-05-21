@@ -21,33 +21,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Pipes;
-using Microsoft.Extensions.DependencyInjection;
+namespace Mediator.Pipes.Utils;
 
-namespace Mediator;
-
-internal class MediatorFactory : IMediatorFactory
+public record struct PipeConnection<TPipe> : IAsyncDisposable
 {
-    private readonly Lazy<Task<IMediator>> _mediator;
+    private int _isDisposed = 0;
+    private readonly Func<PipeConnection<TPipe>, ValueTask> _disconnect;
 
-    public MediatorFactory(IServiceProvider serviceProvider,
-        Func<IServiceProvider, IMediator, Task>? connectPipes = null)
+    public PipeConnection(Route route, TPipe pipe, Func<PipeConnection<TPipe>, ValueTask> disconnect)
     {
-        connectPipes ??= (_, _) => Task.CompletedTask;
-
-        _mediator = new Lazy<Task<IMediator>>(async () =>
-        {
-            var pipeFactory = serviceProvider.GetRequiredService<IPipeFactory>();
-            var dispatchPipe = pipeFactory.Create<Pipe>();
-            var receivePipe = pipeFactory.Create<Pipe>();
-            var mediatorTopology = new MediatorTopology(dispatchPipe, receivePipe);
-            var mediator = new Mediator(mediatorTopology);
-
-            await connectPipes(serviceProvider, mediator);
-
-            return mediator;
-        });
+        Route = route;
+        Pipe = pipe;
+        _disconnect = disconnect;
     }
 
-    public async Task<IMediator> CreateAsync() => await _mediator.Value;
+    public Route Route { get; }
+
+    public TPipe Pipe { get; }
+
+    public ValueTask DisposeAsync() =>
+        Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 0 ? _disconnect(this) : ValueTask.CompletedTask;
 }

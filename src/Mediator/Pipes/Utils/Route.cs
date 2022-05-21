@@ -21,6 +21,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator;
+namespace Mediator.Pipes.Utils;
 
-public readonly record struct Void;
+public readonly record struct Route(string MessageType, string RoutingKey = "", string ResultType = "")
+{
+    public Route(Type messageType, string routingKey = "", Type? resultType = null)
+        : this(messageType.FullName ?? messageType.Name, routingKey, resultType?.FullName ?? resultType?.Name ?? "")
+    {
+    }
+
+    public static Route For<TMessage>(string routingKey = "") =>
+        new(typeof(TMessage), routingKey);
+
+    public static Route For<TMessage, TResult>(string routingKey = "") =>
+        new(typeof(TMessage), routingKey, typeof(TResult));
+
+    public static implicit operator string(Route route) => route.ToString();
+
+    public override string ToString() => $"{MessageType}:{RoutingKey}:{ResultType}";
+}

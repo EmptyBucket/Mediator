@@ -21,11 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Handlers;
+namespace Mediator.Handlers;
 
-namespace Mediator.Pipes.PublishSubscribe;
-
-public interface IPubPipe
-{
-    Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default);
-}
+public readonly record struct Void;

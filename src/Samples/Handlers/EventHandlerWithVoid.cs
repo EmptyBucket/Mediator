@@ -23,7 +23,7 @@
 
 using Mediator.Handlers;
 using Samples.Events;
-using Void = Mediator.Void;
+using Void = Mediator.Handlers.Void;
 
 namespace Samples.Handlers;
 

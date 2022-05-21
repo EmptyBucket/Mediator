@@ -22,20 +22,23 @@
 // SOFTWARE.
 
 using Mediator.Handlers;
-using Mediator.Pipes.PublishSubscribe;
-using Mediator.Pipes.RequestResponse;
 
 namespace Mediator.Pipes;
 
-public class ConnectingPipe : IConnectingPipe
+public class Pipe : IConnectingPipe
 {
-    private readonly ConnectingPubPipe _connectingPubPipe;
-    private readonly ConnectingReqPipe _connectingReqPipe;
+    private readonly IConnectingPubPipe _connectingPubPipe;
+    private readonly IConnectingReqPipe _connectingReqPipe;
 
-    public ConnectingPipe(IServiceProvider serviceProvider)
+    public Pipe(IServiceProvider serviceProvider)
+        : this(new PubPipe(serviceProvider), new ReqPipe(serviceProvider))
     {
-        _connectingPubPipe = new ConnectingPubPipe(serviceProvider);
-        _connectingReqPipe = new ConnectingReqPipe(serviceProvider);
+    }
+
+    public Pipe(IConnectingPubPipe connectingPubPipe, IConnectingReqPipe connectingReqPipe)
+    {
+        _connectingPubPipe = connectingPubPipe;
+        _connectingReqPipe = connectingReqPipe;
     }
 
     public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default) =>

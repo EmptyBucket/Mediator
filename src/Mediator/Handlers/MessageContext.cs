@@ -22,7 +22,7 @@
 // SOFTWARE.
 
 using System.Text.Json.Serialization;
-using Mediator.Pipes;
+using Mediator.Pipes.Utils;
 
 namespace Mediator.Handlers;
 

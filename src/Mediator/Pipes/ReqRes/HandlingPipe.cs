@@ -21,11 +21,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Pipes.PublishSubscribe;
-using Mediator.Pipes.RequestResponse;
+using Mediator.Handlers;
 
 namespace Mediator.Pipes;
 
-public interface IPipeConnector : IPubPipeConnector, IReqPipeConnector
+internal class HandlingPipe<THandlerMessage, THandlerResult> : IReqPipe
 {
+    private readonly Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> _factory;
+
+    public HandlingPipe(Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> factory)
+    {
+        _factory = factory;
+    }
+
+    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
+        CancellationToken token = default)
+    {
+        if (ctx is not MessageContext<THandlerMessage> handlerCtx ||
+            !typeof(THandlerResult).IsAssignableTo(typeof(TResult)))
+            throw new InvalidOperationException($"Message with route: {ctx.Route} cannot be processed");
+
+        if (ctx.ServiceProvider is null)
+            throw new InvalidOperationException($"{nameof(ctx.ServiceProvider)} missing. Handler not constructed");
+
+        var handler = _factory(ctx.ServiceProvider);
+        var result = await handler.HandleAsync(handlerCtx, token);
+        return (TResult)(object)result!;
+    }
 }

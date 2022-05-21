@@ -22,8 +22,6 @@
 // SOFTWARE.
 
 using Mediator.Handlers;
-using Mediator.Pipes.PublishSubscribe;
-using Mediator.Pipes.RequestResponse;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Pipes;

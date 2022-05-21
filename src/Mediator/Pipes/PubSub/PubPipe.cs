@@ -21,29 +21,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System.Collections.Immutable;
 using Mediator.Handlers;
+using Mediator.Pipes.Utils;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Mediator.Pipes.PublishSubscribe;
+namespace Mediator.Pipes;
 
-internal class ConnectingPubPipe : IConnectingPubPipe
+internal class PubPipe : IConnectingPubPipe
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<Route, List<PipeConnection>> _pipeConnections = new();
+    private readonly Dictionary<Route, ImmutableList<PipeConnection<IPubPipe>>> _pipeConnections = new();
 
-    public ConnectingPubPipe(IServiceProvider serviceProvider)
+    public PubPipe(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }
 
     public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
     {
-        var pipes = GetPipes(ctx.Route);
+        var pipeConnections = GetPipeConnections(ctx.Route);
 
         using var scope = _serviceProvider.CreateScope();
         ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
-        foreach (var pipe in pipes) pipe.PassAsync(ctx, token);
+
+        foreach (var pipeConnection in pipeConnections) pipeConnection.Pipe.PassAsync(ctx, token);
 
         return Task.CompletedTask;
     }
@@ -52,60 +55,56 @@ internal class ConnectingPubPipe : IConnectingPubPipe
         string subscriptionId = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
-        var pipeConnection = new PipeConnection(route, pipe, Disconnect);
+        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, Disconnect);
         Connect(pipeConnection);
         return Task.FromResult((IAsyncDisposable)pipeConnection);
     }
 
-    private IEnumerable<IPubPipe> GetPipes(Route route)
+    private IEnumerable<PipeConnection<IPubPipe>> GetPipeConnections(Route route)
     {
-        _lock.EnterReadLock();
-        var pipeConnections = _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection>();
-        var pipes = pipeConnections.Select(c => c.Pipe).ToArray();
-        _lock.ExitReadLock();
-        return pipes;
+        try
+        {
+            _lock.EnterReadLock();
+            return _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection<IPubPipe>>();
+        }
+        finally
+        {
+            _lock.ExitReadLock();
+        }
     }
 
-    private void Connect(PipeConnection pipeConnection)
+    private void Connect(PipeConnection<IPubPipe> pipeConnection)
     {
-        _lock.EnterWriteLock();
-        _pipeConnections.TryAdd(pipeConnection.Route, new List<PipeConnection>());
-        _pipeConnections[pipeConnection.Route].Add(pipeConnection);
-        _lock.ExitWriteLock();
+        try
+        {
+            _lock.EnterWriteLock();
+            var list = ImmutableList<PipeConnection<IPubPipe>>.Empty;
+            _pipeConnections.TryAdd(pipeConnection.Route, list);
+            _pipeConnections[pipeConnection.Route] = _pipeConnections[pipeConnection.Route].Add(pipeConnection);
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
     }
 
-    private ValueTask Disconnect(PipeConnection pipeConnection)
+    private ValueTask Disconnect(PipeConnection<IPubPipe> pipeConnection)
     {
-        _lock.EnterWriteLock();
-        if (_pipeConnections.TryGetValue(pipeConnection.Route, out var l) && l.Remove(pipeConnection) && !l.Any())
-            _pipeConnections.Remove(pipeConnection.Route);
-        _lock.ExitWriteLock();
-
-        return ValueTask.CompletedTask;
+        try
+        {
+            _lock.EnterWriteLock();
+            if (_pipeConnections.TryGetValue(pipeConnection.Route, out var l) && l.Remove(pipeConnection).IsEmpty)
+                _pipeConnections.Remove(pipeConnection.Route);
+            return ValueTask.CompletedTask;
+        }
+        finally
+        {
+            _lock.ExitWriteLock();
+        }
     }
 
     public async ValueTask DisposeAsync()
     {
         foreach (var pipeConnection in _pipeConnections.SelectMany(c => c.Value)) await pipeConnection.DisposeAsync();
-    }
-
-    private record struct PipeConnection : IAsyncDisposable
-    {
-        private int _isDisposed = 0;
-        private readonly Func<PipeConnection, ValueTask> _disconnect;
-
-        public PipeConnection(Route route, IPubPipe pipe, Func<PipeConnection, ValueTask> disconnect)
-        {
-            Route = route;
-            Pipe = pipe;
-            _disconnect = disconnect;
-        }
-
-        public Route Route { get; }
-
-        public IPubPipe Pipe { get; }
-
-        public ValueTask DisposeAsync() =>
-            Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1 ? ValueTask.CompletedTask : _disconnect(this);
     }
 }

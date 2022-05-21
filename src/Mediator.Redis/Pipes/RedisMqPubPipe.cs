@@ -31,81 +31,43 @@ using StackExchange.Redis;
 
 namespace Mediator.Redis.Pipes;
 
-public class RedisStreamPipe : IConnectingPubPipe
+internal class RedisMqPubPipe : IConnectingPubPipe
 {
-    private readonly IDatabase _database;
+    private readonly ISubscriber _subscriber;
     private readonly IServiceProvider _serviceProvider;
     private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, PipeConnection<IPubPipe>> _pipeConnections = new();
 
-    public RedisStreamPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider)
+    public RedisMqPubPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider)
     {
-        _database = multiplexer.GetDatabase();
+        _subscriber = multiplexer.GetSubscriber();
         _serviceProvider = serviceProvider;
     }
-    
+
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default) =>
-        await _database
-            .StreamAddAsync(ctx.Route.ToString(), RedisWellKnown.MessageKey, JsonSerializer.Serialize(ctx))
+        await _subscriber
+            .PublishAsync(ctx.Route.ToString(), JsonSerializer.Serialize(ctx))
             .ConfigureAwait(false);
 
     public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default)
     {
-        async Task Handle(Route r, string position, CancellationToken c)
+        async Task HandleAsync(ChannelMessage m)
         {
-            var entries = await _database
-                .StreamReadGroupAsync(r.ToString(), subscriptionId, "", position)
-                .ConfigureAwait(false);
-
-            foreach (var entry in entries)
-            {
-                await using var scope = _serviceProvider.CreateAsyncScope();
-                var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(entry[RedisWellKnown.MessageKey])!;
-                ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
-                await pipe.PassAsync(ctx, c);
-                await _database.StreamAcknowledgeAsync(r.ToString(), subscriptionId, entry.Id);
-            }
+            await using var scope = _serviceProvider.CreateAsyncScope();
+            var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message)!;
+            ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+            await pipe.PassAsync(ctx, token);
         }
 
         var route = Route.For<TMessage>(routingKey);
-        await CreateConsumerGroup(route, subscriptionId);
-        var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
-        token = cts.Token;
-        await Handle(route, "0", token);
-        Task.Run(async () =>
+        var channelMq = await _subscriber.SubscribeAsync(route.ToString()).ConfigureAwait(false);
+        channelMq.OnMessage(HandleAsync);
+        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, async p =>
         {
-            var spinWait = new SpinWait();
-
-            while (!token.IsCancellationRequested)
-            {
-                await Handle(route, ">", token);
-                spinWait.SpinOnce();
-            }
-        }, token);
-        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, p =>
-        {
-            if (_pipeConnections.TryRemove(p, out _))
-            {
-                cts.Cancel();
-                cts.Dispose();
-            }
-
-            return ValueTask.CompletedTask;
+            if (_pipeConnections.TryRemove(p, out _)) await channelMq.UnsubscribeAsync();
         });
         _pipeConnections.TryAdd(pipeConnection, pipeConnection);
         return pipeConnection;
-    }
-
-    private async Task CreateConsumerGroup(Route route, string subscriptionId)
-    {
-        try
-        {
-            await _database.StreamCreateConsumerGroupAsync(route.ToString(), subscriptionId, "0").ConfigureAwait(false);
-        }
-        catch (RedisException e)
-        {
-            if (e.Message != "BUSYGROUP Consumer Group name already exists") throw;
-        }
     }
 
     public async ValueTask DisposeAsync()

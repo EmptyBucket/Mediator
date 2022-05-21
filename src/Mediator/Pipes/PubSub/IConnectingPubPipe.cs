@@ -21,8 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.Pipes.RequestResponse;
+namespace Mediator.Pipes;
 
-public interface IConnectingReqPipe : IReqPipe, IReqPipeConnector
+public interface IConnectingPubPipe : IPubPipe, IPubPipeConnector
 {
 }

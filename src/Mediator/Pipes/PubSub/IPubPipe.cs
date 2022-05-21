@@ -21,11 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator.Redis.Pipes;
+using Mediator.Handlers;
 
-internal static class RedisWellKnown
+namespace Mediator.Pipes;
+
+public interface IPubPipe
 {
-    public const string ResponseMq = "responsemq";
-
-    public const string MessageKey = "message";
+    Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default);
 }
