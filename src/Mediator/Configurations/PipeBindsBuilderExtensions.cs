@@ -1,5 +1,4 @@
-using Mediator.Pipes.PublishSubscribe;
-using Mediator.Pipes.RequestResponse;
+using Mediator.Pipes;
 
 namespace Mediator.Configurations;
 

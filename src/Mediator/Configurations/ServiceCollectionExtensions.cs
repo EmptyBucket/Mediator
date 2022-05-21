@@ -48,6 +48,6 @@ public static class ServiceCollectionExtensions
             .BindInterfaces(typeof(HandlingPipe<>), "HandlingPipe<>")
             .Bind(typeof(HandlingPipe<,>))
             .BindInterfaces(typeof(HandlingPipe<,>), "HandlingPipe<,>")
-            .Bind<ConnectingPipe>()
-            .BindInterfaces<ConnectingPipe>(nameof(ConnectingPipe));
+            .Bind<Pipe>()
+            .BindInterfaces<Pipe>(nameof(Pipe));
 }

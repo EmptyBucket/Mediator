@@ -1,4 +1,4 @@
-namespace Mediator.Pipes.PublishSubscribe;
+namespace Mediator.Pipes;
 
 public interface IPubPipeConnector : IAsyncDisposable
 {

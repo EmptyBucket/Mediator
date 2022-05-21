@@ -1,6 +1,6 @@
 using Mediator.Handlers;
 
-namespace Mediator.Pipes.RequestResponse;
+namespace Mediator.Pipes;
 
 public interface IReqPipe
 {

@@ -1,4 +1,4 @@
-namespace Mediator.Pipes.RequestResponse;
+namespace Mediator.Pipes;
 
 public interface IConnectingReqPipe : IReqPipe, IReqPipeConnector
 {

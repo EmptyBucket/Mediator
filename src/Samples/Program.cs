@@ -1,7 +1,6 @@
 using Mediator;
 using Mediator.Configurations;
 using Mediator.Pipes;
-using Mediator.Pipes.PublishSubscribe;
 using Mediator.RabbitMq.Configurations;
 using Mediator.Redis.Configurations;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +8,7 @@ using Samples.Events;
 using Samples.Handlers;
 using StackExchange.Redis;
 using EventHandler = Samples.Handlers.EventHandler;
-using Void = Mediator.Void;
+using Void = Mediator.Handlers.Void;
 
 var serviceCollection = new ServiceCollection();
 
@@ -31,7 +30,7 @@ serviceCollection
 
         // bindings usage
         var pipeFactory = serviceProvider.GetRequiredService<IPipeFactory>();
-        var connectingPipe = pipeFactory.Create<ConnectingPipe>();
+        var connectingPipe = pipeFactory.Create<Pipe>();
         // you must specify name when use interface
         var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
         var redisMqPipe = pipeFactory.Create<IConnectingPipe>("RedisMqPipe");

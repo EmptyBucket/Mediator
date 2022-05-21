@@ -1,4 +1,4 @@
-namespace Mediator.Pipes;
+namespace Mediator.Pipes.Utils;
 
 public readonly record struct Route(string MessageType, string RoutingKey = "", string ResultType = "")
 {

@@ -1,6 +1,6 @@
 using Mediator.Handlers;
 
-namespace Mediator.Pipes.PublishSubscribe;
+namespace Mediator.Pipes;
 
 public interface IPubPipe
 {
