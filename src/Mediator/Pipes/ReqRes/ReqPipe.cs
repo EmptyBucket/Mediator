@@ -59,7 +59,7 @@ internal class ReqPipe : IConnectingReqPipe
             _lock.EnterWriteLock();
             var list = ImmutableList<PipeConnection<IReqPipe>>.Empty;
             _pipeConnections.TryAdd(pipeConnection.Route, list);
-            _pipeConnections[pipeConnection.Route] = list.Add(pipeConnection);
+            _pipeConnections[pipeConnection.Route] = _pipeConnections[pipeConnection.Route].Add(pipeConnection);
         }
         finally
         {
