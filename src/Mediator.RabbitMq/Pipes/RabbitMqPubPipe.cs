@@ -23,6 +23,7 @@
 
 using System.Collections.Concurrent;
 using EasyNetQ;
+using EasyNetQ.Topology;
 using Mediator.Handlers;
 using Mediator.Pipes;
 using Mediator.Pipes.Utils;
@@ -42,10 +43,13 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
         _serviceProvider = serviceProvider;
     }
 
-    public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default) =>
-        await _bus.PubSub
-            .PublishAsync(ctx, c => c.WithTopic(ctx.Route), token)
+    public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
+    {
+        var exchange = await _bus.Advanced.ExchangeDeclareAsync(ctx.Route, ExchangeType.Topic, cancellationToken: token)
             .ConfigureAwait(false);
+        var message = new Message<MessageContext<TMessage>>(ctx);
+        await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, token).ConfigureAwait(false);
+    }
 
     public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default)
@@ -58,10 +62,11 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
         }
 
         var route = Route.For<TMessage>(routingKey);
-        var subscription = await _bus.PubSub
-            .SubscribeAsync<MessageContext<TMessage>>(subscriptionId, HandleAsync,
-                c => c.WithQueueName($"{route}:{subscriptionId}").WithTopic(route), token)
+        var exchange = await _bus.Advanced.ExchangeDeclareAsync(route, ExchangeType.Topic, cancellationToken: token)
             .ConfigureAwait(false);
+        var queue = await _bus.Advanced.QueueDeclareAsync($"{route}:{subscriptionId}", token).ConfigureAwait(false);
+        await _bus.Advanced.BindAsync(exchange, queue, route, token).ConfigureAwait(false);
+        var subscription = _bus.Advanced.Consume<MessageContext<TMessage>>(queue, (m, _) => HandleAsync(m.Body, token));
         var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, p =>
         {
             if (_pipeConnections.TryRemove(p, out _)) subscription.Dispose();
