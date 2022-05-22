@@ -72,7 +72,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
     public async Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
-        async Task Handle(ChannelMessage m)
+        async Task HandleAsync(ChannelMessage m)
         {
             var messageCtx = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message)!;
 
@@ -84,6 +84,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
                 var result = await pipe.PassAsync<TMessage, TResult>(messageCtx, token);
                 var resultCtx = new ResultContext<TResult>(messageCtx.Route, Guid.NewGuid().ToString(),
                     messageCtx.CorrelationId, DateTimeOffset.Now) { Result = result };
+                
                 await _subscriber
                     .PublishAsync(RedisWellKnown.ResponseMq, JsonSerializer.Serialize(resultCtx))
                     .ConfigureAwait(false);
@@ -100,8 +101,9 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         }
 
         var route = Route.For<TMessage, TResult>(routingKey);
+        
         var channelMq = await _subscriber.SubscribeAsync(route.ToString()).ConfigureAwait(false);
-        channelMq.OnMessage(Handle);
+        channelMq.OnMessage(HandleAsync);
         var pipeConnection = new PipeConnection<IReqPipe>(route, pipe, async p =>
         {
             if (_pipeConnections.TryRemove(p, out _)) await channelMq.UnsubscribeAsync();

@@ -67,6 +67,8 @@ serviceCollection
         // mediator =[Event]> rabbitMqPipe =[Event]> EventHandler#2
         // you must specify subscriptionId for persistent queues/streams, when has several consumers
         await dispatchPipe.ConnectOutAsync<Event>(rabbitMqPipe);
+        await dispatchPipe.ConnectOutAsync<Event, EventResult>(rabbitMqPipe);
+        await rabbitMqPipe.ConnectHandlerAsync(new EventHandlerWithResult());
         await rabbitMqPipe.ConnectHandlerAsync(new EventHandler(), subscriptionId: "1");
         await rabbitMqPipe.ConnectHandlerAsync(new EventHandler(), subscriptionId: "2");
 
@@ -78,8 +80,8 @@ serviceCollection
 
         // mediator =[Event]> redisMqPipe =[Event]> EventHandlerWithResult =[EventResult]> result
         // you can wait for result
-        await dispatchPipe.ConnectOutAsync<Event, EventResult>(redisMqPipe);
-        await redisMqPipe.ConnectHandlerAsync(new EventHandlerWithResult());
+        // await dispatchPipe.ConnectOutAsync<Event, EventResult>(redisMqPipe);
+        // await redisMqPipe.ConnectHandlerAsync(new EventHandlerWithResult());
 
         // mediator =[Event]> redisMqPipe =[Event]> mediator =[Event]> EventHandlerWithVoid =[Void]>
         // you can wait for Void

@@ -60,6 +60,7 @@ internal class RedisMqPubPipe : IConnectingPubPipe
         }
 
         var route = Route.For<TMessage>(routingKey);
+        
         var channelMq = await _subscriber.SubscribeAsync(route.ToString()).ConfigureAwait(false);
         channelMq.OnMessage(HandleAsync);
         var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, async p =>
