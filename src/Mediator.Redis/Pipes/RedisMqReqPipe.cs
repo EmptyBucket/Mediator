@@ -13,99 +13,103 @@ internal class RedisMqReqPipe : IConnectingReqPipe
     private readonly ISubscriber _subscriber;
     private readonly IServiceProvider _serviceProvider;
     private readonly Lazy<Task<ChannelMessageQueue>> _responseMq;
-    private readonly ConcurrentDictionary<string, Action<ChannelMessage>> _responseHandlers = new();
-    private readonly ConcurrentDictionary<PipeConnection<IReqPipe>, PipeConnection<IReqPipe>> _pipeConnections = new();
+    private readonly ConcurrentDictionary<string, Action<ChannelMessage>> _resultHandlers = new();
+    private readonly ConcurrentDictionary<PipeConnection<IReqPipe>, ChannelMessageQueue> _pipeConnections = new();
 
     public RedisMqReqPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider)
     {
         _subscriber = multiplexer.GetSubscriber();
         _serviceProvider = serviceProvider;
-        _responseMq = new Lazy<Task<ChannelMessageQueue>>(CreateResponseMq);
+        _responseMq = new Lazy<Task<ChannelMessageQueue>>(CreateResultMq);
     }
 
     public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
         CancellationToken token = default)
     {
         await _responseMq.Value;
-
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         void Handle(ChannelMessage m)
         {
-            var resultCtx = JsonSerializer.Deserialize<ResultContext<TResult>>(m.Message)!;
+            // ReSharper disable once VariableHidesOuterVariable
+            var ctx = JsonSerializer.Deserialize<ResultContext<TResult>>(m.Message)!;
 
-            if (resultCtx.Result != null) tcs.TrySetResult(resultCtx.Result);
-            else if (resultCtx.Exception != null) tcs.TrySetException(resultCtx.Exception);
+            if (ctx.Result != null) tcs.TrySetResult(ctx.Result);
+            else if (ctx.Exception != null) tcs.TrySetException(ctx.Exception);
             else tcs.TrySetException(new InvalidOperationException("Message was not be processed"));
         }
 
-        _responseHandlers.TryAdd(ctx.CorrelationId, Handle);
-        await _subscriber
-            .PublishAsync(ctx.Route.ToString(), JsonSerializer.Serialize(ctx))
-            .ConfigureAwait(false);
+        _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
+        var redisValue = JsonSerializer.Serialize(ctx);
+        await _subscriber.PublishAsync(ctx.Route.ToString(), redisValue).ConfigureAwait(false);
         return await tcs.Task;
     }
 
     public async Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
+        var route = Route.For<TMessage, TResult>(routingKey);
+        return await ConnectPipe<TMessage, TResult>(route, pipe);
+    }
+
+    private async Task<IAsyncDisposable> ConnectPipe<TMessage, TResult>(Route route, IReqPipe pipe)
+    {
         async Task HandleAsync(ChannelMessage m)
         {
-            var messageCtx = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message)!;
+            var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message)!;
+            TResult? result = default;
+            Exception? exception = default;
 
             try
             {
                 await using var scope = _serviceProvider.CreateAsyncScope();
-                messageCtx =
-                    messageCtx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
-                var result = await pipe.PassAsync<TMessage, TResult>(messageCtx, token);
-                var resultCtx = new ResultContext<TResult>(messageCtx.Route, Guid.NewGuid().ToString(),
-                    messageCtx.CorrelationId, DateTimeOffset.Now) { Result = result };
-                
-                await _subscriber
-                    .PublishAsync(RedisWellKnown.ResponseMq, JsonSerializer.Serialize(resultCtx))
-                    .ConfigureAwait(false);
+                ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+                result = await pipe.PassAsync<TMessage, TResult>(ctx);
             }
             catch (Exception e)
             {
-                var resultCtx = new ResultContext<TResult>(messageCtx.Route, Guid.NewGuid().ToString(),
-                    messageCtx.CorrelationId, DateTimeOffset.Now) { Exception = e };
-                await _subscriber
-                    .PublishAsync(RedisWellKnown.ResponseMq, JsonSerializer.Serialize(resultCtx))
-                    .ConfigureAwait(false);
+                exception = e;
                 throw;
+            }
+            finally
+            {
+                var messageId = Guid.NewGuid().ToString();
+                var resultCtx = new ResultContext<TResult>(ctx.Route, messageId, ctx.CorrelationId, DateTimeOffset.Now)
+                    { Result = result, Exception = exception };
+                var redisValue = JsonSerializer.Serialize(resultCtx);
+                await _subscriber.PublishAsync(WellKnown.ResultMq, redisValue).ConfigureAwait(false);
             }
         }
 
-        var route = Route.For<TMessage, TResult>(routingKey);
-        
         var channelMq = await _subscriber.SubscribeAsync(route.ToString()).ConfigureAwait(false);
         channelMq.OnMessage(HandleAsync);
-        var pipeConnection = new PipeConnection<IReqPipe>(route, pipe, async p =>
-        {
-            if (_pipeConnections.TryRemove(p, out _)) await channelMq.UnsubscribeAsync();
-        });
-        _pipeConnections.TryAdd(pipeConnection, pipeConnection);
+        var pipeConnection = new PipeConnection<IReqPipe>(route, pipe, DisconnectPipe);
+        _pipeConnections.TryAdd(pipeConnection, channelMq);
         return pipeConnection;
     }
 
-    private async Task<ChannelMessageQueue> CreateResponseMq()
+    private async ValueTask DisconnectPipe(PipeConnection<IReqPipe> p)
+    {
+        if (_pipeConnections.TryRemove(p, out var c)) await c.UnsubscribeAsync();
+    }
+
+    private async Task<ChannelMessageQueue> CreateResultMq()
     {
         void Handle(ChannelMessage m)
         {
             var jsonElement = JsonDocument.Parse(m.Message.ToString()).RootElement;
             var correlationId = jsonElement.GetProperty("CorrelationId").ToString();
 
-            if (_responseHandlers.TryRemove(correlationId, out var handle)) handle(m);
+            if (_resultHandlers.TryRemove(correlationId, out var handle)) handle(m);
         }
 
-        var channelMq = await _subscriber.SubscribeAsync(RedisWellKnown.ResponseMq).ConfigureAwait(false);
+        var channelMq = await _subscriber.SubscribeAsync(WellKnown.ResultMq).ConfigureAwait(false);
         channelMq.OnMessage(Handle);
         return channelMq;
     }
 
     public async ValueTask DisposeAsync()
     {
-        foreach (var pipeConnection in _pipeConnections.Values) await pipeConnection.DisposeAsync();
+        foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
     }
 }
