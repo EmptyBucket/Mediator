@@ -23,7 +23,7 @@
 
 namespace Mediator.RabbitMq;
 
-internal static class RabbitMqWellKnown
+internal static class WellKnown
 {
     public const string ResponseMq = "responsemq";
 }

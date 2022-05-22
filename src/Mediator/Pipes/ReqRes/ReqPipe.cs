@@ -48,8 +48,8 @@ internal class ReqPipe : IConnectingReqPipe
             throw new InvalidOperationException($"Message with route: {ctx.Route} must have only one registered pipe");
 
         using var scope = _serviceProvider.CreateScope();
-        var pipeConnection = pipeConnections.First();
         ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+        var pipeConnection = pipeConnections.First();
         return await pipeConnection.Pipe.PassAsync<TMessage, TResult>(ctx, token);
     }
 
@@ -57,57 +57,37 @@ internal class ReqPipe : IConnectingReqPipe
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
-        
-        var pipeConnection = new PipeConnection<IReqPipe>(route, pipe, Disconnect);
-        Connect(pipeConnection);
+        var pipeConnection = ConnectPipe(route, pipe);
         return Task.FromResult((IAsyncDisposable)pipeConnection);
     }
 
     private IList<PipeConnection<IReqPipe>> GetPipeConnections(Route route)
     {
-        try
-        {
-            _lock.EnterReadLock();
-            return _pipeConnections.GetValueOrDefault(route) ?? ImmutableList<PipeConnection<IReqPipe>>.Empty;
-        }
-        finally
-        {
-            _lock.ExitReadLock();
-        }
+        using var scope = _lock.EnterReadScope();
+        return _pipeConnections.GetValueOrDefault(route) ?? ImmutableList<PipeConnection<IReqPipe>>.Empty;
     }
 
-    private void Connect(PipeConnection<IReqPipe> pipeConnection)
+    private PipeConnection<IReqPipe> ConnectPipe(Route route, IReqPipe pipe)
     {
-        try
-        {
-            _lock.EnterWriteLock();
-            var list = ImmutableList<PipeConnection<IReqPipe>>.Empty;
-            _pipeConnections.TryAdd(pipeConnection.Route, list);
-            _pipeConnections[pipeConnection.Route] = _pipeConnections[pipeConnection.Route].Add(pipeConnection);
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
+        var pipeConnection = new PipeConnection<IReqPipe>(route, pipe, DisconnectPipe);
+        using var scope = _lock.EnterWriteScope();
+        _pipeConnections.TryAdd(pipeConnection.Route, ImmutableList<PipeConnection<IReqPipe>>.Empty);
+        _pipeConnections[pipeConnection.Route] = _pipeConnections[pipeConnection.Route].Add(pipeConnection);
+        return pipeConnection;
     }
 
-    private ValueTask Disconnect(PipeConnection<IReqPipe> pipeConnection)
+    private ValueTask DisconnectPipe(PipeConnection<IReqPipe> pipeConnection)
     {
-        try
-        {
-            _lock.EnterWriteLock();
-            if (_pipeConnections.TryGetValue(pipeConnection.Route, out var l) && l.Remove(pipeConnection).IsEmpty)
-                _pipeConnections.Remove(pipeConnection.Route);
-            return ValueTask.CompletedTask;
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
+        using var scope = _lock.EnterWriteScope();
+        if (_pipeConnections.TryGetValue(pipeConnection.Route, out var l) && l.Remove(pipeConnection).IsEmpty)
+            _pipeConnections.Remove(pipeConnection.Route);
+        return ValueTask.CompletedTask;
     }
 
     public async ValueTask DisposeAsync()
     {
         foreach (var pipeConnection in _pipeConnections.SelectMany(c => c.Value)) await pipeConnection.DisposeAsync();
+
+        _lock.Dispose();
     }
 }

@@ -55,56 +55,37 @@ internal class PubPipe : IConnectingPubPipe
         string subscriptionId = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
-        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, Disconnect);
-        Connect(pipeConnection);
+        var pipeConnection = ConnectPipe(route, pipe);
         return Task.FromResult((IAsyncDisposable)pipeConnection);
     }
 
     private IEnumerable<PipeConnection<IPubPipe>> GetPipeConnections(Route route)
     {
-        try
-        {
-            _lock.EnterReadLock();
-            return _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection<IPubPipe>>();
-        }
-        finally
-        {
-            _lock.ExitReadLock();
-        }
+        using var scope = _lock.EnterReadScope();
+        return _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection<IPubPipe>>();
     }
 
-    private void Connect(PipeConnection<IPubPipe> pipeConnection)
+    private PipeConnection<IPubPipe> ConnectPipe(Route route, IPubPipe pipe)
     {
-        try
-        {
-            _lock.EnterWriteLock();
-            var list = ImmutableList<PipeConnection<IPubPipe>>.Empty;
-            _pipeConnections.TryAdd(pipeConnection.Route, list);
-            _pipeConnections[pipeConnection.Route] = _pipeConnections[pipeConnection.Route].Add(pipeConnection);
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
+        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe);
+        using var scope = _lock.EnterWriteScope();
+        _pipeConnections.TryAdd(pipeConnection.Route, ImmutableList<PipeConnection<IPubPipe>>.Empty);
+        _pipeConnections[pipeConnection.Route] = _pipeConnections[pipeConnection.Route].Add(pipeConnection);
+        return pipeConnection;
     }
 
-    private ValueTask Disconnect(PipeConnection<IPubPipe> pipeConnection)
+    private ValueTask DisconnectPipe(PipeConnection<IPubPipe> pipeConnection)
     {
-        try
-        {
-            _lock.EnterWriteLock();
-            if (_pipeConnections.TryGetValue(pipeConnection.Route, out var l) && l.Remove(pipeConnection).IsEmpty)
-                _pipeConnections.Remove(pipeConnection.Route);
-            return ValueTask.CompletedTask;
-        }
-        finally
-        {
-            _lock.ExitWriteLock();
-        }
+        using var scope = _lock.EnterWriteScope();
+        if (_pipeConnections.TryGetValue(pipeConnection.Route, out var l) && l.Remove(pipeConnection).IsEmpty)
+            _pipeConnections.Remove(pipeConnection.Route);
+        return ValueTask.CompletedTask;
     }
 
     public async ValueTask DisposeAsync()
     {
         foreach (var pipeConnection in _pipeConnections.SelectMany(c => c.Value)) await pipeConnection.DisposeAsync();
+
+        _lock.Dispose();
     }
 }

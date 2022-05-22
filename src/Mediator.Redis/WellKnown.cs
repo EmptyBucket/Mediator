@@ -23,9 +23,9 @@
 
 namespace Mediator.Redis;
 
-internal static class RedisWellKnown
+internal static class WellKnown
 {
-    public const string ResponseMq = "responsemq";
+    public const string ResultMq = "responsemq";
 
     public const string MessageKey = "message";
 }
