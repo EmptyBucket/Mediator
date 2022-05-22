@@ -45,20 +45,20 @@ public class RedisStreamPipe : IConnectingPubPipe
         }
 
         var route = Route.For<TMessage>(routingKey);
+        
         await CreateConsumerGroup(route, subscriptionId);
         var cts = CancellationTokenSource.CreateLinkedTokenSource(token);
-        token = cts.Token;
-        await Handle(route, "0", token);
+        await Handle(route, "0", cts.Token);
         Task.Run(async () =>
         {
             var spinWait = new SpinWait();
 
-            while (!token.IsCancellationRequested)
+            while (!cts.Token.IsCancellationRequested)
             {
-                await Handle(route, ">", token);
+                await Handle(route, ">", cts.Token);
                 spinWait.SpinOnce();
             }
-        }, token);
+        }, cts.Token);
         var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, p =>
         {
             if (_pipeConnections.TryRemove(p, out _))

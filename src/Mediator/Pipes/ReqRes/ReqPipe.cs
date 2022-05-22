@@ -34,6 +34,7 @@ internal class ReqPipe : IConnectingReqPipe
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
+        
         var pipeConnection = new PipeConnection<IReqPipe>(route, pipe, Disconnect);
         Connect(pipeConnection);
         return Task.FromResult((IAsyncDisposable)pipeConnection);

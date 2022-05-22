@@ -22,8 +22,10 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
 
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
     {
-        var exchange = await _bus.Advanced.ExchangeDeclareAsync(ctx.Route, ExchangeType.Topic, cancellationToken: token)
+        var exchange = await _bus.Advanced
+            .ExchangeDeclareAsync(ctx.Route, ExchangeType.Direct, cancellationToken: token)
             .ConfigureAwait(false);
+
         var message = new Message<MessageContext<TMessage>>(ctx);
         await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, token).ConfigureAwait(false);
     }
@@ -39,10 +41,13 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
         }
 
         var route = Route.For<TMessage>(routingKey);
-        var exchange = await _bus.Advanced.ExchangeDeclareAsync(route, ExchangeType.Topic, cancellationToken: token)
+
+        var exchange = await _bus.Advanced
+            .ExchangeDeclareAsync(route, ExchangeType.Direct, cancellationToken: token)
             .ConfigureAwait(false);
         var queue = await _bus.Advanced.QueueDeclareAsync($"{route}:{subscriptionId}", token).ConfigureAwait(false);
         await _bus.Advanced.BindAsync(exchange, queue, route, token).ConfigureAwait(false);
+
         var subscription = _bus.Advanced.Consume<MessageContext<TMessage>>(queue, (m, _) => HandleAsync(m.Body, token));
         var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, p =>
         {
