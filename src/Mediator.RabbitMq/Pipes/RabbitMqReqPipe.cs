@@ -81,7 +81,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
                 var resultCtx = new ResultContext<TResult>(ctx.Route, messageId, ctx.CorrelationId, DateTimeOffset.Now)
                     { Result = result, Exception = exception };
                 var message = new Message<ResultContext<TResult>>(resultCtx);
-                await _bus.Advanced.PublishAsync(exchange, WellKnown.ResponseMq, false, message).ConfigureAwait(false);
+                await _bus.Advanced.PublishAsync(exchange, WellKnown.ResultMq, false, message).ConfigureAwait(false);
             }
         }
 
@@ -115,7 +115,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
     private async Task<IExchange> DeclareResultExchangeAsync(CancellationToken token = default)
     {
         var exchange = await _bus.Advanced
-            .ExchangeDeclareAsync(WellKnown.ResponseMq, ExchangeType.Fanout, cancellationToken: token)
+            .ExchangeDeclareAsync(WellKnown.ResultMq, ExchangeType.Fanout, cancellationToken: token)
             .ConfigureAwait(false);
         return exchange;
     }
@@ -123,7 +123,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
     private async Task<IQueue> DeclareResultQueueAsync(CancellationToken token = default)
     {
         var exchange = await DeclareResultExchangeAsync(token);
-        var queue = await _bus.Advanced.QueueDeclareAsync(WellKnown.ResponseMq, token).ConfigureAwait(false);
+        var queue = await _bus.Advanced.QueueDeclareAsync(WellKnown.ResultMq, token).ConfigureAwait(false);
         await _bus.Advanced.BindAsync(exchange, queue, "", default, token).ConfigureAwait(false);
         return queue;
     }
