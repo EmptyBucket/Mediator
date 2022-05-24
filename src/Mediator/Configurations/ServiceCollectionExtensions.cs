@@ -10,13 +10,7 @@ public static class ServiceCollectionExtensions
         Action<IPipeBinder>? bindPipes = null,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        bindPipes ??= _ => { };
-
-        var pipeBinder = new PipeBinder();
-        BindDefaults(pipeBinder);
-        bindPipes(pipeBinder);
-        var pipeBinds = pipeBinder.Build();
-        serviceCollection.TryAddScoped<IPipeFactory>(p => new PipeFactory(pipeBinds, p));
+        AddPipeFactory(serviceCollection, bindPipes);
 
         serviceCollection.TryAdd(new ServiceDescriptor(typeof(IMediator),
             p => new MediatorFactory(p).CreateAsync().Result, lifetime));
@@ -25,16 +19,10 @@ public static class ServiceCollectionExtensions
     }
 
     public static IServiceCollection AddMediatorFactory(this IServiceCollection serviceCollection,
-        Action<IPipeBinder>? bindPipes = null, Func<IServiceProvider, IMediator, Task>? connectPipes = null,
+        Action<IPipeBinder>? bindPipes = null, Func<IServiceProvider, MediatorTopology, Task>? connectPipes = null,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        bindPipes ??= _ => { };
-
-        var pipeBinder = new PipeBinder();
-        BindDefaults(pipeBinder);
-        bindPipes(pipeBinder);
-        var pipeBinds = pipeBinder.Build();
-        serviceCollection.TryAddScoped<IPipeFactory>(p => new PipeFactory(pipeBinds, p));
+        AddPipeFactory(serviceCollection, bindPipes);
 
         serviceCollection.TryAdd(new ServiceDescriptor(typeof(IMediatorFactory),
             p => new MediatorFactory(p, connectPipes), lifetime));
@@ -42,7 +30,17 @@ public static class ServiceCollectionExtensions
         return serviceCollection;
     }
 
-    private static void BindDefaults(IPipeBinder pipeBinder) =>
+    private static void AddPipeFactory(IServiceCollection serviceCollection, Action<IPipeBinder>? bindPipes = null)
+    {
+        bindPipes ??= _ => { };
+        var pipeBinder = new PipeBinder();
+        BindDefaultPipes(pipeBinder);
+        bindPipes(pipeBinder);
+        var pipeBinds = pipeBinder.Build();
+        serviceCollection.TryAddScoped<IPipeFactory>(p => new PipeFactory(pipeBinds, p));
+    }
+
+    private static void BindDefaultPipes(IPipeBinder pipeBinder) =>
         pipeBinder
             .Bind(typeof(HandlingPipe<>))
             .BindInterfaces(typeof(HandlingPipe<>), "HandlingPipe<>")

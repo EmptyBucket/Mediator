@@ -24,9 +24,9 @@ serviceCollection
         // pipe bindings are needed in order not to have an explicit dependency on libs
         // bindings register a type to itself and all its pipe interfaces
         bind.BindRabbitMq().BindRedisMq();
-    }, async (serviceProvider, mediator) =>
+    }, async (serviceProvider, mediatorTopology) =>
     {
-        var (dispatchPipe, receivePipe) = mediator.Topology;
+        var (dispatchPipe, receivePipe) = mediatorTopology;
 
         // bindings usage
         var pipeFactory = serviceProvider.GetRequiredService<IPipeFactory>();
