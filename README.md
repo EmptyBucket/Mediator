@@ -27,7 +27,7 @@ serviceCollection
 
         // bindings usage
         var pipeFactory = serviceProvider.GetRequiredService<IPipeFactory>();
-        var connectingPipe = pipeFactory.Create<ConnectingPipe>();
+        var connectingPipe = pipeFactory.Create<Pipe>();
         // you must specify name when use interface
         var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
         var redisMqPipe = pipeFactory.Create<IConnectingPipe>("RedisMqPipe");
