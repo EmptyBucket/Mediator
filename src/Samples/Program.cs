@@ -73,6 +73,7 @@ var serviceProvider = serviceCollection.BuildServiceProvider();
 var mediator = await serviceProvider.GetRequiredService<IMediatorFactory>().CreateAsync();
 
 // publish and send events
+// Mediator, MediatorFactory, MediatorTopology, Pipes are thread safe
 await mediator.PublishAsync(new Event());
 var result = await mediator.SendAsync<Event, EventResult>(new Event());
 await mediator.SendAsync<Event, Void>(new Event());
