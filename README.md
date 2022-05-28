@@ -21,9 +21,9 @@ serviceCollection
         // pipe bindings are needed in order not to have an explicit dependency on libs
         // bindings register a type to itself and all its pipe interfaces
         bind.BindRabbitMq().BindRedisMq();
-    }, async (serviceProvider, mediator) =>
+    }, async (serviceProvider, mediatorTopology) =>
     {
-        var (dispatchPipe, receivePipe) = mediator.Topology;
+        var (dispatchPipe, receivePipe) = mediatorTopology;
 
         // bindings usage
         var pipeFactory = serviceProvider.GetRequiredService<IPipeFactory>();
@@ -70,6 +70,7 @@ var serviceProvider = serviceCollection.BuildServiceProvider();
 var mediator = await serviceProvider.GetRequiredService<IMediatorFactory>().CreateAsync();
 
 // publish and send events
+// Mediator, MediatorFactory, MediatorTopology, Pipes are thread safe
 await mediator.PublishAsync(new Event());
 var result = await mediator.SendAsync<Event, EventResult>(new Event());
 await mediator.SendAsync<Event, Void>(new Event());
