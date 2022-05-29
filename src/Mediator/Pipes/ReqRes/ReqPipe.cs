@@ -58,7 +58,7 @@ internal class ReqPipe : IConnectingReqPipe
         using var scope = _lock.EnterWriteScope();
         if (_pipeConnections.TryGetValue(pipeConnection.Route, out var l) && l.Remove(pipeConnection).IsEmpty)
             _pipeConnections.Remove(pipeConnection.Route);
-        return ValueTask.CompletedTask;
+        return new ValueTask();
     }
 
     public async ValueTask DisposeAsync()

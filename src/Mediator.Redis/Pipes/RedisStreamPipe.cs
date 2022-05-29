@@ -73,7 +73,7 @@ public class RedisStreamPipe : IConnectingPubPipe
             c.Dispose();
         }
 
-        return ValueTask.CompletedTask;
+        return new ValueTask();
     }
 
     private async Task CreateConsumerGroup(Route route, string subscriptionId)

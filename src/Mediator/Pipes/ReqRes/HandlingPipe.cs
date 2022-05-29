@@ -15,7 +15,7 @@ internal class HandlingPipe<THandlerMessage, THandlerResult> : IReqPipe
         CancellationToken token = default)
     {
         if (ctx is not MessageContext<THandlerMessage> handlerCtx ||
-            !typeof(THandlerResult).IsAssignableTo(typeof(TResult)))
+            !typeof(TResult).IsAssignableFrom(typeof(THandlerResult)))
             throw new InvalidOperationException($"Message with route: {ctx.Route} cannot be processed");
 
         if (ctx.ServiceProvider is null)
