@@ -21,31 +21,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Handlers;
+// ReSharper disable once CheckNamespace
 
-namespace Mediator.Pipes;
+namespace System.Runtime.CompilerServices;
 
-internal class HandlingPipe<THandlerMessage, THandlerResult> : IReqPipe
+// ReSharper disable once UnusedType.Global
+internal static class IsExternalInit
 {
-    private readonly Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> _factory;
-
-    public HandlingPipe(Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> factory)
-    {
-        _factory = factory;
-    }
-
-    public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
-        CancellationToken token = default)
-    {
-        if (ctx is not MessageContext<THandlerMessage> handlerCtx ||
-            !typeof(TResult).IsAssignableFrom(typeof(THandlerResult)))
-            throw new InvalidOperationException($"Message with route: {ctx.Route} cannot be processed");
-
-        if (ctx.ServiceProvider is null)
-            throw new InvalidOperationException($"{nameof(ctx.ServiceProvider)} missing. Handler not constructed");
-
-        var handler = _factory(ctx.ServiceProvider);
-        var result = await handler.HandleAsync(handlerCtx, token);
-        return (TResult)(object)result!;
-    }
 }

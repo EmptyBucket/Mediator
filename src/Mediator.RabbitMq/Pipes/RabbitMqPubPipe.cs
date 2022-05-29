@@ -77,7 +77,7 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
     private ValueTask DisconnectPipe(PipeConnection<IPubPipe> p)
     {
         if (_pipeConnections.TryRemove(p, out var s)) s.Dispose();
-        return ValueTask.CompletedTask;
+        return new ValueTask();
     }
 
     private async Task<IExchange> DeclareExchangeAsync(Route route, CancellationToken token = default)

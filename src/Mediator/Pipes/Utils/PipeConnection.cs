@@ -40,5 +40,5 @@ public record struct PipeConnection<TPipe> : IAsyncDisposable
     public TPipe Pipe { get; }
 
     public ValueTask DisposeAsync() =>
-        Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 0 ? _disconnect(this) : ValueTask.CompletedTask;
+        Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 0 ? _disconnect(this) : new ValueTask();
 }

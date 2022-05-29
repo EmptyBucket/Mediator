@@ -117,7 +117,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
     private ValueTask DisconnectPipe(PipeConnection<IReqPipe> p)
     {
         if (_pipeConnections.TryRemove(p, out var s)) s.Dispose();
-        return ValueTask.CompletedTask;
+        return new ValueTask();
     }
 
     private async Task<IDisposable> CreateResultMq()
