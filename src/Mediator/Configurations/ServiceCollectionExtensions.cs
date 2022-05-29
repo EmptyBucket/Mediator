@@ -33,7 +33,7 @@ public static class ServiceCollectionExtensions
         Action<IPipeBinder>? bindPipes = null,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        TryAddPipeFactory(serviceCollection, bindPipes);
+        TryAddPipeFactory(serviceCollection, bindPipes, lifetime);
 
         serviceCollection.TryAdd(new ServiceDescriptor(typeof(IMediator),
             p => new MediatorFactory(p, (_, _) => Task.CompletedTask).CreateAsync().Result, lifetime));
@@ -45,7 +45,7 @@ public static class ServiceCollectionExtensions
         Action<IPipeBinder>? bindPipes = null, Func<IServiceProvider, MediatorTopology, Task>? connectPipes = null,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        TryAddPipeFactory(serviceCollection, bindPipes);
+        TryAddPipeFactory(serviceCollection, bindPipes, lifetime);
 
         if (connectPipes is not null) serviceCollection.AddSingleton(new ConnectPipes(connectPipes));
 
@@ -64,7 +64,8 @@ public static class ServiceCollectionExtensions
         return serviceCollection;
     }
 
-    private static void TryAddPipeFactory(IServiceCollection serviceCollection, Action<IPipeBinder>? bindPipes = null)
+    private static void TryAddPipeFactory(IServiceCollection serviceCollection, Action<IPipeBinder>? bindPipes = null,
+        ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
         static void BindDefaultPipes(IPipeBinder pipeBinder) =>
             pipeBinder
@@ -84,8 +85,8 @@ public static class ServiceCollectionExtensions
             bind(pipeBinder);
             return pipeBinder;
         });
-        serviceCollection.TryAddScoped<IPipeFactory>(
-            p => new PipeFactory(p.GetRequiredService<PipeBinder>().Build(), p));
+        serviceCollection.TryAdd(new ServiceDescriptor(typeof(IPipeFactory),
+            p => new PipeFactory(p.GetRequiredService<PipeBinder>().Build(), p), lifetime));
     }
 
     private delegate void BindPipes(IPipeBinder pipeBinder);
