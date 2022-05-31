@@ -51,12 +51,19 @@ internal class PubPipe : IConnectingPubPipe
         return Task.CompletedTask;
     }
 
+    public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
+    {
+        var route = Route.For<TMessage>(routingKey);
+        var pipeConnection = ConnectPipe(route, pipe);
+        return pipeConnection;
+    }
+
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
         var pipeConnection = ConnectPipe(route, pipe);
-        return Task.FromResult((IAsyncDisposable)pipeConnection);
+        return Task.FromResult<IAsyncDisposable>(pipeConnection);
     }
 
     private IEnumerable<PipeConnection<IPubPipe>> GetPipeConnections(Route route)
@@ -74,12 +81,11 @@ internal class PubPipe : IConnectingPubPipe
         return pipeConnection;
     }
 
-    private ValueTask DisconnectPipe(PipeConnection<IPubPipe> pipeConnection)
+    private void DisconnectPipe(PipeConnection<IPubPipe> pipeConnection)
     {
         using var scope = _lock.EnterWriteScope();
         if (_pipeConnections.TryGetValue(pipeConnection.Route, out var l) && l.Remove(pipeConnection).IsEmpty)
             _pipeConnections.Remove(pipeConnection.Route);
-        return new ValueTask();
     }
 
     public async ValueTask DisposeAsync()

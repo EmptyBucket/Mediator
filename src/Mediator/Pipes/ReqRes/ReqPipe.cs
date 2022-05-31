@@ -53,12 +53,19 @@ internal class ReqPipe : IConnectingReqPipe
         return await pipeConnection.Pipe.PassAsync<TMessage, TResult>(ctx, token);
     }
 
+    public IDisposable ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "")
+    {
+        var route = Route.For<TMessage, TResult>(routingKey);
+        var pipeConnection = ConnectPipe(route, pipe);
+        return pipeConnection;
+    }
+
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         var pipeConnection = ConnectPipe(route, pipe);
-        return Task.FromResult((IAsyncDisposable)pipeConnection);
+        return Task.FromResult<IAsyncDisposable>(pipeConnection);
     }
 
     private IList<PipeConnection<IReqPipe>> GetPipeConnections(Route route)
@@ -76,12 +83,11 @@ internal class ReqPipe : IConnectingReqPipe
         return pipeConnection;
     }
 
-    private ValueTask DisconnectPipe(PipeConnection<IReqPipe> pipeConnection)
+    private void DisconnectPipe(PipeConnection<IReqPipe> pipeConnection)
     {
         using var scope = _lock.EnterWriteScope();
         if (_pipeConnections.TryGetValue(pipeConnection.Route, out var l) && l.Remove(pipeConnection).IsEmpty)
             _pipeConnections.Remove(pipeConnection.Route);
-        return new ValueTask();
     }
 
     public async ValueTask DisposeAsync()
