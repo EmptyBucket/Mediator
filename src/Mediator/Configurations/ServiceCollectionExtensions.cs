@@ -42,7 +42,7 @@ public static class ServiceCollectionExtensions
             var pipeFactory = p.GetRequiredService<IPipeFactory>();
             var dispatchPipe = pipeFactory.Create<Pipe>();
             var receivePipe = pipeFactory.Create<Pipe>();
-            var mediatorTopology = new MediatorTopology(dispatchPipe, receivePipe);
+            var mediatorTopology = new MediatorTopology(dispatchPipe, receivePipe, pipeFactory);
             
             var connect = p.GetServices<ConnectPipes>().Aggregate(new ConnectPipes((_, _) => { }), (a, n) => a + n);
             connect(p, mediatorTopology);

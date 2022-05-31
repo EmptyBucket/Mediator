@@ -27,10 +27,11 @@ namespace Mediator;
 
 public class MediatorTopology : IAsyncDisposable
 {
-    public MediatorTopology(IConnectingPipe dispatch, IConnectingPipe receive)
+    public MediatorTopology(IConnectingPipe dispatch, IConnectingPipe receive, IPipeFactory pipeFactory)
     {
         Dispatch = dispatch;
         Receive = receive;
+        PipeFactory = pipeFactory;
     }
 
     public void Deconstruct(out IConnectingPipe dispatch, out IConnectingPipe receive)
@@ -38,11 +39,20 @@ public class MediatorTopology : IAsyncDisposable
         dispatch = Dispatch;
         receive = Receive;
     }
+    
+    public void Deconstruct(out IConnectingPipe dispatch, out IConnectingPipe receive, out IPipeFactory pipeFactory)
+    {
+        dispatch = Dispatch;
+        receive = Receive;
+        pipeFactory = PipeFactory;
+    }
 
     public IConnectingPipe Dispatch { get; set; }
 
     public IConnectingPipe Receive { get; set; }
     
+    public IPipeFactory PipeFactory { get; }
+
     public async ValueTask DisposeAsync()
     {
         await Dispatch.DisposeAsync();
