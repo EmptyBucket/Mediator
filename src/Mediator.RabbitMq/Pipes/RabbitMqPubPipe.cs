@@ -27,6 +27,14 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
         await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, token).ConfigureAwait(false);
     }
 
+    public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
+    {
+        var route = Route.For<TMessage>(routingKey);
+        var queue = DeclareQueue(route, subscriptionId);
+        var pipeConnection = ConnectPipe<TMessage>(route, pipe, queue);
+        return pipeConnection;
+    }
+
     public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default)
     {
@@ -38,23 +46,28 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
 
     private PipeConnection<IPubPipe> ConnectPipe<TMessage>(Route route, IPubPipe pipe, IQueue queue)
     {
-        async Task HandleAsync(IMessage<MessageContext<TMessage>> m, MessageReceivedInfo i)
-        {
-            await using var scope = _serviceProvider.CreateAsyncScope();
-            var ctx = m.Body with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
-            await pipe.PassAsync(ctx);
-        }
-
-        var subscription = _bus.Advanced.Consume<MessageContext<TMessage>>(queue, HandleAsync);
+        var subscription = _bus.Advanced.Consume<MessageContext<TMessage>>(queue, (m, _) => HandleAsync(pipe, m));
         var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe);
         _pipeConnections.TryAdd(pipeConnection, subscription);
         return pipeConnection;
     }
 
-    private ValueTask DisconnectPipe(PipeConnection<IPubPipe> p)
+    private void DisconnectPipe(PipeConnection<IPubPipe> p)
     {
         if (_pipeConnections.TryRemove(p, out var s)) s.Dispose();
-        return new ValueTask();
+    }
+
+    private async Task HandleAsync<TMessage>(IPubPipe pipe, IMessage<MessageContext<TMessage>> message)
+    {
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var ctx = message.Body with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+        await pipe.PassAsync(ctx);
+    }
+
+    private IExchange DeclareExchange(Route route)
+    {
+        var exchange = _bus.Advanced.ExchangeDeclare(route, ExchangeType.Direct);
+        return exchange;
     }
 
     private async Task<IExchange> DeclareExchangeAsync(Route route, CancellationToken token = default)
@@ -63,6 +76,14 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
             .ExchangeDeclareAsync(route, ExchangeType.Direct, cancellationToken: token)
             .ConfigureAwait(false);
         return exchange;
+    }
+
+    private IQueue DeclareQueue(Route route, string subscriptionId)
+    {
+        var exchange = DeclareExchange(route);
+        var queue = _bus.Advanced.QueueDeclare($"{route}:{subscriptionId}");
+        _bus.Advanced.Bind(exchange, queue, route);
+        return queue;
     }
 
     private async Task<IQueue> DeclareQueueAsync(Route route, string subscriptionId, CancellationToken token = default)

@@ -26,34 +26,55 @@ internal class RedisMqPubPipe : IConnectingPubPipe
         await _subscriber.PublishAsync(ctx.Route.ToString(), redisValue).ConfigureAwait(false);
     }
 
+    public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
+    {
+        var route = Route.For<TMessage>(routingKey);
+        var pipeConnection = ConnectPipe<TMessage>(route, pipe);
+        return pipeConnection;
+    }
+
     public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
-        var pipeConnection = await ConnectPipe<TMessage>(route, pipe);
+        var pipeConnection = await ConnectPipeAsync<TMessage>(route, pipe);
         return pipeConnection;
     }
 
-    private async Task<PipeConnection<IPubPipe>> ConnectPipe<TMessage>(Route route, IPubPipe pipe)
+    private PipeConnection<IPubPipe> ConnectPipe<TMessage>(Route route, IPubPipe pipe)
     {
-        async Task HandleAsync(ChannelMessage m)
-        {
-            await using var scope = _serviceProvider.CreateAsyncScope();
-            var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message)!;
-            ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
-            await pipe.PassAsync(ctx);
-        }
-
-        var channelMq = await _subscriber.SubscribeAsync(route.ToString()).ConfigureAwait(false);
-        channelMq.OnMessage(HandleAsync);
-        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe);
+        var channelMq = _subscriber.Subscribe(route.ToString());
+        channelMq.OnMessage(m => HandleAsync<TMessage>(pipe, m));
+        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe, DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, channelMq);
         return pipeConnection;
     }
 
-    private async ValueTask DisconnectPipe(PipeConnection<IPubPipe> p)
+    private async Task<PipeConnection<IPubPipe>> ConnectPipeAsync<TMessage>(Route route, IPubPipe pipe)
+    {
+        var channelMq = await _subscriber.SubscribeAsync(route.ToString()).ConfigureAwait(false);
+        channelMq.OnMessage(m => HandleAsync<TMessage>(pipe, m));
+        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe, DisconnectPipeAsync);
+        _pipeConnections.TryAdd(pipeConnection, channelMq);
+        return pipeConnection;
+    }
+
+    private void DisconnectPipe(PipeConnection<IPubPipe> p)
+    {
+        if (_pipeConnections.TryRemove(p, out var c)) c.Unsubscribe();
+    }
+
+    private async ValueTask DisconnectPipeAsync(PipeConnection<IPubPipe> p)
     {
         if (_pipeConnections.TryRemove(p, out var c)) await c.UnsubscribeAsync();
+    }
+
+    private async Task HandleAsync<TMessage>(IPubPipe pipe, ChannelMessage channelMessage)
+    {
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(channelMessage.Message)!;
+        ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+        await pipe.PassAsync(ctx);
     }
 
     public async ValueTask DisposeAsync()

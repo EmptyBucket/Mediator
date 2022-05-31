@@ -25,9 +25,15 @@ public class Pipe : IConnectingPipe
         CancellationToken token = default) =>
         _connectingReqPipe.PassAsync<TMessage, TResult>(ctx, token);
 
+    public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "") =>
+        _connectingPubPipe.ConnectOut<TMessage>(pipe, routingKey, subscriptionId);
+
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string subscriptionId = "", CancellationToken token = default) =>
         _connectingPubPipe.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
+
+    public IDisposable ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "") =>
+        _connectingReqPipe.ConnectOut<TMessage, TResult>(pipe, routingKey);
 
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
         CancellationToken token = default) =>
