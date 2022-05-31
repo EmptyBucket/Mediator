@@ -38,11 +38,6 @@ public static partial class PipeExtensions
         CancellationToken token = default) =>
         pipeConnector.ConnectHandlerAsync(_ => handler, routingKey, subscriptionId, token);
 
-    public static Task<IAsyncDisposable> ConnectHandlerAsync<TMessage>(this IPubPipeConnector pipeConnector,
-        Func<MessageContext<TMessage>, CancellationToken, Task> func, string routingKey = "", string subscriptionId = "", 
-        CancellationToken token = default) =>
-        pipeConnector.ConnectHandlerAsync(new LambdaHandler<TMessage>(func), routingKey, subscriptionId, token);
-
     public static Task<IAsyncDisposable> ConnectHandlerAsync<TMessage, THandler>(this IPubPipeConnector pipeConnector,
         string routingKey = "", string subscriptionId = "", CancellationToken token = default)
         where THandler : IHandler<TMessage> =>
@@ -57,11 +52,6 @@ public static partial class PipeExtensions
     public static Task<IAsyncDisposable> ConnectHandlerAsync<TMessage, TResult>(this IReqPipeConnector pipeConnector,
         IHandler<TMessage, TResult> handler, string routingKey = "", CancellationToken token = default) =>
         pipeConnector.ConnectHandlerAsync(_ => handler, routingKey, token);
-
-    public static Task<IAsyncDisposable> ConnectHandlerAsync<TMessage, TResult>(this IReqPipeConnector pipeConnector,
-        Func<MessageContext<TMessage>, CancellationToken, Task<TResult>> func, string routingKey = "",
-        CancellationToken token = default) =>
-        pipeConnector.ConnectHandlerAsync(new LambdaHandler<TMessage, TResult>(func), routingKey, token);
 
     public static Task<IAsyncDisposable> ConnectHandlerAsync<TMessage, TResult, THandler>(
         this IReqPipeConnector pipeConnector, string routingKey = "", CancellationToken token = default)

@@ -21,9 +21,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator;
+using Mediator.Handlers;
 
-public interface IMediatorFactory
+namespace Mediator.Pipes;
+
+public static partial class PipeExtensions
 {
-    Task<IMediator> CreateAsync();
+    public static Task<IAsyncDisposable> ConnectDelegateAsync<TMessage>(this IPubPipeConnector pipeConnector,
+        Func<MessageContext<TMessage>, CancellationToken, Task> func, string routingKey = "",
+        string subscriptionId = "",
+        CancellationToken token = default) =>
+        pipeConnector.ConnectHandlerAsync(new LambdaHandler<TMessage>(func), routingKey, subscriptionId, token);
+    
+    public static Task<IAsyncDisposable> ConnectDelegateAsync<TMessage, TResult>(this IReqPipeConnector pipeConnector,
+        Func<MessageContext<TMessage>, CancellationToken, Task<TResult>> func, string routingKey = "",
+        CancellationToken token = default) =>
+        pipeConnector.ConnectHandlerAsync(new LambdaHandler<TMessage, TResult>(func), routingKey, token);
 }

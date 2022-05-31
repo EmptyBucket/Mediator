@@ -21,29 +21,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Pipes;
-using Microsoft.Extensions.DependencyInjection;
+namespace Mediator.Pipes;
 
-namespace Mediator;
-
-internal class MediatorFactory : IMediatorFactory
+public static partial class PipeExtensions
 {
-    private readonly Lazy<Task<IMediator>> _mediator;
+    public static IDisposable ConnectIn<TMessage>(this IPubPipe pipe, IPubPipeConnector pipeConnector,
+        string routingKey = "", string subscriptionId = "") =>
+        pipeConnector.ConnectOut<TMessage>(pipe, routingKey, subscriptionId);
 
-    public MediatorFactory(IServiceProvider serviceProvider,
-        Func<IServiceProvider, MediatorTopology, Task> connectPipes)
-    {
-        _mediator = new Lazy<Task<IMediator>>(async () =>
-        {
-            var pipeFactory = serviceProvider.GetRequiredService<IPipeFactory>();
-            var dispatchPipe = pipeFactory.Create<Pipe>();
-            var receivePipe = pipeFactory.Create<Pipe>();
-            var mediatorTopology = new MediatorTopology(dispatchPipe, receivePipe);
-            await connectPipes(serviceProvider, mediatorTopology);
-            var mediator = new Mediator(mediatorTopology);
-            return mediator;
-        });
-    }
-
-    public async Task<IMediator> CreateAsync() => await _mediator.Value;
+    public static IDisposable ConnectIn<TMessage, TResult>(this IReqPipe pipe, IReqPipeConnector pipeConnector,
+        string routingKey = "") =>
+        pipeConnector.ConnectOut<TMessage, TResult>(pipe, routingKey);
 }
