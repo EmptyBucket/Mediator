@@ -12,11 +12,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.RabbitMq", "src\Me
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{D826687F-F456-4D9B-8627-1B241CAC5504}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.Tests", "Mediator.Tests\Mediator.Tests.csproj", "{12764087-4CF6-4A68-BA39-E43BE0D5E2E2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.Tests", "tests\Mediator.Tests\Mediator.Tests.csproj", "{12764087-4CF6-4A68-BA39-E43BE0D5E2E2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.RabbitMq.Tests", "Mediator.RabbitMq.Tests\Mediator.RabbitMq.Tests.csproj", "{8597A490-BF28-4723-A3F7-D61A73E8B153}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.RabbitMq.Tests", "tests\Mediator.RabbitMq.Tests\Mediator.RabbitMq.Tests.csproj", "{8597A490-BF28-4723-A3F7-D61A73E8B153}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.Redis.Tests", "Mediator.Redis.Tests\Mediator.Redis.Tests.csproj", "{1F0FA97A-F1F3-431A-92FC-931FE79EF1BE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mediator.Redis.Tests", "tests\Mediator.Redis.Tests\Mediator.Redis.Tests.csproj", "{1F0FA97A-F1F3-431A-92FC-931FE79EF1BE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
