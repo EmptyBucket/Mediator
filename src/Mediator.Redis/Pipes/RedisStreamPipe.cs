@@ -73,8 +73,11 @@ public class RedisStreamPipe : IConnectingPubPipe
         {
             await HandleAsync<TMessage>(route, pipe, subscriptionId, "0");
 
-            for (var spinWait = new SpinWait(); !cts.Token.IsCancellationRequested; spinWait.SpinOnce())
+            while (!cts.Token.IsCancellationRequested)
+            {
                 await HandleAsync<TMessage>(route, pipe, subscriptionId, ">");
+                await Task.Delay(100, cts.Token);
+            }
         }, cts.Token);
         var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe);
         _pipeConnections.TryAdd(pipeConnection, cts);
