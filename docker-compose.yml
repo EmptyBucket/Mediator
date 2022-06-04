@@ -1,0 +1,22 @@
+version: "3.1"
+
+services:
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+      - "8002:15672"
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq
+  redis:
+    image: redis/redis-stack:latest
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    volumes:
+      - redis:/data
+
+volumes:
+  rabbitmq:
+  redis:

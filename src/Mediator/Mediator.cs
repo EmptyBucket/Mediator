@@ -34,7 +34,7 @@ internal class Mediator : IMediator
     }
 
     public async Task PublishAsync<TMessage>(TMessage message,
-        Func<MessageContext<TMessage>, MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default)
+        Action<MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default)
     {
         var route = Route.For<TMessage>();
         var messageId = Guid.NewGuid().ToString();
@@ -45,7 +45,7 @@ internal class Mediator : IMediator
     }
 
     public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message,
-        Func<MessageContext<TMessage>, MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default)
+        Action<MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>();
         var messageId = Guid.NewGuid().ToString();

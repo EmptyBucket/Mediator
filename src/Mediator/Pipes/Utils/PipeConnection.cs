@@ -23,9 +23,9 @@
 
 namespace Mediator.Pipes.Utils;
 
-public record struct PipeConnection<TPipe> : IDisposable, IAsyncDisposable
+public class PipeConnection<TPipe> : IDisposable, IAsyncDisposable
 {
-    private int _isDisposed = 0;
+    private int _isDisposed;
     private readonly Action<PipeConnection<TPipe>> _disconnect;
     private readonly Func<PipeConnection<TPipe>, ValueTask> _disconnectAsync;
 

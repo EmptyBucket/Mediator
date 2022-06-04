@@ -24,6 +24,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using FluentAssertions;
 using Mediator.Configurations;
 using Mediator.Handlers;
 using Mediator.Pipes;
@@ -37,7 +38,7 @@ namespace Mediator.Tests
     {
         private ServiceProvider _serviceProvider;
         private IMediator _mediator;
-        private Mock<IPipe> _pipe;
+        private Mock<IPipe> _endPipe;
 
         [OneTimeSetUp]
         public void OneTimeSetup()
@@ -51,8 +52,11 @@ namespace Mediator.Tests
         public void Setup()
         {
             _mediator = _serviceProvider.GetRequiredService<IMediator>();
-            _pipe = new Mock<IPipe>();
+            _endPipe = new Mock<IPipe>();
         }
+
+        [TearDown]
+        public async Task Teardown() => await _mediator.DisposeAsync();
 
         [Test]
         public async Task PublishAsync_WhenDirectTopology_CallPassAsync()
@@ -60,10 +64,10 @@ namespace Mediator.Tests
             var (dispatch, _) = _mediator.Topology;
             var someEvent = new SomeEvent(Guid.NewGuid());
 
-            await dispatch.ConnectOutAsync<SomeEvent>(_pipe.Object);
+            await dispatch.ConnectOutAsync<SomeEvent>(_endPipe.Object);
             await _mediator.PublishAsync(someEvent);
 
-            _pipe.Verify(p => p.PassAsync(
+            _endPipe.Verify(p => p.PassAsync(
                 It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()));
         }
 
@@ -74,10 +78,10 @@ namespace Mediator.Tests
             var someEvent = new SomeEvent(Guid.NewGuid());
 
             await dispatch.ConnectOutAsync<SomeEvent>(receive);
-            await receive.ConnectOutAsync<SomeEvent>(_pipe.Object);
+            await receive.ConnectOutAsync<SomeEvent>(_endPipe.Object);
             await _mediator.PublishAsync(someEvent);
 
-            _pipe.Verify(p => p.PassAsync(
+            _endPipe.Verify(p => p.PassAsync(
                 It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()));
         }
 
@@ -87,11 +91,27 @@ namespace Mediator.Tests
             var (dispatch, _) = _mediator.Topology;
             var someEvent = new SomeEvent(Guid.NewGuid());
 
-            await dispatch.ConnectOutAsync<SomeEvent, SomeResult>(_pipe.Object);
+            await dispatch.ConnectOutAsync<SomeEvent, SomeResult>(_endPipe.Object);
             await _mediator.SendAsync<SomeEvent, SomeResult>(someEvent);
 
-            _pipe.Verify(p => p.PassAsync<SomeEvent, SomeResult>(
+            _endPipe.Verify(p => p.PassAsync<SomeEvent, SomeResult>(
                 It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()));
+        }
+
+        [Test]
+        public async Task SendAsync_WhenDirectTopologyWithResult_ReturnResult()
+        {
+            var (dispatch, _) = _mediator.Topology;
+            var someEvent = new SomeEvent(Guid.NewGuid());
+            var expectedResult = new SomeResult(Guid.NewGuid());
+            _endPipe.Setup(p => p.PassAsync<SomeEvent, SomeResult>(It.IsAny<MessageContext<SomeEvent>>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            await dispatch.ConnectOutAsync<SomeEvent, SomeResult>(_endPipe.Object);
+            var actualResult = await _mediator.SendAsync<SomeEvent, SomeResult>(someEvent);
+
+            actualResult.Should().Be(expectedResult);
         }
 
         [Test]
@@ -101,11 +121,28 @@ namespace Mediator.Tests
             var someEvent = new SomeEvent(Guid.NewGuid());
 
             await dispatch.ConnectOutAsync<SomeEvent, SomeResult>(receive);
-            await receive.ConnectOutAsync<SomeEvent, SomeResult>(_pipe.Object);
+            await receive.ConnectOutAsync<SomeEvent, SomeResult>(_endPipe.Object);
             await _mediator.SendAsync<SomeEvent, SomeResult>(someEvent);
 
-            _pipe.Verify(p => p.PassAsync<SomeEvent, SomeResult>(
+            _endPipe.Verify(p => p.PassAsync<SomeEvent, SomeResult>(
                 It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()));
+        }
+
+        [Test]
+        public async Task SendAsync_WhenReceiveTopologyWithResult_ReturnResult()
+        {
+            var (dispatch, receive) = _mediator.Topology;
+            var someEvent = new SomeEvent(Guid.NewGuid());
+            var expectedResult = new SomeResult(Guid.NewGuid());
+            _endPipe.Setup(p => p.PassAsync<SomeEvent, SomeResult>(
+                    It.Is<MessageContext<SomeEvent>>(m => m.Message.Equals(someEvent)), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(expectedResult);
+
+            await dispatch.ConnectOutAsync<SomeEvent, SomeResult>(receive);
+            await receive.ConnectOutAsync<SomeEvent, SomeResult>(_endPipe.Object);
+            var actualResult = await _mediator.SendAsync<SomeEvent, SomeResult>(someEvent);
+
+            actualResult.Should().Be(expectedResult);
         }
 
         public readonly record struct SomeEvent(Guid Id);
