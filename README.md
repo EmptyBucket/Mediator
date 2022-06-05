@@ -26,7 +26,7 @@ serviceCollection
         var (dispatchPipe, receivePipe, pipeFactory) = mediatorTopology;
 
         // bindings usage
-        var connectingPipe = pipeFactory.Create<Pipe>();
+        var pipe = pipeFactory.Create<Pipe>();
         // you must specify name when use interface
         var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
         var redisMqPipe = pipeFactory.Create<IConnectingPipe>("RedisMqPipe");
