@@ -19,6 +19,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\Mediator.RabbitMq\Mediator.RabbitMq.csproj" />
+        <ProjectReference Include="..\Mediator.Tests\Mediator.Tests.csproj" />
     </ItemGroup>
 
 </Project>

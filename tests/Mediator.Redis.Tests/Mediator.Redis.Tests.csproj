@@ -17,6 +17,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\Mediator.Redis\Mediator.Redis.csproj" />
+      <ProjectReference Include="..\Mediator.Tests\Mediator.Tests.csproj" />
     </ItemGroup>
 
 </Project>
