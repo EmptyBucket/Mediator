@@ -53,7 +53,7 @@ public class RedisStreamPipe : IConnectingPubPipe
             while (!cts.Token.IsCancellationRequested)
             {
                 await HandleAsync<TMessage>(route, pipe, subscriptionId, ">");
-                await Task.Delay(100, cts.Token);
+                await Task.Delay(100, cts.Token).ConfigureAwait(false);
             }
         }, cts.Token);
         var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe);
@@ -85,7 +85,9 @@ public class RedisStreamPipe : IConnectingPubPipe
                 var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(entry[WellKnown.MessageKey])!;
                 ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
                 await pipe.PassAsync(ctx);
-                await _database.StreamAcknowledgeAsync(route.ToString(), subscriptionId, entry.Id);
+                await _database
+                    .StreamAcknowledgeAsync(route.ToString(), subscriptionId, entry.Id)
+                    .ConfigureAwait(false);
             }
         } while (entries.Any());
     }

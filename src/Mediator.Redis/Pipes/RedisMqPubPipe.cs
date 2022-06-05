@@ -66,7 +66,7 @@ internal class RedisMqPubPipe : IConnectingPubPipe
 
     private async ValueTask DisconnectPipeAsync(PipeConnection<IPubPipe> p)
     {
-        if (_pipeConnections.TryRemove(p, out var c)) await c.UnsubscribeAsync();
+        if (_pipeConnections.TryRemove(p, out var c)) await c.UnsubscribeAsync().ConfigureAwait(false);
     }
 
     private async Task HandleAsync<TMessage>(IPubPipe pipe, ChannelMessage channelMessage)

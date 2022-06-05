@@ -42,7 +42,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
         var redisValue = JsonSerializer.Serialize(ctx);
         await _subscriber.PublishAsync(ctx.Route.ToString(), redisValue).ConfigureAwait(false);
-        return await tcs.Task;
+        return await tcs.Task.ConfigureAwait(false);
     }
 
     public IDisposable ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "")
@@ -83,7 +83,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
 
     private async ValueTask DisconnectPipeAsync(PipeConnection<IReqPipe> p)
     {
-        if (_pipeConnections.TryRemove(p, out var c)) await c.UnsubscribeAsync();
+        if (_pipeConnections.TryRemove(p, out var c)) await c.UnsubscribeAsync().ConfigureAwait(false);
     }
 
     private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe, ChannelMessage m)
