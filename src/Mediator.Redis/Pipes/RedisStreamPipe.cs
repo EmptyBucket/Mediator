@@ -52,8 +52,9 @@ public class RedisStreamPipe : IConnectingPubPipe
     public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
     {
         var route = Route.For<TMessage>(routingKey);
-        CreateConsumerGroup(route, subscriptionId);
-        var pipeConnection = ConnectPipe<TMessage>(route, pipe, subscriptionId);
+        var (groupName, consumerName) = ParseSubscriptionId(subscriptionId);
+        CreateConsumerGroup(route, groupName);
+        var pipeConnection = ConnectPipe<TMessage>(route, pipe, groupName, consumerName);
         return pipeConnection;
     }
 
@@ -61,22 +62,27 @@ public class RedisStreamPipe : IConnectingPubPipe
         string subscriptionId = "", CancellationToken token = default)
     {
         var route = Route.For<TMessage>(routingKey);
-        await CreateConsumerGroupAsync(route, subscriptionId);
-        var pipeConnection = ConnectPipe<TMessage>(route, pipe, subscriptionId);
+        var (groupName, consumerName) = ParseSubscriptionId(subscriptionId);
+        await CreateConsumerGroupAsync(route, groupName);
+        var pipeConnection = ConnectPipe<TMessage>(route, pipe, groupName, consumerName);
         return pipeConnection;
     }
 
-    private PipeConnection<IPubPipe> ConnectPipe<TMessage>(Route route, IPubPipe pipe, string subscriptionId)
+    private PipeConnection<IPubPipe> ConnectPipe<TMessage>(Route route, IPubPipe pipe, string groupName,
+        string consumerName)
     {
         var cts = new CancellationTokenSource();
         Task.Run(async () =>
         {
-            await HandleAsync<TMessage>(route, pipe, subscriptionId, "0");
+            const int batchSize = 1_000;
+            const int millisecondsDelay = 100;
+
+            await HandleAsync<TMessage>(route, pipe, groupName, consumerName, "0", batchSize);
 
             while (!cts.Token.IsCancellationRequested)
             {
-                await HandleAsync<TMessage>(route, pipe, subscriptionId, ">");
-                await Task.Delay(100, cts.Token).ConfigureAwait(false);
+                await HandleAsync<TMessage>(route, pipe, groupName, consumerName, ">", batchSize);
+                await Task.Delay(millisecondsDelay, cts.Token).ConfigureAwait(false);
             }
         }, cts.Token);
         var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe);
@@ -92,14 +98,15 @@ public class RedisStreamPipe : IConnectingPubPipe
         cts.Dispose();
     }
 
-    private async Task HandleAsync<TMessage>(Route route, IPubPipe pipe, string subscriptionId, string position)
+    private async Task HandleAsync<TMessage>(Route route, IPubPipe pipe, string groupName, string consumerName,
+        string position, int count)
     {
         StreamEntry[] entries;
 
         do
         {
             entries = await _database
-                .StreamReadGroupAsync(route.ToString(), subscriptionId, "", position, 1_000)
+                .StreamReadGroupAsync(route.ToString(), groupName, consumerName, position, count)
                 .ConfigureAwait(false);
 
             foreach (var entry in entries)
@@ -108,20 +115,18 @@ public class RedisStreamPipe : IConnectingPubPipe
                 var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(entry[WellKnown.MessageKey])!;
                 ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
                 await pipe.PassAsync(ctx);
-                await _database
-                    .StreamAcknowledgeAsync(route.ToString(), subscriptionId, entry.Id)
-                    .ConfigureAwait(false);
+                await _database.StreamAcknowledgeAsync(route.ToString(), groupName, entry.Id).ConfigureAwait(false);
             }
         } while (entries.Any());
     }
 
     private static string ConsumerGroupExistsExceptionMessage => "BUSYGROUP Consumer Group name already exists";
 
-    private void CreateConsumerGroup(Route route, string subscriptionId)
+    private void CreateConsumerGroup(Route route, string groupName)
     {
         try
         {
-            _database.StreamCreateConsumerGroup(route.ToString(), subscriptionId, "0");
+            _database.StreamCreateConsumerGroup(route.ToString(), groupName, "0");
         }
         catch (RedisException e)
         {
@@ -129,17 +134,22 @@ public class RedisStreamPipe : IConnectingPubPipe
         }
     }
 
-    private async Task CreateConsumerGroupAsync(Route route, string subscriptionId)
+    private async Task CreateConsumerGroupAsync(Route route, string groupName)
     {
         try
         {
-            await _database.StreamCreateConsumerGroupAsync(route.ToString(), subscriptionId, "0").ConfigureAwait(false);
+            await _database.StreamCreateConsumerGroupAsync(route.ToString(), groupName, "0").ConfigureAwait(false);
         }
         catch (RedisException e)
         {
             if (e.Message != ConsumerGroupExistsExceptionMessage) throw;
         }
     }
+
+    private static (string groupName, string consumerName) ParseSubscriptionId(string subscriptionId) =>
+        subscriptionId.IndexOf(':', StringComparison.Ordinal) is var idx && idx >= 0
+            ? (subscriptionId[..idx], subscriptionId[(idx + 1)..])
+            : (subscriptionId, string.Empty);
 
     public async ValueTask DisposeAsync()
     {

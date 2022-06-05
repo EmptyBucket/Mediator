@@ -155,7 +155,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
     {
         var exchange = await DeclareResultExchangeAsync(token);
         var queue = await _bus.Advanced.QueueDeclareAsync(WellKnown.ResultMq, token).ConfigureAwait(false);
-        await _bus.Advanced.BindAsync(exchange, queue, "", default, token).ConfigureAwait(false);
+        await _bus.Advanced.BindAsync(exchange, queue, string.Empty, token).ConfigureAwait(false);
         return queue;
     }
 

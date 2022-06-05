@@ -65,6 +65,9 @@ serviceCollection
         // mediator =[Event]> rabbitMqPipe =[Event]> EventHandler#1
         // mediator =[Event]> rabbitMqPipe =[Event]> EventHandler#2
         // you must specify subscriptionId for persistent queues/streams, when has several consumers
+        // if you want multiple consumers in a consumer group:
+        // in rabbitmq use the same subscriptionId for several consumers
+        // in redis use delimiter ':' (i.e. subscriptionId = "groupName:consumerName")
         dispatchPipe.ConnectOut<Event>(rabbitMqPipe);
         rabbitMqPipe.ConnectHandler(new EventHandler(), subscriptionId: "1");
         rabbitMqPipe.ConnectHandler(new EventHandler(), subscriptionId: "2");
