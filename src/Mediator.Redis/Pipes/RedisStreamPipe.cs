@@ -64,25 +64,30 @@ public class RedisStreamPipe : IConnectingPubPipe
     private void DisconnectPipe(PipeConnection<IPubPipe> pipeConnection)
     {
         if (!_pipeConnections.TryRemove(pipeConnection, out var cts)) return;
-        
+
         cts.Cancel();
         cts.Dispose();
     }
 
     private async Task HandleAsync<TMessage>(Route route, IPubPipe pipe, string subscriptionId, string position)
     {
-        var entries = await _database
-            .StreamReadGroupAsync(route.ToString(), subscriptionId, "", position)
-            .ConfigureAwait(false);
+        StreamEntry[] entries;
 
-        foreach (var entry in entries)
+        do
         {
-            await using var scope = _serviceProvider.CreateAsyncScope();
-            var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(entry[WellKnown.MessageKey])!;
-            ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
-            await pipe.PassAsync(ctx);
-            await _database.StreamAcknowledgeAsync(route.ToString(), subscriptionId, entry.Id);
-        }
+            entries = await _database
+                .StreamReadGroupAsync(route.ToString(), subscriptionId, "", position, 1_000)
+                .ConfigureAwait(false);
+
+            foreach (var entry in entries)
+            {
+                await using var scope = _serviceProvider.CreateAsyncScope();
+                var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(entry[WellKnown.MessageKey])!;
+                ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+                await pipe.PassAsync(ctx);
+                await _database.StreamAcknowledgeAsync(route.ToString(), subscriptionId, entry.Id);
+            }
+        } while (entries.Any());
     }
 
     private static string ConsumerGroupExistsExceptionMessage => "BUSYGROUP Consumer Group name already exists";
