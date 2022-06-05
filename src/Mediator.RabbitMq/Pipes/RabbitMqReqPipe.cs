@@ -66,7 +66,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
         var message = new Message<MessageContext<TMessage>>(ctx);
         await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, token).ConfigureAwait(false);
-        return await tcs.Task;
+        return await tcs.Task.ConfigureAwait(false);
     }
 
     public IDisposable ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "")
