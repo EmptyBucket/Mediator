@@ -26,6 +26,8 @@ using System.Text.Json;
 using Mediator.Handlers;
 using Mediator.Pipes;
 using Mediator.Pipes.Utils;
+using Mediator.Redis.Utils;
+using Mediator.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 
@@ -36,6 +38,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
     private readonly ISubscriber _subscriber;
     private readonly IServiceProvider _serviceProvider;
     private readonly Lazy<Task<ChannelMessageQueue>> _responseMq;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly ConcurrentDictionary<string, Action<ChannelMessage>> _resultHandlers = new();
     private readonly ConcurrentDictionary<PipeConnection<IReqPipe>, ChannelMessageQueue> _pipeConnections = new();
 
@@ -43,6 +46,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
     {
         _subscriber = multiplexer.GetSubscriber();
         _serviceProvider = serviceProvider;
+        _jsonSerializerOptions = new JsonSerializerOptions { Converters = { ObjectToInferredTypesConverter.Instance } };
         _responseMq = new Lazy<Task<ChannelMessageQueue>>(CreateResultMq);
     }
 
@@ -55,16 +59,18 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         void Handle(ChannelMessage m)
         {
             // ReSharper disable once VariableHidesOuterVariable
-            var ctx = JsonSerializer.Deserialize<ResultContext<TResult>>(m.Message)!;
+            var ctx = JsonSerializer.Deserialize<ResultContext<TResult>>(m.Message, _jsonSerializerOptions)!;
 
             if (ctx.Result != null) tcs.TrySetResult(ctx.Result);
             else if (ctx.Exception != null) tcs.TrySetException(ctx.Exception);
             else tcs.TrySetException(new InvalidOperationException("Message was not be processed"));
         }
 
+        if (ctx.CorrelationId == null) ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
-        var redisValue = JsonSerializer.Serialize(ctx);
-        await _subscriber.PublishAsync(ctx.Route.ToString(), redisValue).ConfigureAwait(false);
+        var redisValue = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
+        var messageProperties = new MessagePropertiesBuilder().Attach(ctx.Meta).Build();
+        await _subscriber.PublishAsync(ctx.Route.ToString(), redisValue, messageProperties.Flags).ConfigureAwait(false);
         return await tcs.Task.ConfigureAwait(false);
     }
 
@@ -111,7 +117,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
 
     private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe, ChannelMessage m)
     {
-        var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message)!;
+        var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message, _jsonSerializerOptions)!;
         TResult? result = default;
         Exception? exception = default;
 
@@ -128,10 +134,9 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         }
         finally
         {
-            var messageId = Guid.NewGuid().ToString();
-            var resultCtx = new ResultContext<TResult>(ctx.Route, messageId, ctx.CorrelationId, DateTimeOffset.Now)
+            var resultCtx = new ResultContext<TResult>(ctx.Route, Guid.NewGuid().ToString(), ctx.CorrelationId!)
                 { Result = result, Exception = exception };
-            var redisValue = JsonSerializer.Serialize(resultCtx);
+            var redisValue = JsonSerializer.Serialize(resultCtx, _jsonSerializerOptions);
             await _subscriber.PublishAsync(WellKnown.ResultMq, redisValue).ConfigureAwait(false);
         }
     }
@@ -154,7 +159,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
     public async ValueTask DisposeAsync()
     {
         foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
-        
+
         if (_responseMq.IsValueCreated) _responseMq.Value.Dispose();
     }
 }

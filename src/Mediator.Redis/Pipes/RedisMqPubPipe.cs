@@ -26,6 +26,8 @@ using System.Text.Json;
 using Mediator.Handlers;
 using Mediator.Pipes;
 using Mediator.Pipes.Utils;
+using Mediator.Redis.Utils;
+using Mediator.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 
@@ -35,18 +37,21 @@ internal class RedisMqPubPipe : IConnectingPubPipe
 {
     private readonly ISubscriber _subscriber;
     private readonly IServiceProvider _serviceProvider;
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, ChannelMessageQueue> _pipeConnections = new();
 
     public RedisMqPubPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider)
     {
         _subscriber = multiplexer.GetSubscriber();
         _serviceProvider = serviceProvider;
+        _jsonSerializerOptions = new JsonSerializerOptions { Converters = { ObjectToInferredTypesConverter.Instance } };
     }
 
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
     {
-        var redisValue = JsonSerializer.Serialize(ctx);
-        await _subscriber.PublishAsync(ctx.Route.ToString(), redisValue).ConfigureAwait(false);
+        var redisValue = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
+        var messageProperties = new MessagePropertiesBuilder().Attach(ctx.Meta).Build();
+        await _subscriber.PublishAsync(ctx.Route.ToString(), redisValue, messageProperties.Flags).ConfigureAwait(false);
     }
 
     public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
@@ -95,7 +100,7 @@ internal class RedisMqPubPipe : IConnectingPubPipe
     private async Task HandleAsync<TMessage>(IPubPipe pipe, ChannelMessage channelMessage)
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
-        var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(channelMessage.Message)!;
+        var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(channelMessage.Message, _jsonSerializerOptions)!;
         ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
         await pipe.PassAsync(ctx);
     }

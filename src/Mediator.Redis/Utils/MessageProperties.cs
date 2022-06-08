@@ -21,15 +21,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator;
+using StackExchange.Redis;
 
-public interface IMediator : IAsyncDisposable
+namespace Mediator.Redis.Utils;
+
+internal class MessageProperties
 {
-    Task PublishAsync<TMessage>(TMessage message, Options? options = null,
-        CancellationToken token = default);
+    public RedisValue? MessageId { get; set; } = null;
 
-    Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Options? options = null,
-        CancellationToken token = default);
+    public int? MaxLenght { get; set; } = null;
 
-    MediatorTopology Topology { get; }
+    public bool UseApproximateMaxLength { get; set; } = false;
+
+    public CommandFlags Flags { get; set; } = CommandFlags.None;
 }

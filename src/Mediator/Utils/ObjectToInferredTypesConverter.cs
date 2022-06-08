@@ -21,15 +21,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
-public interface IMediator : IAsyncDisposable
+namespace Mediator.Utils;
+
+internal class ObjectToInferredTypesConverter : JsonConverter<object>
 {
-    Task PublishAsync<TMessage>(TMessage message, Options? options = null,
-        CancellationToken token = default);
+    public static readonly JsonConverter<object> Instance = new ObjectToInferredTypesConverter();
 
-    Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Options? options = null,
-        CancellationToken token = default);
+    public override object Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+        reader.TokenType switch
+        {
+            JsonTokenType.True => true,
+            JsonTokenType.False => false,
+            JsonTokenType.Number when reader.TryGetInt64(out var l) => l,
+            JsonTokenType.Number => reader.GetDouble(),
+            JsonTokenType.String when reader.TryGetDateTime(out var datetime) => datetime,
+            JsonTokenType.String => reader.GetString()!,
+            _ => JsonDocument.ParseValue(ref reader).RootElement.Clone()
+        };
 
-    MediatorTopology Topology { get; }
+    public override void Write(Utf8JsonWriter writer, object objectToWrite, JsonSerializerOptions options) =>
+        JsonSerializer.Serialize(writer, objectToWrite, objectToWrite.GetType(), options);
 }

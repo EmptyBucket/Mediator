@@ -21,15 +21,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Mediator;
+using System.Reflection;
 
-public interface IMediator : IAsyncDisposable
+namespace Mediator.Redis.Utils;
+
+internal class MessagePropertiesBuilder
 {
-    Task PublishAsync<TMessage>(TMessage message, Options? options = null,
-        CancellationToken token = default);
+    private static readonly Dictionary<string, PropertyInfo> Props = typeof(MessageProperties)
+        .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty)
+        .ToDictionary(p => p.Name);
 
-    Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Options? options = null,
-        CancellationToken token = default);
+    private readonly MessageProperties _messageProperties;
 
-    MediatorTopology Topology { get; }
+    public MessagePropertiesBuilder()
+    {
+        _messageProperties = new MessageProperties();
+    }
+
+    public MessagePropertiesBuilder Attach(IEnumerable<KeyValuePair<string, object?>> values)
+    {
+        foreach (var value in values)
+            if (Props.TryGetValue(value.Key, out var prop))
+                prop.SetValue(_messageProperties, value.Value);
+
+        return this;
+    }
+
+    public MessageProperties Build() => _messageProperties;
 }

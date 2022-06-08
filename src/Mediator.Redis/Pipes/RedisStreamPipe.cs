@@ -26,6 +26,8 @@ using System.Text.Json;
 using Mediator.Handlers;
 using Mediator.Pipes;
 using Mediator.Pipes.Utils;
+using Mediator.Redis.Utils;
+using Mediator.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using StackExchange.Redis;
 
@@ -36,17 +38,23 @@ public class RedisStreamPipe : IConnectingPubPipe
     private readonly IDatabase _database;
     private readonly IServiceProvider _serviceProvider;
     private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, CancellationTokenSource> _pipeConnections = new();
+    private readonly JsonSerializerOptions _jsonSerializerOptions;
 
     public RedisStreamPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider)
     {
         _database = multiplexer.GetDatabase();
         _serviceProvider = serviceProvider;
+        _jsonSerializerOptions = new JsonSerializerOptions { Converters = { ObjectToInferredTypesConverter.Instance } };
     }
 
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
     {
-        var redisValue = JsonSerializer.Serialize(ctx);
-        await _database.StreamAddAsync(ctx.Route.ToString(), WellKnown.MessageKey, redisValue).ConfigureAwait(false);
+        var redisValue = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
+        var messageProperties = new MessagePropertiesBuilder().Attach(ctx.Meta).Build();
+        await _database.StreamAddAsync(ctx.Route.ToString(), WellKnown.MessageKey, redisValue,
+                messageProperties.MessageId, messageProperties.MaxLenght, messageProperties.UseApproximateMaxLength,
+                messageProperties.Flags)
+            .ConfigureAwait(false);
     }
 
     public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
@@ -112,8 +120,12 @@ public class RedisStreamPipe : IConnectingPubPipe
             foreach (var entry in entries)
             {
                 await using var scope = _serviceProvider.CreateAsyncScope();
-                var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(entry[WellKnown.MessageKey])!;
-                ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+                var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(entry[WellKnown.MessageKey],
+                    _jsonSerializerOptions)!;
+                ctx = ctx with
+                {
+                    MessageId = entry.Id, DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider
+                };
                 await pipe.PassAsync(ctx);
                 await _database.StreamAcknowledgeAsync(route.ToString(), groupName, entry.Id).ConfigureAwait(false);
             }
