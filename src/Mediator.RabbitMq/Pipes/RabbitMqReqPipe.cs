@@ -4,6 +4,7 @@ using EasyNetQ.Topology;
 using Mediator.Handlers;
 using Mediator.Pipes;
 using Mediator.Pipes.Utils;
+using Mediator.RabbitMq.Utils;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.RabbitMq.Pipes;
@@ -40,8 +41,10 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
         }
 
         var exchange = await DeclareMessageExchangeAsync(ctx.Route, token);
+        if (ctx.CorrelationId == null) ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
-        var message = new Message<MessageContext<TMessage>>(ctx);
+        var messageProperties = new MessagePropertiesBuilder().Attach(ctx.Meta).Build();
+        var message = new Message<MessageContext<TMessage>>(ctx, messageProperties);
         await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, token).ConfigureAwait(false);
         return await tcs.Task.ConfigureAwait(false);
     }
@@ -97,8 +100,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
         }
         finally
         {
-            var messageId = Guid.NewGuid().ToString();
-            var resultCtx = new ResultContext<TResult>(ctx.Route, messageId, ctx.CorrelationId, DateTimeOffset.Now)
+            var resultCtx = new ResultContext<TResult>(ctx.Route, Guid.NewGuid().ToString(), ctx.CorrelationId)
                 { Result = result, Exception = exception };
             var message = new Message<ResultContext<TResult>>(resultCtx);
             await _bus.Advanced.PublishAsync(exchange, WellKnown.ResultMq, false, message).ConfigureAwait(false);
@@ -169,7 +171,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
     public async ValueTask DisposeAsync()
     {
         foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
-        
+
         if (_resultMq.IsValueCreated) _resultMq.Value.Dispose();
     }
 }

@@ -4,6 +4,7 @@ using EasyNetQ.Topology;
 using Mediator.Handlers;
 using Mediator.Pipes;
 using Mediator.Pipes.Utils;
+using Mediator.RabbitMq.Utils;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.RabbitMq.Pipes;
@@ -23,7 +24,8 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
     {
         var exchange = await DeclareExchangeAsync(ctx.Route, token);
-        var message = new Message<MessageContext<TMessage>>(ctx);
+        var messageProperties = new MessagePropertiesBuilder().Attach(ctx.Meta).Build();
+        var message = new Message<MessageContext<TMessage>>(ctx, messageProperties);
         await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, token).ConfigureAwait(false);
     }
 

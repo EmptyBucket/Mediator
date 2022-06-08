@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Mediator.Handlers;
 using Mediator.Pipes.Utils;
 
@@ -10,25 +11,23 @@ internal class Mediator : IMediator
         Topology = topology;
     }
 
-    public async Task PublishAsync<TMessage>(TMessage message,
-        Action<MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default)
+    public async Task PublishAsync<TMessage>(TMessage message, Options? options = null,
+        CancellationToken token = default)
     {
-        var route = Route.For<TMessage>();
-        var messageId = Guid.NewGuid().ToString();
-        var correlationId = Guid.NewGuid().ToString();
-        var ctx = new MessageContext<TMessage>(route, messageId, correlationId, DateTimeOffset.Now, message);
-        ctxBuilder?.Invoke(ctx);
+        options ??= new Options();
+        var route = Route.For<TMessage>(options.RoutingKey);
+        var ctx = new MessageContext<TMessage>(route, message,
+            options.Meta.ToImmutableDictionary(), options.Extra.ToImmutableDictionary());
         await Topology.Dispatch.PassAsync(ctx, token);
     }
 
-    public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message,
-        Action<MessageContext<TMessage>>? ctxBuilder = null, CancellationToken token = default)
+    public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Options? options = null,
+        CancellationToken token = default)
     {
-        var route = Route.For<TMessage, TResult>();
-        var messageId = Guid.NewGuid().ToString();
-        var correlationId = Guid.NewGuid().ToString();
-        var ctx = new MessageContext<TMessage>(route, messageId, correlationId, DateTimeOffset.Now, message);
-        ctxBuilder?.Invoke(ctx);
+        options ??= new Options();
+        var route = Route.For<TMessage, TResult>(options.RoutingKey);
+        var ctx = new MessageContext<TMessage>(route, message,
+            options.Meta.ToImmutableDictionary(), options.Extra.ToImmutableDictionary());
         return await Topology.Dispatch.PassAsync<TMessage, TResult>(ctx, token);
     }
 

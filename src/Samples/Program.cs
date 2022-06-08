@@ -29,7 +29,7 @@ serviceCollection
         var (dispatchPipe, receivePipe, pipeFactory) = mediatorTopology;
 
         // bindings usage
-        var connectingPipe = pipeFactory.Create<Pipe>();
+        var pipe = pipeFactory.Create<Pipe>();
         // you must specify name when use interface
         var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
         var redisMqPipe = pipeFactory.Create<IConnectingPipe>("RedisMqPipe");
@@ -75,14 +75,17 @@ var mediator = serviceProvider.GetRequiredService<IMediator>();
 // you can also skip configuration that was above and configure IMediator on the fly
 var (dispatchPipe, receivePipe, pipeFactory) = mediator.Topology;
 var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
-await dispatchPipe.ConnectOutAsync<Event, EventAnotherResult>(rabbitMqPipe);
-await rabbitMqPipe.ConnectHandlerAsync(new EventHandlerWithAnotherResult());
+// you can specify routingKey for routing in same type
+const string someRoutingKey = "some-routing-key";
+await dispatchPipe.ConnectOutAsync<Event, EventAnotherResult>(rabbitMqPipe, routingKey: someRoutingKey);
+await rabbitMqPipe.ConnectHandlerAsync(new EventHandlerWithAnotherResult(), routingKey: someRoutingKey);
 
 // publish and send events
 // Mediator, MediatorTopology, Pipes are thread safe
 await mediator.PublishAsync(new Event());
 var result = await mediator.SendAsync<Event, EventResult>(new Event());
-var anotherResult = await mediator.SendAsync<Event, EventAnotherResult>(new Event());
+var anotherResult =
+    await mediator.SendAsync<Event, EventAnotherResult>(new Event(), new Options { RoutingKey = someRoutingKey });
 await mediator.SendAsync<Event, Void>(new Event());
 
 await Task.Delay(TimeSpan.FromHours(1));
