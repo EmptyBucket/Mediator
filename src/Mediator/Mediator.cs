@@ -16,8 +16,7 @@ internal class Mediator : IMediator
     {
         options ??= new Options();
         var route = Route.For<TMessage>(options.RoutingKey);
-        var ctx = new MessageContext<TMessage>(route, message,
-            options.Meta.ToImmutableDictionary(), options.Extra.ToImmutableDictionary());
+        var ctx = CreateMessageContext(route, message, options);
         await Topology.Dispatch.PassAsync(ctx, token);
     }
 
@@ -26,12 +25,20 @@ internal class Mediator : IMediator
     {
         options ??= new Options();
         var route = Route.For<TMessage, TResult>(options.RoutingKey);
-        var ctx = new MessageContext<TMessage>(route, message,
-            options.Meta.ToImmutableDictionary(), options.Extra.ToImmutableDictionary());
+        var ctx = CreateMessageContext(route, message, options);
         return await Topology.Dispatch.PassAsync<TMessage, TResult>(ctx, token);
     }
 
     public MediatorTopology Topology { get; }
 
     public ValueTask DisposeAsync() => Topology.DisposeAsync();
+
+    private static MessageContext<TMessage> CreateMessageContext<TMessage>(Route route, TMessage message,
+        Options options)
+    {
+        var meta = options.Meta.ToImmutableDictionary();
+        var extra = options.Extra.ToImmutableDictionary();
+        var ctx = new MessageContext<TMessage>(route, message, meta, extra) { CreatedAt = DateTimeOffset.Now };
+        return ctx;
+    }
 }

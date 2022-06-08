@@ -18,7 +18,6 @@ public record MessageContext<TMessage>
         Message = message;
         _meta = meta;
         _extra = extra;
-        CreatedAt = DateTimeOffset.Now;
     }
 
     public MessageContext(MessageContext<TMessage> ctx)
@@ -33,30 +32,40 @@ public record MessageContext<TMessage>
 
     public TMessage Message { get; init; }
 
+    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     public string? MessageId
     {
         get => Get<string>(nameof(MessageId));
         init => Set(nameof(MessageId), value);
     }
 
+    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     public string? CorrelationId
     {
         get => Get<string>(nameof(CorrelationId));
         init => Set(nameof(CorrelationId), value);
     }
 
+    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     public DateTimeOffset CreatedAt
     {
         get => Get<DateTimeOffset>(nameof(CreatedAt), true);
         init => Set(nameof(CreatedAt), value, true);
     }
 
+    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     public DateTimeOffset? DeliveredAt
     {
         get => Get<DateTimeOffset>(nameof(DeliveredAt), true);
         init => Set(nameof(DeliveredAt), value, true);
     }
 
+    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     public TimeSpan? DeliveryTime => DeliveredAt is not null ? DeliveredAt.Value - CreatedAt : null;
 
     [JsonIgnore]
