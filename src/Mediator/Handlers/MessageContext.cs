@@ -29,26 +29,26 @@ namespace Mediator.Handlers;
 
 public record MessageContext<TMessage>
 {
-    private IImmutableDictionary<string, object?> _meta;
-    private IImmutableDictionary<string, object?> _extra;
+    private IImmutableDictionary<string, object?> _serviceProps;
+    private IImmutableDictionary<string, object?> _extraProps;
 
     [JsonConstructor]
     [Newtonsoft.Json.JsonConstructor]
     public MessageContext(Route route, TMessage message,
-        IImmutableDictionary<string, object?> meta, IImmutableDictionary<string, object?> extra)
+        IImmutableDictionary<string, object?> serviceProps, IImmutableDictionary<string, object?> extraProps)
     {
         Route = route;
         Message = message;
-        _meta = meta;
-        _extra = extra;
+        _serviceProps = serviceProps;
+        _extraProps = extraProps;
     }
 
     public MessageContext(MessageContext<TMessage> ctx)
     {
         Route = ctx.Route;
         Message = ctx.Message;
-        _meta = ctx._meta;
-        _extra = ctx._extra;
+        _serviceProps = ctx._serviceProps;
+        _extraProps = ctx._extraProps;
     }
 
     public Route Route { get; init; }
@@ -96,23 +96,23 @@ public record MessageContext<TMessage>
     public IServiceProvider? ServiceProvider { get; init; }
 
     public T? Get<T>(string propertyName, bool isExtra = false) =>
-        isExtra ? (T?)Extra.GetValueOrDefault(propertyName) : (T?)Meta.GetValueOrDefault(propertyName);
+        isExtra ? (T?)ExtraProps.GetValueOrDefault(propertyName) : (T?)ServiceProps.GetValueOrDefault(propertyName);
 
     private void Set<T>(string propertyName, T value, bool isExtra = false)
     {
-        if (isExtra) _extra = _extra.SetItem(propertyName, value);
-        else _meta = _meta.SetItem(propertyName, value);
+        if (isExtra) _extraProps = _extraProps.SetItem(propertyName, value);
+        else _serviceProps = _serviceProps.SetItem(propertyName, value);
     }
 
-    public IImmutableDictionary<string, object?> Meta
+    public IImmutableDictionary<string, object?> ServiceProps
     {
-        get => _meta;
-        init => _meta = value;
+        get => _serviceProps;
+        init => _serviceProps = value;
     }
 
-    public IImmutableDictionary<string, object?> Extra
+    public IImmutableDictionary<string, object?> ExtraProps
     {
-        get => _extra;
-        init => _extra = value;
+        get => _extraProps;
+        init => _extraProps = value;
     }
 }

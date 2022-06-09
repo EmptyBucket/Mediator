@@ -44,21 +44,21 @@ public class Options
     }
 
     public T? Get<T>(string propertyName, bool isExtra = false) =>
-        isExtra ? (T?)Extra.GetValueOrDefault(propertyName) : (T?)Meta.GetValueOrDefault(propertyName);
+        isExtra ? (T?)ExtraProps.GetValueOrDefault(propertyName) : (T?)ServiceProps.GetValueOrDefault(propertyName);
 
     public void Set<T>(string propertyName, T value, bool isExtra = false)
     {
-        if (isExtra) Extra[propertyName] = value;
-        else Meta[propertyName] = value;
+        if (isExtra) ExtraProps[propertyName] = value;
+        else ServiceProps[propertyName] = value;
     }
 
     /// <summary>
     /// Service information is embedded in the fields of the same name 
     /// </summary>
-    public Dictionary<string, object?> Meta { get; set; } = new();
+    public Dictionary<string, object?> ServiceProps { get; set; } = new();
 
     /// <summary>
     /// Additional information stored in the body 
     /// </summary>
-    public Dictionary<string, object?> Extra { get; set; } = new();
+    public Dictionary<string, object?> ExtraProps { get; set; } = new();
 }

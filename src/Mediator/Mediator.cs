@@ -59,9 +59,10 @@ internal class Mediator : IMediator
     private static MessageContext<TMessage> CreateMessageContext<TMessage>(Route route, TMessage message,
         Options options)
     {
-        var meta = options.Meta.ToImmutableDictionary();
-        var extra = options.Extra.ToImmutableDictionary();
-        var ctx = new MessageContext<TMessage>(route, message, meta, extra) { CreatedAt = DateTime.UtcNow };
+        var serviceProps = options.ServiceProps.ToImmutableDictionary();
+        var extraProps = options.ExtraProps.ToImmutableDictionary();
+        var ctx = new MessageContext<TMessage>(route, message, serviceProps, extraProps)
+            { CreatedAt = DateTime.UtcNow };
         return ctx;
     }
 }

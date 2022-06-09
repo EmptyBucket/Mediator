@@ -49,9 +49,9 @@ internal class RedisMqPubPipe : IConnectingPubPipe
 
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
     {
-        var redisValue = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
-        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.Meta).Build();
-        await _subscriber.PublishAsync(ctx.Route.ToString(), redisValue, messageProperties.Flags).ConfigureAwait(false);
+        var message = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
+        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
+        await _subscriber.PublishAsync(ctx.Route.ToString(), message, messageProperties.Flags).ConfigureAwait(false);
     }
 
     public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
@@ -87,14 +87,14 @@ internal class RedisMqPubPipe : IConnectingPubPipe
         return pipeConnection;
     }
 
-    private void DisconnectPipe(PipeConnection<IPubPipe> p)
+    private void DisconnectPipe(PipeConnection<IPubPipe> pipeConnection)
     {
-        if (_pipeConnections.TryRemove(p, out var c)) c.Unsubscribe();
+        if (_pipeConnections.TryRemove(pipeConnection, out var c)) c.Unsubscribe();
     }
 
-    private async ValueTask DisconnectPipeAsync(PipeConnection<IPubPipe> p)
+    private async ValueTask DisconnectPipeAsync(PipeConnection<IPubPipe> pipeConnection)
     {
-        if (_pipeConnections.TryRemove(p, out var c)) await c.UnsubscribeAsync().ConfigureAwait(false);
+        if (_pipeConnections.TryRemove(pipeConnection, out var c)) await c.UnsubscribeAsync().ConfigureAwait(false);
     }
 
     private async Task HandleAsync<TMessage>(IPubPipe pipe, ChannelMessage channelMessage)
