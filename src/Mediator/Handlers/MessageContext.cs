@@ -50,17 +50,17 @@ public record MessageContext<TMessage>
 
     [JsonIgnore]
     [Newtonsoft.Json.JsonIgnore]
-    public DateTimeOffset CreatedAt
+    public DateTime CreatedAt
     {
-        get => Get<DateTimeOffset>(nameof(CreatedAt), true);
+        get => Get<DateTime>(nameof(CreatedAt), true);
         init => Set(nameof(CreatedAt), value, true);
     }
 
     [JsonIgnore]
     [Newtonsoft.Json.JsonIgnore]
-    public DateTimeOffset? DeliveredAt
+    public DateTime? DeliveredAt
     {
-        get => Get<DateTimeOffset>(nameof(DeliveredAt), true);
+        get => Get<DateTime>(nameof(DeliveredAt), true);
         init => Set(nameof(DeliveredAt), value, true);
     }
 

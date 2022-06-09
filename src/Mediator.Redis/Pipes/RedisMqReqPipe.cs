@@ -46,7 +46,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         if (ctx.CorrelationId == null) ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
         var redisValue = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
-        var messageProperties = new MessagePropertiesBuilder().Attach(ctx.Meta).Build();
+        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.Meta).Build();
         await _subscriber.PublishAsync(ctx.Route.ToString(), redisValue, messageProperties.Flags).ConfigureAwait(false);
         return await tcs.Task.ConfigureAwait(false);
     }
@@ -101,7 +101,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         try
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
-            ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+            ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
             result = await pipe.PassAsync<TMessage, TResult>(ctx);
         }
         catch (Exception e)

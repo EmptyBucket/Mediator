@@ -27,7 +27,7 @@ internal class RedisMqPubPipe : IConnectingPubPipe
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
     {
         var redisValue = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
-        var messageProperties = new MessagePropertiesBuilder().Attach(ctx.Meta).Build();
+        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.Meta).Build();
         await _subscriber.PublishAsync(ctx.Route.ToString(), redisValue, messageProperties.Flags).ConfigureAwait(false);
     }
 
@@ -78,7 +78,7 @@ internal class RedisMqPubPipe : IConnectingPubPipe
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(channelMessage.Message, _jsonSerializerOptions)!;
-        ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+        ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
         await pipe.PassAsync(ctx);
     }
 

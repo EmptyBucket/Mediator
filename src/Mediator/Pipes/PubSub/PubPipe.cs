@@ -21,7 +21,7 @@ internal class PubPipe : IConnectingPubPipe
         var pipeConnections = GetPipeConnections(ctx.Route);
 
         using var scope = _serviceProvider.CreateScope();
-        ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+        ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
 
         foreach (var pipeConnection in pipeConnections) pipeConnection.Pipe.PassAsync(ctx, token);
 

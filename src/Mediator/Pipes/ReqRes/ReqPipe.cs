@@ -25,7 +25,7 @@ internal class ReqPipe : IConnectingReqPipe
             throw new InvalidOperationException($"Message with route: {ctx.Route} must have only one registered pipe");
 
         using var scope = _serviceProvider.CreateScope();
-        ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+        ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
         var pipeConnection = pipeConnections.First();
         return await pipeConnection.Pipe.PassAsync<TMessage, TResult>(ctx, token);
     }
