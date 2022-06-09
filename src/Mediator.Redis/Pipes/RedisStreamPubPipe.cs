@@ -38,7 +38,7 @@ public class RedisStreamPubPipe : IConnectingPubPipe
     {
         var route = Route.For<TMessage>(routingKey);
         var (groupName, consumerName) = ParseSubscriptionId(subscriptionId);
-        CreateConsumerGroup(route, groupName);
+        _database.TryCreateConsumerGroup(route, groupName, "0");
         var pipeConnection = ConnectPipe<TMessage>(route, pipe, groupName, consumerName);
         return pipeConnection;
     }
@@ -48,7 +48,7 @@ public class RedisStreamPubPipe : IConnectingPubPipe
     {
         var route = Route.For<TMessage>(routingKey);
         var (groupName, consumerName) = ParseSubscriptionId(subscriptionId);
-        await CreateConsumerGroupAsync(route, groupName);
+        await _database.TryCreateConsumerGroupAsync(route, groupName, "0");
         var pipeConnection = ConnectPipe<TMessage>(route, pipe, groupName, consumerName);
         return pipeConnection;
     }
@@ -105,32 +105,6 @@ public class RedisStreamPubPipe : IConnectingPubPipe
                 await _database.StreamAcknowledgeAsync(route.ToString(), groupName, entry.Id).ConfigureAwait(false);
             }
         } while (entries.Any());
-    }
-
-    private static string ConsumerGroupExistsExceptionMessage => "BUSYGROUP Consumer Group name already exists";
-
-    private void CreateConsumerGroup(Route route, string groupName)
-    {
-        try
-        {
-            _database.StreamCreateConsumerGroup(route.ToString(), groupName, "0");
-        }
-        catch (RedisException e)
-        {
-            if (e.Message != ConsumerGroupExistsExceptionMessage) throw;
-        }
-    }
-
-    private async Task CreateConsumerGroupAsync(Route route, string groupName)
-    {
-        try
-        {
-            await _database.StreamCreateConsumerGroupAsync(route.ToString(), groupName, "0").ConfigureAwait(false);
-        }
-        catch (RedisException e)
-        {
-            if (e.Message != ConsumerGroupExistsExceptionMessage) throw;
-        }
     }
 
     private static (string groupName, string consumerName) ParseSubscriptionId(string subscriptionId) =>

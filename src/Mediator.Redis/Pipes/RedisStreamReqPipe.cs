@@ -37,11 +37,6 @@ public class RedisStreamReqPipe : IConnectingReqPipe
         throw new NotImplementedException();
     }
 
-    public ValueTask DisposeAsync()
-    {
-        throw new NotImplementedException();
-    }
-
     private async Task HandleAsync<TMessage, TResult>(Route route, IReqPipe pipe, string groupName, string consumerName,
         string position, int count)
     {
@@ -85,32 +80,38 @@ public class RedisStreamReqPipe : IConnectingReqPipe
         } while (entries.Any());
     }
 
-    private async Task<ChannelMessageQueue> CreateResultMqAsync()
+    private async Task<ChannelMessageQueue> CreateResultStreamAsync()
     {
-        async Task HandleAsync<TMessage>(Route route, IPubPipe pipe, string groupName, string consumerName,
-            string position, int count)
+        async Task HandleAsync(string position, int count)
         {
             StreamEntry[] entries;
 
             do
             {
                 entries = await _database
-                    .StreamReadGroupAsync(route.ToString(), groupName, consumerName, position, count)
+                    .StreamReadGroupAsync(WellKnown.ResultStream, WellKnown.ResultGroup, WellKnown.ResultConsumer,
+                        position, count)
                     .ConfigureAwait(false);
-                var now = DateTime.Now;
 
                 foreach (var entry in entries)
                 {
-                    var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(entry[WellKnown.MessageKey],
-                        _jsonSerializerOptions)!;
+                    var jsonElement = JsonDocument.Parse(entry[WellKnown.MessageKey].ToString()).RootElement;
+                    var correlationId = jsonElement.GetProperty("CorrelationId").ToString();
                     await using var scope = _serviceProvider.CreateAsyncScope();
-                    ctx = ctx with { MessageId = entry.Id, DeliveredAt = now, ServiceProvider = scope.ServiceProvider };
-                    await pipe.PassAsync(ctx);
-                    await _database.StreamAcknowledgeAsync(route.ToString(), groupName, entry.Id).ConfigureAwait(false);
+
+                    if (_resultHandlers.TryRemove(correlationId, out var handle)) handle(entry);
+
+                    await _database.StreamAcknowledgeAsync(WellKnown.ResultStream, WellKnown.ResultGroup, entry.Id)
+                        .ConfigureAwait(false);
                 }
             } while (entries.Any());
         }
 
         // код, который крутит цикл
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        throw new NotImplementedException();
     }
 }
