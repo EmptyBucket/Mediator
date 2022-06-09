@@ -26,7 +26,7 @@ serviceCollection
         var (dispatchPipe, receivePipe, pipeFactory) = mediatorTopology;
 
         // bindings usage
-        var connectingPipe = pipeFactory.Create<Pipe>();
+        var pipe = pipeFactory.Create<Pipe>();
         // you must specify name when use interface
         var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
         var redisMqPipe = pipeFactory.Create<IConnectingPipe>("RedisMqPipe");
@@ -39,6 +39,9 @@ serviceCollection
         // mediator =[Event]> rabbitMqPipe =[Event]> EventHandler#1
         // mediator =[Event]> rabbitMqPipe =[Event]> EventHandler#2
         // you must specify subscriptionId for persistent queues/streams, when has several consumers
+        // if you want multiple consumers in a consumer group:
+        // in rabbitmq use the same subscriptionId for several consumers
+        // in redis use delimiter ':' (i.e. subscriptionId = "groupName:consumerName")
         dispatchPipe.ConnectOut<Event>(rabbitMqPipe);
         rabbitMqPipe.ConnectHandler(new EventHandler(), subscriptionId: "1");
         rabbitMqPipe.ConnectHandler(new EventHandler(), subscriptionId: "2");
