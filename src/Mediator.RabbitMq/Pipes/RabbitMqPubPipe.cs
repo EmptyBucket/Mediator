@@ -24,7 +24,7 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
     {
         var exchange = await DeclareExchangeAsync(ctx.Route, token);
-        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.Meta).Build();
+        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
         var message = new Message<MessageContext<TMessage>>(ctx, messageProperties);
         await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, token).ConfigureAwait(false);
     }

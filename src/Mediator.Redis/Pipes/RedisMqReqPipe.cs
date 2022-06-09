@@ -45,9 +45,9 @@ internal class RedisMqReqPipe : IConnectingReqPipe
 
         if (ctx.CorrelationId == null) ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
-        var redisValue = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
-        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.Meta).Build();
-        await _subscriber.PublishAsync(ctx.Route.ToString(), redisValue, messageProperties.Flags).ConfigureAwait(false);
+        var message = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
+        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
+        await _subscriber.PublishAsync(ctx.Route.ToString(), message, messageProperties.Flags).ConfigureAwait(false);
         return await tcs.Task.ConfigureAwait(false);
     }
 
@@ -82,19 +82,19 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         return pipeConnection;
     }
 
-    private void DisconnectPipe(PipeConnection<IReqPipe> p)
+    private void DisconnectPipe(PipeConnection<IReqPipe> pipeConnection)
     {
-        if (_pipeConnections.TryRemove(p, out var c)) c.Unsubscribe();
+        if (_pipeConnections.TryRemove(pipeConnection, out var c)) c.Unsubscribe();
     }
 
-    private async ValueTask DisconnectPipeAsync(PipeConnection<IReqPipe> p)
+    private async ValueTask DisconnectPipeAsync(PipeConnection<IReqPipe> pipeConnection)
     {
-        if (_pipeConnections.TryRemove(p, out var c)) await c.UnsubscribeAsync().ConfigureAwait(false);
+        if (_pipeConnections.TryRemove(pipeConnection, out var c)) await c.UnsubscribeAsync().ConfigureAwait(false);
     }
 
-    private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe, ChannelMessage m)
+    private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe, ChannelMessage message)
     {
-        var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(m.Message, _jsonSerializerOptions)!;
+        var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(message.Message, _jsonSerializerOptions)!;
         TResult? result = default;
         Exception? exception = default;
 
@@ -113,8 +113,8 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         {
             var resultCtx = new ResultContext<TResult>(ctx.Route, Guid.NewGuid().ToString(), ctx.CorrelationId!)
                 { Result = result, Exception = exception };
-            var redisValue = JsonSerializer.Serialize(resultCtx, _jsonSerializerOptions);
-            await _subscriber.PublishAsync(WellKnown.ResultMq, redisValue).ConfigureAwait(false);
+            var resultMessage = JsonSerializer.Serialize(resultCtx, _jsonSerializerOptions);
+            await _subscriber.PublishAsync(WellKnown.ResultMq, resultMessage).ConfigureAwait(false);
         }
     }
 

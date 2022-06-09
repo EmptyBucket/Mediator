@@ -43,7 +43,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
         var exchange = await DeclareMessageExchangeAsync(ctx.Route, token);
         if (ctx.CorrelationId == null) ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
-        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.Meta).Build();
+        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
         var message = new Message<MessageContext<TMessage>>(ctx, messageProperties);
         await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, token).ConfigureAwait(false);
         return await tcs.Task.ConfigureAwait(false);
@@ -75,15 +75,15 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
         return pipeConnection;
     }
 
-    private void DisconnectPipe(PipeConnection<IReqPipe> p)
+    private void DisconnectPipe(PipeConnection<IReqPipe> pipeConnection)
     {
-        if (_pipeConnections.TryRemove(p, out var s)) s.Dispose();
+        if (_pipeConnections.TryRemove(pipeConnection, out var s)) s.Dispose();
     }
 
-    private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe, IMessage<MessageContext<TMessage>> m)
+    private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe, IMessage<MessageContext<TMessage>> message)
     {
         var exchange = await DeclareResultExchangeAsync();
-        var ctx = m.Body;
+        var ctx = message.Body;
         TResult? result = default;
         Exception? exception = default;
 
@@ -102,8 +102,8 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
         {
             var resultCtx = new ResultContext<TResult>(ctx.Route, Guid.NewGuid().ToString(), ctx.CorrelationId!)
                 { Result = result, Exception = exception };
-            var message = new Message<ResultContext<TResult>>(resultCtx);
-            await _bus.Advanced.PublishAsync(exchange, WellKnown.ResultMq, false, message).ConfigureAwait(false);
+            var resultMessage = new Message<ResultContext<TResult>>(resultCtx);
+            await _bus.Advanced.PublishAsync(exchange, WellKnown.ResultMq, false, resultMessage).ConfigureAwait(false);
         }
     }
 
