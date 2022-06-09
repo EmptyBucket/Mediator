@@ -35,12 +35,11 @@ internal class RedisMqReqPipe : IConnectingReqPipe
 
         void Handle(ChannelMessage m)
         {
-            // ReSharper disable once VariableHidesOuterVariable
-            var ctx = JsonSerializer.Deserialize<ResultContext<TResult>>(m.Message, _jsonSerializerOptions)!;
+            var resultCtx = JsonSerializer.Deserialize<ResultContext<TResult>>(m.Message, _jsonSerializerOptions)!;
 
-            if (ctx.Result != null) tcs.TrySetResult(ctx.Result);
-            else if (ctx.Exception != null) tcs.TrySetException(ctx.Exception);
-            else tcs.TrySetException(new InvalidOperationException("Message was not be processed"));
+            if (resultCtx.Result != null) tcs.TrySetResult(resultCtx.Result);
+            else if (resultCtx.Exception != null) tcs.TrySetException(resultCtx.Exception);
+            else tcs.TrySetException(new MessageNotProcessedException());
         }
 
         if (ctx.CorrelationId == null) ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };

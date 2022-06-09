@@ -4,6 +4,7 @@ using EasyNetQ.Topology;
 using Mediator.Handlers;
 using Mediator.Pipes;
 using Mediator.Pipes.Utils;
+using Mediator.RabbitMq.Utils;
 using Mediator.Utils;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -32,15 +33,14 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
 
         void Handle(IMessage m, MessageReceivedInfo i)
         {
-            // ReSharper disable once VariableHidesOuterVariable
-            var ctx = (ResultContext<TResult>)m.GetBody();
+            var resultCtx = (ResultContext<TResult>)m.GetBody();
 
-            if (ctx.Result != null) tcs.TrySetResult(ctx.Result);
-            else if (ctx.Exception != null) tcs.TrySetException(ctx.Exception);
-            else tcs.TrySetException(new InvalidOperationException("Message was not be processed"));
+            if (resultCtx.Result != null) tcs.TrySetResult(resultCtx.Result);
+            else if (resultCtx.Exception != null) tcs.TrySetException(resultCtx.Exception);
+            else tcs.TrySetException(new MessageNotProcessedException());
         }
 
-        var exchange = await DeclareMessageExchangeAsync(ctx.Route, token);
+        var exchange = await _bus.Advanced.DeclareExchangeAsync(ctx.Route, token);
         if (ctx.CorrelationId == null) ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
         var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
@@ -52,7 +52,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
     public IDisposable ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "")
     {
         var route = Route.For<TMessage, TResult>(routingKey);
-        var queue = DeclareMessageQueue(route);
+        var queue = _bus.Advanced.DeclareBoundQueue(route);
         var pipeConnection = ConnectPipe<TMessage, TResult>(route, pipe, queue);
         return pipeConnection;
     }
@@ -61,7 +61,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
         CancellationToken token = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
-        var queue = await DeclareMessageQueueAsync(route, token);
+        var queue = await _bus.Advanced.DeclareBoundQueueAsync(route, token);
         var pipeConnection = ConnectPipe<TMessage, TResult>(route, pipe, queue);
         return pipeConnection;
     }
@@ -82,7 +82,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
 
     private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe, IMessage<MessageContext<TMessage>> message)
     {
-        var exchange = await DeclareResultExchangeAsync();
+        var exchange = await _bus.Advanced.DeclareResultExchangeAsync();
         var ctx = message.Body;
         TResult? result = default;
         Exception? exception = default;
@@ -117,55 +117,9 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
                 handle(m, i);
         }
 
-        var queue = await DeclareResultQueueAsync();
+        var queue = await _bus.Advanced.DeclareBoundResultQueueAsync();
         var subscription = _bus.Advanced.Consume<dynamic>(queue, Handle);
         return subscription;
-    }
-
-    private async Task<IExchange> DeclareResultExchangeAsync(CancellationToken token = default)
-    {
-        var exchange = await _bus.Advanced
-            .ExchangeDeclareAsync(WellKnown.ResultMq, ExchangeType.Fanout, cancellationToken: token)
-            .ConfigureAwait(false);
-        return exchange;
-    }
-
-    private async Task<IQueue> DeclareResultQueueAsync(CancellationToken token = default)
-    {
-        var exchange = await DeclareResultExchangeAsync(token);
-        var queue = await _bus.Advanced.QueueDeclareAsync(WellKnown.ResultMq, token).ConfigureAwait(false);
-        await _bus.Advanced.BindAsync(exchange, queue, string.Empty, token).ConfigureAwait(false);
-        return queue;
-    }
-
-    private IExchange DeclareMessageExchange(Route route)
-    {
-        var exchange = _bus.Advanced.ExchangeDeclare(route, ExchangeType.Direct);
-        return exchange;
-    }
-
-    private async Task<IExchange> DeclareMessageExchangeAsync(Route route, CancellationToken token = default)
-    {
-        var exchange = await _bus.Advanced
-            .ExchangeDeclareAsync(route, ExchangeType.Direct, cancellationToken: token)
-            .ConfigureAwait(false);
-        return exchange;
-    }
-
-    private IQueue DeclareMessageQueue(Route route)
-    {
-        var exchange = DeclareMessageExchange(route);
-        var queue = _bus.Advanced.QueueDeclare(route);
-        _bus.Advanced.Bind(exchange, queue, route);
-        return queue;
-    }
-
-    private async Task<IQueue> DeclareMessageQueueAsync(Route route, CancellationToken token = default)
-    {
-        var exchange = await DeclareMessageExchangeAsync(route, token);
-        var queue = await _bus.Advanced.QueueDeclareAsync(route, token).ConfigureAwait(false);
-        await _bus.Advanced.BindAsync(exchange, queue, route, token).ConfigureAwait(false);
-        return queue;
     }
 
     public async ValueTask DisposeAsync()
