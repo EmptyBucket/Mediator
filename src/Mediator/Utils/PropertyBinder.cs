@@ -23,29 +23,29 @@
 
 using System.Reflection;
 
-namespace Mediator.Redis.Utils;
+namespace Mediator.Utils;
 
-internal class MessagePropertiesBuilder
+internal class PropertyBinder<TMessageProperties> where TMessageProperties : new()
 {
-    private static readonly Dictionary<string, PropertyInfo> Props = typeof(MessageProperties)
+    private static readonly Dictionary<string, PropertyInfo> Props = typeof(TMessageProperties)
         .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty)
         .ToDictionary(p => p.Name);
 
-    private readonly MessageProperties _messageProperties;
+    private readonly TMessageProperties _messageProperties;
 
-    public MessagePropertiesBuilder()
+    public PropertyBinder()
     {
-        _messageProperties = new MessageProperties();
+        _messageProperties = new TMessageProperties();
     }
 
-    public MessagePropertiesBuilder Attach(IEnumerable<KeyValuePair<string, object?>> values)
+    public PropertyBinder<TMessageProperties> Bind(IEnumerable<KeyValuePair<string, object?>> pairs)
     {
-        foreach (var value in values)
-            if (Props.TryGetValue(value.Key, out var prop))
-                prop.SetValue(_messageProperties, value.Value);
+        foreach (var pair in pairs)
+            if (Props.TryGetValue(pair.Key, out var prop))
+                prop.SetValue(_messageProperties, pair.Value?.CastTo(prop.PropertyType));
 
         return this;
     }
 
-    public MessageProperties Build() => _messageProperties;
+    public TMessageProperties Build() => _messageProperties;
 }

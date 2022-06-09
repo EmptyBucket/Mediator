@@ -27,7 +27,7 @@ using EasyNetQ.Topology;
 using Mediator.Handlers;
 using Mediator.Pipes;
 using Mediator.Pipes.Utils;
-using Mediator.RabbitMq.Utils;
+using Mediator.Utils;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.RabbitMq.Pipes;
@@ -66,7 +66,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
         var exchange = await DeclareMessageExchangeAsync(ctx.Route, token);
         if (ctx.CorrelationId == null) ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
-        var messageProperties = new MessagePropertiesBuilder().Attach(ctx.Meta).Build();
+        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.Meta).Build();
         var message = new Message<MessageContext<TMessage>>(ctx, messageProperties);
         await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, token).ConfigureAwait(false);
         return await tcs.Task.ConfigureAwait(false);
@@ -113,7 +113,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
         try
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
-            ctx = ctx with { DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider };
+            ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
             result = await pipe.PassAsync<TMessage, TResult>(ctx);
         }
         catch (Exception e)
@@ -123,7 +123,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
         }
         finally
         {
-            var resultCtx = new ResultContext<TResult>(ctx.Route, Guid.NewGuid().ToString(), ctx.CorrelationId)
+            var resultCtx = new ResultContext<TResult>(ctx.Route, Guid.NewGuid().ToString(), ctx.CorrelationId!)
                 { Result = result, Exception = exception };
             var message = new Message<ResultContext<TResult>>(resultCtx);
             await _bus.Advanced.PublishAsync(exchange, WellKnown.ResultMq, false, message).ConfigureAwait(false);

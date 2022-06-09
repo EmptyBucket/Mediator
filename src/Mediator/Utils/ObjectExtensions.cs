@@ -22,31 +22,16 @@
 // SOFTWARE.
 
 using System.Reflection;
-using EasyNetQ;
 
-namespace Mediator.RabbitMq.Utils;
+namespace Mediator.Utils;
 
-internal class MessagePropertiesBuilder
+internal static class ObjectExtensions
 {
-    private static readonly Dictionary<string, PropertyInfo> Props = typeof(MessageProperties)
-        .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty)
-        .ToDictionary(p => p.Name);
+    private static readonly MethodInfo CastMethodInfo =
+        typeof(ObjectExtensions).GetMethod(nameof(Cast), BindingFlags.Static | BindingFlags.NonPublic)!;
 
-    private readonly MessageProperties _messageProperties;
+    public static object CastTo(this object obj, Type type) =>
+        CastMethodInfo.MakeGenericMethod(type).Invoke(null, new[] { obj });
 
-    public MessagePropertiesBuilder()
-    {
-        _messageProperties = new MessageProperties();
-    }
-
-    public MessagePropertiesBuilder Attach(IEnumerable<KeyValuePair<string, object?>> values)
-    {
-        foreach (var value in values)
-            if (Props.TryGetValue(value.Key, out var prop))
-                prop.SetValue(_messageProperties, value.Value);
-
-        return this;
-    }
-
-    public MessageProperties Build() => _messageProperties;
+    private static T Cast<T>(dynamic o) => (T)o;
 }

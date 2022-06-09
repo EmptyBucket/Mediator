@@ -61,7 +61,7 @@ internal class Mediator : IMediator
     {
         var meta = options.Meta.ToImmutableDictionary();
         var extra = options.Extra.ToImmutableDictionary();
-        var ctx = new MessageContext<TMessage>(route, message, meta, extra) { CreatedAt = DateTimeOffset.Now };
+        var ctx = new MessageContext<TMessage>(route, message, meta, extra) { CreatedAt = DateTime.UtcNow };
         return ctx;
     }
 }

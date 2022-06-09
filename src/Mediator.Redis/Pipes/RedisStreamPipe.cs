@@ -50,7 +50,7 @@ public class RedisStreamPipe : IConnectingPubPipe
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
     {
         var redisValue = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
-        var messageProperties = new MessagePropertiesBuilder().Attach(ctx.Meta).Build();
+        var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.Meta).Build();
         await _database.StreamAddAsync(ctx.Route.ToString(), WellKnown.MessageKey, redisValue,
                 messageProperties.MessageId, messageProperties.MaxLenght, messageProperties.UseApproximateMaxLength,
                 messageProperties.Flags)
@@ -124,7 +124,7 @@ public class RedisStreamPipe : IConnectingPubPipe
                     _jsonSerializerOptions)!;
                 ctx = ctx with
                 {
-                    MessageId = entry.Id, DeliveredAt = DateTimeOffset.Now, ServiceProvider = scope.ServiceProvider
+                    MessageId = entry.Id, DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider
                 };
                 await pipe.PassAsync(ctx);
                 await _database.StreamAcknowledgeAsync(route.ToString(), groupName, entry.Id).ConfigureAwait(false);
