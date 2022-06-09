@@ -76,8 +76,8 @@ internal class RedisMqPubPipe : IConnectingPubPipe
 
     private async Task HandleAsync<TMessage>(IPubPipe pipe, ChannelMessage channelMessage)
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
         var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(channelMessage.Message, _jsonSerializerOptions)!;
+        await using var scope = _serviceProvider.CreateAsyncScope();
         ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
         await pipe.PassAsync(ctx);
     }

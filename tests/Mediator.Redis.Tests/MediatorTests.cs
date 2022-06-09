@@ -98,7 +98,7 @@ public class MediatorTests
     public async Task PublishAsync_WhenRedisStreamTopology_CallPassAsync()
     {
         var (dispatch, _, pipeFactory) = _mediator.Topology;
-        await using var pipe = pipeFactory.Create<RedisStreamPipe>();
+        await using var pipe = pipeFactory.Create<RedisStreamPubPipe>();
         var someEvent = new SomeEvent(Guid.NewGuid());
 
         await dispatch.ConnectOutAsync<SomeEvent>(pipe);
@@ -114,7 +114,7 @@ public class MediatorTests
     public async Task PublishAsync_WhenRedisStreamTopologyWithTwoConsumers_CallPassAsyncOnBoth()
     {
         var (dispatch, _, pipeFactory) = _mediator.Topology;
-        await using var pipe = pipeFactory.Create<RedisStreamPipe>();
+        await using var pipe = pipeFactory.Create<RedisStreamPubPipe>();
         var someEvent = new SomeEvent(Guid.NewGuid());
 
         await dispatch.ConnectOutAsync<SomeEvent>(pipe);
@@ -134,7 +134,7 @@ public class MediatorTests
     public async Task PublishAsyncTwice_WhenRedisStreamTopologyWithTwoConsumers_CallPassAsyncOnBoth()
     {
         var (dispatch, _, pipeFactory) = _mediator.Topology;
-        await using var pipe = pipeFactory.Create<RedisStreamPipe>();
+        await using var pipe = pipeFactory.Create<RedisStreamPubPipe>();
         var someEvent = new SomeEvent(Guid.NewGuid());
         async Task DoSomeWork() => await Task.Delay(1_000);
         _fEndPipe.Setup(p => p.PassAsync(It.IsAny<MessageContext<SomeEvent>>(), It.IsAny<CancellationToken>()))

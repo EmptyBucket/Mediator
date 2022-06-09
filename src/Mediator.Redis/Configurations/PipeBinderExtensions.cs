@@ -9,6 +9,6 @@ public static class PipeBinderExtensions
         pipeBinder
             .Bind<RedisMqPipe>()
             .BindInterfaces<RedisMqPipe>(nameof(RedisMqPipe))
-            .Bind<RedisStreamPipe>()
-            .BindInterfaces<RedisStreamPipe>(nameof(RedisStreamPipe));
+            .Bind<RedisStreamPubPipe>()
+            .BindInterfaces<RedisStreamPubPipe>(nameof(RedisStreamPubPipe));
 }

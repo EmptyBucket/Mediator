@@ -10,14 +10,14 @@ using StackExchange.Redis;
 
 namespace Mediator.Redis.Pipes;
 
-public class RedisStreamPipe : IConnectingPubPipe
+public class RedisStreamPubPipe : IConnectingPubPipe
 {
     private readonly IDatabase _database;
     private readonly IServiceProvider _serviceProvider;
     private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, CancellationTokenSource> _pipeConnections = new();
     private readonly JsonSerializerOptions _jsonSerializerOptions;
 
-    public RedisStreamPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider)
+    public RedisStreamPubPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider)
     {
         _database = multiplexer.GetDatabase();
         _serviceProvider = serviceProvider;
@@ -93,16 +93,14 @@ public class RedisStreamPipe : IConnectingPubPipe
             entries = await _database
                 .StreamReadGroupAsync(route.ToString(), groupName, consumerName, position, count)
                 .ConfigureAwait(false);
+            var now = DateTime.Now;
 
             foreach (var entry in entries)
             {
-                await using var scope = _serviceProvider.CreateAsyncScope();
                 var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(entry[WellKnown.MessageKey],
                     _jsonSerializerOptions)!;
-                ctx = ctx with
-                {
-                    MessageId = entry.Id, DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider
-                };
+                await using var scope = _serviceProvider.CreateAsyncScope();
+                ctx = ctx with { MessageId = entry.Id, DeliveredAt = now, ServiceProvider = scope.ServiceProvider };
                 await pipe.PassAsync(ctx);
                 await _database.StreamAcknowledgeAsync(route.ToString(), groupName, entry.Id).ConfigureAwait(false);
             }

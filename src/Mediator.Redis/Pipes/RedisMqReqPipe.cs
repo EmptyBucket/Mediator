@@ -24,7 +24,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         _subscriber = multiplexer.GetSubscriber();
         _serviceProvider = serviceProvider;
         _jsonSerializerOptions = new JsonSerializerOptions { Converters = { ObjectToInferredTypesConverter.Instance } };
-        _responseMq = new Lazy<Task<ChannelMessageQueue>>(CreateResultMq);
+        _responseMq = new Lazy<Task<ChannelMessageQueue>>(CreateResultMqAsync);
     }
 
     public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
@@ -118,7 +118,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         }
     }
 
-    private async Task<ChannelMessageQueue> CreateResultMq()
+    private async Task<ChannelMessageQueue> CreateResultMqAsync()
     {
         void Handle(ChannelMessage m)
         {
