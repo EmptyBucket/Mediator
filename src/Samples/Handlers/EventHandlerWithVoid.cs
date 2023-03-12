@@ -29,7 +29,7 @@ namespace Samples.Handlers;
 
 public class EventHandlerWithVoid : IHandler<Event, Void>
 {
-    public Task<Void> HandleAsync(MessageContext<Event> ctx, CancellationToken token)
+    public Task<Void> HandleAsync(MessageContext<Event> ctx, CancellationToken cancellationToken)
     {
         return Task.FromResult(new Void());
     }

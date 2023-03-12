@@ -29,8 +29,8 @@ public class PipeConnection<TPipe> : IDisposable, IAsyncDisposable
     private readonly Action<PipeConnection<TPipe>> _disconnect;
     private readonly Func<PipeConnection<TPipe>, ValueTask> _disconnectAsync;
 
-    public PipeConnection(Route route, TPipe pipe,
-        Action<PipeConnection<TPipe>> disconnect, Func<PipeConnection<TPipe>, ValueTask> disconnectAsync)
+    public PipeConnection(Route route, TPipe pipe, Action<PipeConnection<TPipe>> disconnect,
+        Func<PipeConnection<TPipe>, ValueTask> disconnectAsync)
     {
         Route = route;
         Pipe = pipe;

@@ -25,7 +25,19 @@ using Mediator.Handlers;
 
 namespace Mediator.Pipes;
 
+/// <summary>
+/// Represents the pipe interface for request/response messaging model 
+/// </summary>
 public interface IReqPipe
 {
-    Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx, CancellationToken token = default);
+    /// <summary>
+    /// Handle the message that passes through the pipe
+    /// </summary>
+    /// <param name="ctx"></param>
+    /// <param name="cancellationToken"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    /// <returns></returns>
+    Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
+        CancellationToken cancellationToken = default);
 }

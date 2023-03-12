@@ -28,6 +28,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Pipes;
 
+/// <summary>
+/// Represents the pipe for publish/subscribe messaging model 
+/// </summary>
 internal class PubPipe : IConnectingPubPipe
 {
     private readonly IServiceProvider _serviceProvider;
@@ -39,18 +42,20 @@ internal class PubPipe : IConnectingPubPipe
         _serviceProvider = serviceProvider;
     }
 
-    public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
+    /// <inheritdoc />
+    public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
         var pipeConnections = GetPipeConnections(ctx.Route);
 
         using var scope = _serviceProvider.CreateScope();
         ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
 
-        foreach (var pipeConnection in pipeConnections) pipeConnection.Pipe.PassAsync(ctx, token);
+        foreach (var pipeConnection in pipeConnections) pipeConnection.Pipe.PassAsync(ctx, cancellationToken);
 
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
     public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
     {
         var route = Route.For<TMessage>(routingKey);
@@ -58,8 +63,9 @@ internal class PubPipe : IConnectingPubPipe
         return pipeConnection;
     }
 
+    /// <inheritdoc />
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
-        string subscriptionId = "", CancellationToken token = default)
+        string subscriptionId = "", CancellationToken cancellationToken = default)
     {
         var route = Route.For<TMessage>(routingKey);
         var pipeConnection = ConnectPipe(route, pipe);
@@ -88,6 +94,7 @@ internal class PubPipe : IConnectingPubPipe
             _pipeConnections.Remove(pipeConnection.Route);
     }
 
+    /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         foreach (var pipeConnection in _pipeConnections.SelectMany(c => c.Value)) await pipeConnection.DisposeAsync();

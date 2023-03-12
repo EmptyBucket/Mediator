@@ -27,6 +27,10 @@ using Mediator.Pipes.Utils;
 
 namespace Mediator.Handlers;
 
+/// <summary>
+/// Represents the message context
+/// </summary>
+/// <typeparam name="TMessage"></typeparam>
 public record MessageContext<TMessage>
 {
     private IImmutableDictionary<string, object?> _serviceProps;
@@ -34,8 +38,8 @@ public record MessageContext<TMessage>
 
     [JsonConstructor]
     [Newtonsoft.Json.JsonConstructor]
-    public MessageContext(Route route, TMessage message,
-        IImmutableDictionary<string, object?> serviceProps, IImmutableDictionary<string, object?> extraProps)
+    public MessageContext(Route route, TMessage message, IImmutableDictionary<string, object?> serviceProps,
+        IImmutableDictionary<string, object?> extraProps)
     {
         Route = route;
         Message = message;
@@ -51,10 +55,19 @@ public record MessageContext<TMessage>
         _extraProps = ctx._extraProps;
     }
 
+    /// <summary>
+    /// Route for routing this message, according to the built topology
+    /// </summary>
     public Route Route { get; init; }
 
+    /// <summary>
+    /// Message
+    /// </summary>
     public TMessage Message { get; init; }
 
+    /// <summary>
+    /// Unique message id
+    /// </summary>
     [JsonIgnore]
     [Newtonsoft.Json.JsonIgnore]
     public string? MessageId
@@ -63,6 +76,9 @@ public record MessageContext<TMessage>
         init => Set(nameof(MessageId), value);
     }
 
+    /// <summary>
+    /// Unique message correlation id
+    /// </summary>
     [JsonIgnore]
     [Newtonsoft.Json.JsonIgnore]
     public string? CorrelationId
@@ -71,6 +87,9 @@ public record MessageContext<TMessage>
         init => Set(nameof(CorrelationId), value);
     }
 
+    /// <summary>
+    /// The time the message was created
+    /// </summary>
     [JsonIgnore]
     [Newtonsoft.Json.JsonIgnore]
     public DateTime CreatedAt
@@ -79,6 +98,9 @@ public record MessageContext<TMessage>
         init => Set(nameof(CreatedAt), value, true);
     }
 
+    /// <summary>
+    /// The time the message was delivered
+    /// </summary>
     [JsonIgnore]
     [Newtonsoft.Json.JsonIgnore]
     public DateTime? DeliveredAt
@@ -87,6 +109,9 @@ public record MessageContext<TMessage>
         init => Set(nameof(DeliveredAt), value, true);
     }
 
+    /// <summary>
+    /// The time it took for the message to be delivered
+    /// </summary>
     [JsonIgnore]
     [Newtonsoft.Json.JsonIgnore]
     public TimeSpan? DeliveryTime => DeliveredAt is not null ? DeliveredAt.Value - CreatedAt : null;
@@ -95,21 +120,42 @@ public record MessageContext<TMessage>
     [Newtonsoft.Json.JsonIgnore]
     public IServiceProvider? ServiceProvider { get; init; }
 
+    /// <summary>
+    /// Get property by <paramref name="propertyName"/>
+    /// </summary>
+    /// <param name="propertyName"></param>
+    /// <param name="isExtra"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     public T? Get<T>(string propertyName, bool isExtra = false) =>
         isExtra ? (T?)ExtraProps.GetValueOrDefault(propertyName) : (T?)ServiceProps.GetValueOrDefault(propertyName);
 
+    /// <summary>
+    /// Set property by <paramref name="propertyName"/>
+    /// </summary>
+    /// <param name="propertyName"></param>
+    /// <param name="value"></param>
+    /// <param name="isExtra"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     private void Set<T>(string propertyName, T value, bool isExtra = false)
     {
         if (isExtra) _extraProps = _extraProps.SetItem(propertyName, value);
         else _serviceProps = _serviceProps.SetItem(propertyName, value);
     }
 
+    /// <summary>
+    /// Service properties for embedding in infrastructure fields of the same name, e.g. in redis transport message fields
+    /// </summary>
     public IImmutableDictionary<string, object?> ServiceProps
     {
         get => _serviceProps;
         init => _serviceProps = value;
     }
 
+    /// <summary>
+    /// Extra properties for users needed stored in body of message
+    /// </summary>
     public IImmutableDictionary<string, object?> ExtraProps
     {
         get => _extraProps;

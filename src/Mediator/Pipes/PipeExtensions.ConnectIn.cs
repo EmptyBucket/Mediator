@@ -25,10 +25,28 @@ namespace Mediator.Pipes;
 
 public static partial class PipeExtensions
 {
+    /// <summary>
+    /// Connect in of this pipe to <paramref name="pipeConnector"/>
+    /// </summary>
+    /// <param name="pipe"></param>
+    /// <param name="pipeConnector"></param>
+    /// <param name="routingKey"></param>
+    /// <param name="subscriptionId"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <returns></returns>
     public static IDisposable ConnectIn<TMessage>(this IPubPipe pipe, IPubPipeConnector pipeConnector,
         string routingKey = "", string subscriptionId = "") =>
         pipeConnector.ConnectOut<TMessage>(pipe, routingKey, subscriptionId);
 
+    /// <summary>
+    /// Connect in of this pipe to <paramref name="pipeConnector"/>
+    /// </summary>
+    /// <param name="pipe"></param>
+    /// <param name="pipeConnector"></param>
+    /// <param name="routingKey"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    /// <returns></returns>
     public static IDisposable ConnectIn<TMessage, TResult>(this IReqPipe pipe, IReqPipeConnector pipeConnector,
         string routingKey = "") =>
         pipeConnector.ConnectOut<TMessage, TResult>(pipe, routingKey);

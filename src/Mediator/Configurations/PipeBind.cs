@@ -23,4 +23,9 @@
 
 namespace Mediator.Configurations;
 
+/// <summary>
+/// Represents the pipe bind with <paramref name="Type"/> and <paramref name="Name"/>
+/// </summary>
+/// <param name="Type"></param>
+/// <param name="Name"></param>
 internal readonly record struct PipeBind(Type Type, string Name);

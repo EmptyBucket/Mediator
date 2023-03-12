@@ -25,6 +25,9 @@ using Mediator.Pipes;
 
 namespace Mediator;
 
+/// <summary>
+/// Represents the mediator topology according to which messages are routed
+/// </summary>
 public class MediatorTopology : IAsyncDisposable
 {
     public MediatorTopology(IConnectingPipe dispatch, IConnectingPipe receive, IPipeFactory pipeFactory)
@@ -47,8 +50,14 @@ public class MediatorTopology : IAsyncDisposable
         pipeFactory = PipeFactory;
     }
 
+    /// <summary>
+    /// Connecting pipe to connect the dispatch topology
+    /// </summary>
     public IConnectingPipe Dispatch { get; set; }
 
+    /// <summary>
+    /// Connecting pipe to connect the receive topology
+    /// </summary>
     public IConnectingPipe Receive { get; set; }
     
     public IPipeFactory PipeFactory { get; }

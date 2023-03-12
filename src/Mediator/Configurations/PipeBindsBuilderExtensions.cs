@@ -27,17 +27,45 @@ namespace Mediator.Configurations;
 
 public static class PipeBindsBuilderExtensions
 {
+    /// <summary>
+    /// Bind <paramref name="pipeType"/> to itself with <paramref name="pipeName"/>
+    /// </summary>
+    /// <param name="pipeBinder"></param>
+    /// <param name="pipeType"></param>
+    /// <param name="pipeName"></param>
+    /// <returns></returns>
     public static IPipeBinder Bind(this IPipeBinder pipeBinder, Type pipeType, string pipeName = "") =>
         pipeBinder.Bind(pipeType, pipeType, pipeName);
 
+    /// <summary>
+    /// Bind <typeparamref name="TPipe" /> to itself with <paramref name="pipeName"/>
+    /// </summary>
+    /// <param name="pipeBinder"></param>
+    /// <param name="pipeName"></param>
+    /// <typeparam name="TPipe"></typeparam>
+    /// <returns></returns>
     public static IPipeBinder Bind<TPipe>(this IPipeBinder pipeBinder, string pipeName = "") =>
         pipeBinder.Bind(typeof(TPipe), pipeName);
 
+    /// <summary>
+    /// Bind <paramref name="pipeType"/> to all its interfaces with <paramref name="pipeName"/>
+    /// </summary>
+    /// <param name="pipeBinder"></param>
+    /// <param name="pipeType"></param>
+    /// <param name="pipeName"></param>
+    /// <returns></returns>
     public static IPipeBinder BindInterfaces(this IPipeBinder pipeBinder, Type pipeType, string pipeName) =>
         pipeType.GetInterfaces()
             .Where(i => typeof(IPubPipe).IsAssignableFrom(i) || typeof(IReqPipe).IsAssignableFrom(i))
             .Aggregate(pipeBinder, (b, i) => b.Bind(i, pipeType, pipeName));
 
+    /// <summary>
+    /// Bind <typeparamref name="TPipe"/> to all its interfaces with <paramref name="pipeName"/>
+    /// </summary>
+    /// <param name="pipeBinder"></param>
+    /// <param name="pipeName"></param>
+    /// <typeparam name="TPipe"></typeparam>
+    /// <returns></returns>
     public static IPipeBinder BindInterfaces<TPipe>(this IPipeBinder pipeBinder, string pipeName) =>
         pipeBinder.BindInterfaces(typeof(TPipe), pipeName);
 }

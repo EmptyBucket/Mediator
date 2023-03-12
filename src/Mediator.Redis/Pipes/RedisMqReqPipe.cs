@@ -51,7 +51,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
     }
 
     public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
-        CancellationToken token = default)
+        CancellationToken cancellationToken = default)
     {
         await _responseMq.Value;
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -81,7 +81,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
     }
 
     public async Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
-        CancellationToken token = default)
+        CancellationToken cancellationToken = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         return await ConnectPipeAsync<TMessage, TResult>(route, pipe);

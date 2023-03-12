@@ -23,6 +23,10 @@
 
 namespace Mediator.Handlers;
 
+/// <summary>
+/// Represents the handler based on a lambda function that does not return a result
+/// </summary>
+/// <typeparam name="TMessage"></typeparam>
 public class LambdaHandler<TMessage> : IHandler<TMessage>
 {
     private readonly Func<MessageContext<TMessage>, CancellationToken, Task> _func;
@@ -32,9 +36,16 @@ public class LambdaHandler<TMessage> : IHandler<TMessage>
         _func = func;
     }
 
-    public Task HandleAsync(MessageContext<TMessage> ctx, CancellationToken token) => _func(ctx, token);
+    /// <inheritdoc />
+    public Task HandleAsync(MessageContext<TMessage> ctx, CancellationToken cancellationToken) =>
+        _func(ctx, cancellationToken);
 }
 
+/// <summary>
+/// Represents the handler based on a lambda function that returns a result
+/// </summary>
+/// <typeparam name="TMessage"></typeparam>
+/// <typeparam name="TResult"></typeparam>
 public class LambdaHandler<TMessage, TResult> : IHandler<TMessage, TResult>
 {
     private readonly Func<MessageContext<TMessage>, CancellationToken, Task<TResult>> _func;
@@ -44,5 +55,7 @@ public class LambdaHandler<TMessage, TResult> : IHandler<TMessage, TResult>
         _func = func;
     }
 
-    public Task<TResult> HandleAsync(MessageContext<TMessage> ctx, CancellationToken token) => _func(ctx, token);
+    /// <inheritdoc />
+    public Task<TResult> HandleAsync(MessageContext<TMessage> ctx, CancellationToken cancellationToken) =>
+        _func(ctx, cancellationToken);
 }

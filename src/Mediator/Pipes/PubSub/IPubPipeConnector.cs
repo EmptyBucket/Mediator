@@ -23,10 +23,30 @@
 
 namespace Mediator.Pipes;
 
+/// <summary>
+/// Represents the connector interface for connecting this pipe to other pipes for publish/subscribe messaging model
+/// </summary>
 public interface IPubPipeConnector : IAsyncDisposable
 {
+    /// <summary>
+    /// Connect out of this pipe to <paramref name="pipe"/>
+    /// </summary>
+    /// <param name="pipe"></param>
+    /// <param name="routingKey"></param>
+    /// <param name="subscriptionId"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <returns></returns>
     IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "");
 
+    /// <summary>
+    /// Connect out of this pipe to <paramref name="pipe"/>
+    /// </summary>
+    /// <param name="pipe"></param>
+    /// <param name="routingKey"></param>
+    /// <param name="subscriptionId"></param>
+    /// <param name="cancellationToken"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <returns></returns>
     Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "",
-        CancellationToken token = default);
+        CancellationToken cancellationToken = default);
 }

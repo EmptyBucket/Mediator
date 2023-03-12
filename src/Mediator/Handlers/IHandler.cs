@@ -23,15 +23,42 @@
 
 namespace Mediator.Handlers;
 
+/// <summary>
+/// Represents the handler interface
+/// </summary>
+/// <typeparam name="TMessage"></typeparam>
 public interface IHandler<TMessage>
 {
-    Task HandleAsync(MessageContext<TMessage> ctx, CancellationToken token);
+    /// <summary>
+    /// Processes received message inside <paramref name="ctx"/>
+    /// </summary>
+    /// <param name="ctx"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task HandleAsync(MessageContext<TMessage> ctx, CancellationToken cancellationToken);
 }
 
+/// <summary>
+/// Represents the handler interface
+/// </summary>
+/// <typeparam name="TMessage"></typeparam>
+/// <typeparam name="TResult"></typeparam>
 public interface IHandler<TMessage, TResult> : IHandler<TMessage>
 {
-    new Task<TResult> HandleAsync(MessageContext<TMessage> ctx, CancellationToken token);
+    /// <summary>
+    /// Processes received message inside <paramref name="ctx"/> and returns a result of type <typeparamref name="TResult"/>
+    /// </summary>
+    /// <param name="ctx"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    new Task<TResult> HandleAsync(MessageContext<TMessage> ctx, CancellationToken cancellationToken);
 
-    Task IHandler<TMessage>.HandleAsync(MessageContext<TMessage> ctx, CancellationToken token) =>
-        HandleAsync(ctx, token);
+    /// <summary>
+    /// Processes received message inside <paramref name="ctx"/>
+    /// </summary>
+    /// <param name="ctx"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task IHandler<TMessage>.HandleAsync(MessageContext<TMessage> ctx, CancellationToken cancellationToken) =>
+        HandleAsync(ctx, cancellationToken);
 }

@@ -23,6 +23,9 @@
 
 namespace Mediator.Pipes.Utils;
 
+/// <summary>
+/// Represents the wrapper around ReaderWriterLockSlim in using style
+/// </summary>
 internal static class ReaderWriterLockSlimExtensions
 {
     public static IDisposable EnterReadScope(this ReaderWriterLockSlim @lock)

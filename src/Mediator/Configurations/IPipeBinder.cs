@@ -23,7 +23,17 @@
 
 namespace Mediator.Configurations;
 
+/// <summary>
+/// Represents the builder interface for building pipe bindings
+/// </summary>
 public interface IPipeBinder
 {
+    /// <summary>
+    /// Bind <paramref name="pipeImplType"/> to <paramref name="pipeType"/> with <paramref name="pipeName"/>
+    /// </summary>
+    /// <param name="pipeType"></param>
+    /// <param name="pipeImplType"></param>
+    /// <param name="pipeName"></param>
+    /// <returns></returns>
     IPipeBinder Bind(Type pipeType, Type pipeImplType, string pipeName = "");
 }

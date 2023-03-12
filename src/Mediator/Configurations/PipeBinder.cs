@@ -23,10 +23,14 @@
 
 namespace Mediator.Configurations;
 
+/// <summary>
+/// Represents the builder for building pipe bindings
+/// </summary>
 internal class PipeBinder : IPipeBinder
 {
     private readonly Dictionary<PipeBind, Type> _pipeBinds = new();
 
+    /// <inheritdoc />
     public IPipeBinder Bind(Type pipeType, Type pipeImplType, string pipeName = "")
     {
         _pipeBinds[new PipeBind(pipeType, pipeName)] = pipeImplType;
@@ -34,5 +38,9 @@ internal class PipeBinder : IPipeBinder
         return this;
     }
 
+    /// <summary>
+    /// Build pipe bindings
+    /// </summary>
+    /// <returns></returns>
     public IReadOnlyDictionary<PipeBind, Type> Build() => _pipeBinds;
 }

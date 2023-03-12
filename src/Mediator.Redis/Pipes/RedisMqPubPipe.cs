@@ -47,7 +47,7 @@ internal class RedisMqPubPipe : IConnectingPubPipe
         _jsonSerializerOptions = new JsonSerializerOptions { Converters = { ObjectToInferredTypesConverter.Instance } };
     }
 
-    public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
+    public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
         var message = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
         var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
@@ -62,7 +62,7 @@ internal class RedisMqPubPipe : IConnectingPubPipe
     }
 
     public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
-        string subscriptionId = "", CancellationToken token = default)
+        string subscriptionId = "", CancellationToken cancellationToken = default)
     {
         var route = Route.For<TMessage>(routingKey);
         var pipeConnection = await ConnectPipeAsync<TMessage>(route, pipe);

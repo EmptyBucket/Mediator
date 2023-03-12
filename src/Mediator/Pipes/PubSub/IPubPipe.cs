@@ -25,7 +25,17 @@ using Mediator.Handlers;
 
 namespace Mediator.Pipes;
 
+/// <summary>
+/// Represents the pipe interface for publish/subscribe messaging model 
+/// </summary>
 public interface IPubPipe
 {
-    Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default);
+    /// <summary>
+    /// Handle the message that passes through the pipe
+    /// </summary>
+    /// <param name="ctx"></param>
+    /// <param name="cancellationToken"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <returns></returns>
+    Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default);
 }

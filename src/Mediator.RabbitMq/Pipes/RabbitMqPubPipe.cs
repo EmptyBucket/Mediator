@@ -44,12 +44,12 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
         _serviceProvider = serviceProvider;
     }
 
-    public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
+    public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
-        var exchange = await DeclareExchangeAsync(ctx.Route, token);
+        var exchange = await DeclareExchangeAsync(ctx.Route, cancellationToken);
         var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
         var message = new Message<MessageContext<TMessage>>(ctx, messageProperties);
-        await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, token).ConfigureAwait(false);
+        await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, cancellationToken).ConfigureAwait(false);
     }
 
     public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
@@ -61,10 +61,10 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
     }
 
     public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
-        string subscriptionId = "", CancellationToken token = default)
+        string subscriptionId = "", CancellationToken cancellationToken = default)
     {
         var route = Route.For<TMessage>(routingKey);
-        var queue = await DeclareQueueAsync(route, subscriptionId, token);
+        var queue = await DeclareQueueAsync(route, subscriptionId, cancellationToken);
         var pipeConnection = ConnectPipe<TMessage>(route, pipe, queue);
         return pipeConnection;
     }
@@ -95,10 +95,10 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
         return exchange;
     }
 
-    private async Task<IExchange> DeclareExchangeAsync(Route route, CancellationToken token = default)
+    private async Task<IExchange> DeclareExchangeAsync(Route route, CancellationToken cancellationToken = default)
     {
         var exchange = await _bus.Advanced
-            .ExchangeDeclareAsync(route, ExchangeType.Direct, cancellationToken: token)
+            .ExchangeDeclareAsync(route, ExchangeType.Direct, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         return exchange;
     }
@@ -111,11 +111,13 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
         return queue;
     }
 
-    private async Task<IQueue> DeclareQueueAsync(Route route, string subscriptionId, CancellationToken token = default)
+    private async Task<IQueue> DeclareQueueAsync(Route route, string subscriptionId,
+        CancellationToken cancellationToken = default)
     {
-        var exchange = await DeclareExchangeAsync(route, token);
-        var queue = await _bus.Advanced.QueueDeclareAsync($"{route}:{subscriptionId}", token).ConfigureAwait(false);
-        await _bus.Advanced.BindAsync(exchange, queue, route, token).ConfigureAwait(false);
+        var exchange = await DeclareExchangeAsync(route, cancellationToken);
+        var queue = await _bus.Advanced.QueueDeclareAsync($"{route}:{subscriptionId}", cancellationToken)
+            .ConfigureAwait(false);
+        await _bus.Advanced.BindAsync(exchange, queue, route, cancellationToken).ConfigureAwait(false);
         return queue;
     }
 

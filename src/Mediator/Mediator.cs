@@ -27,6 +27,9 @@ using Mediator.Pipes.Utils;
 
 namespace Mediator;
 
+/// <summary>
+/// Represents the mediator thar will deliver a message according to the built topology
+/// </summary>
 internal class Mediator : IMediator
 {
     public Mediator(MediatorTopology topology)
@@ -34,24 +37,27 @@ internal class Mediator : IMediator
         Topology = topology;
     }
 
+    /// <inheritdoc />
     public async Task PublishAsync<TMessage>(TMessage message, Options? options = null,
-        CancellationToken token = default)
+        CancellationToken cancellationToken = default)
     {
         options ??= new Options();
         var route = Route.For<TMessage>(options.RoutingKey);
         var ctx = CreateMessageContext(route, message, options);
-        await Topology.Dispatch.PassAsync(ctx, token);
+        await Topology.Dispatch.PassAsync(ctx, cancellationToken);
     }
 
+    /// <inheritdoc />
     public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Options? options = null,
-        CancellationToken token = default)
+        CancellationToken cancellationToken = default)
     {
         options ??= new Options();
         var route = Route.For<TMessage, TResult>(options.RoutingKey);
         var ctx = CreateMessageContext(route, message, options);
-        return await Topology.Dispatch.PassAsync<TMessage, TResult>(ctx, token);
+        return await Topology.Dispatch.PassAsync<TMessage, TResult>(ctx, cancellationToken);
     }
 
+    /// <inheritdoc />
     public MediatorTopology Topology { get; }
 
     public ValueTask DisposeAsync() => Topology.DisposeAsync();

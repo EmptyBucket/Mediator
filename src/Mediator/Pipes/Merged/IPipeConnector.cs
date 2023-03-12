@@ -23,6 +23,9 @@
 
 namespace Mediator.Pipes;
 
+/// <summary>
+/// Represents the connector interface for connecting this pipe to other pipes for publish/subscribe and request/response messaging models
+/// </summary>
 public interface IPipeConnector : IPubPipeConnector, IReqPipeConnector
 {
 }

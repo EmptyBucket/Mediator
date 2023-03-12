@@ -28,6 +28,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Pipes;
 
+/// <summary>
+/// Represents the pipe for request/response messaging model 
+/// </summary>
 internal class ReqPipe : IConnectingReqPipe
 {
     private readonly IServiceProvider _serviceProvider;
@@ -39,8 +42,9 @@ internal class ReqPipe : IConnectingReqPipe
         _serviceProvider = serviceProvider;
     }
 
+    /// <inheritdoc />
     public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
-        CancellationToken token = default)
+        CancellationToken cancellationToken = default)
     {
         var pipeConnections = GetPipeConnections(ctx.Route);
 
@@ -50,9 +54,10 @@ internal class ReqPipe : IConnectingReqPipe
         using var scope = _serviceProvider.CreateScope();
         ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
         var pipeConnection = pipeConnections.First();
-        return await pipeConnection.Pipe.PassAsync<TMessage, TResult>(ctx, token);
+        return await pipeConnection.Pipe.PassAsync<TMessage, TResult>(ctx, cancellationToken);
     }
 
+    /// <inheritdoc />
     public IDisposable ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "")
     {
         var route = Route.For<TMessage, TResult>(routingKey);
@@ -60,8 +65,9 @@ internal class ReqPipe : IConnectingReqPipe
         return pipeConnection;
     }
 
+    /// <inheritdoc />
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
-        CancellationToken token = default)
+        CancellationToken cancellationToken = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         var pipeConnection = ConnectPipe(route, pipe);
@@ -90,6 +96,7 @@ internal class ReqPipe : IConnectingReqPipe
             _pipeConnections.Remove(pipeConnection.Route);
     }
 
+    /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         foreach (var pipeConnection in _pipeConnections.SelectMany(c => c.Value)) await pipeConnection.DisposeAsync();

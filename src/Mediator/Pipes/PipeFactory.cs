@@ -26,6 +26,9 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Pipes;
 
+/// <summary>
+/// Represents the pipe factory to create pipes
+/// </summary>
 internal class PipeFactory : IPipeFactory
 {
     private readonly IReadOnlyDictionary<PipeBind, Type> _pipeBinds;
@@ -37,6 +40,7 @@ internal class PipeFactory : IPipeFactory
         _serviceProvider = serviceProvider;
     }
 
+    /// <inheritdoc />
     public TPipe Create<TPipe>(string pipeName = "")
     {
         var pipeType = typeof(TPipe);

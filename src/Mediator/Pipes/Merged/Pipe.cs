@@ -25,6 +25,9 @@ using Mediator.Handlers;
 
 namespace Mediator.Pipes;
 
+/// <summary>
+/// Represents the pipe for publish/subscribe and request/response messaging model 
+/// </summary>
 public class Pipe : IConnectingPipe
 {
     private readonly IConnectingPubPipe _connectingPubPipe;
@@ -41,27 +44,34 @@ public class Pipe : IConnectingPipe
         _connectingReqPipe = connectingReqPipe;
     }
 
-    public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default) =>
-        _connectingPubPipe.PassAsync(ctx, token);
+    /// <inheritdoc />
+    public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default) =>
+        _connectingPubPipe.PassAsync(ctx, cancellationToken);
 
+    /// <inheritdoc />
     public Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
-        CancellationToken token = default) =>
-        _connectingReqPipe.PassAsync<TMessage, TResult>(ctx, token);
+        CancellationToken cancellationToken = default) =>
+        _connectingReqPipe.PassAsync<TMessage, TResult>(ctx, cancellationToken);
 
+    /// <inheritdoc />
     public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "") =>
         _connectingPubPipe.ConnectOut<TMessage>(pipe, routingKey, subscriptionId);
 
+    /// <inheritdoc />
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
-        string subscriptionId = "", CancellationToken token = default) =>
-        _connectingPubPipe.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, token);
+        string subscriptionId = "", CancellationToken cancellationToken = default) =>
+        _connectingPubPipe.ConnectOutAsync<TMessage>(pipe, routingKey, subscriptionId, cancellationToken);
 
+    /// <inheritdoc />
     public IDisposable ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "") =>
         _connectingReqPipe.ConnectOut<TMessage, TResult>(pipe, routingKey);
 
+    /// <inheritdoc />
     public Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
-        CancellationToken token = default) =>
-        _connectingReqPipe.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, token);
+        CancellationToken cancellationToken = default) =>
+        _connectingReqPipe.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, cancellationToken);
 
+    /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
         await _connectingPubPipe.DisposeAsync();

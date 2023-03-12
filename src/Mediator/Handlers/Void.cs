@@ -23,4 +23,7 @@
 
 namespace Mediator.Handlers;
 
+/// <summary>
+/// Represents an empty result
+/// </summary>
 public readonly record struct Void;

@@ -25,16 +25,21 @@ using Mediator.Handlers;
 
 namespace Mediator.Pipes;
 
+/// <summary>
+/// Represents the pipe that ends with a handler for publish/subscribe messaging model
+/// </summary>
+/// <typeparam name="THandlerMessage"></typeparam>
 internal class HandlingPipe<THandlerMessage> : IPubPipe
 {
-    private readonly Func<IServiceProvider, IHandler<THandlerMessage>> _factory;
+    private readonly Func<IServiceProvider, IHandler<THandlerMessage>> _handlerFactory;
 
-    public HandlingPipe(Func<IServiceProvider, IHandler<THandlerMessage>> factory)
+    public HandlingPipe(Func<IServiceProvider, IHandler<THandlerMessage>> handlerFactory)
     {
-        _factory = factory;
+        _handlerFactory = handlerFactory;
     }
 
-    public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken token = default)
+    /// <inheritdoc />
+    public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
         if (ctx is not MessageContext<THandlerMessage> handlerMessageContext)
             throw new InvalidOperationException($"Message with route: {ctx.Route} cannot be processed");
@@ -42,7 +47,7 @@ internal class HandlingPipe<THandlerMessage> : IPubPipe
         if (ctx.ServiceProvider is null)
             throw new InvalidOperationException($"{nameof(ctx.ServiceProvider)} missing. Handler not constructed");
 
-        var handler = _factory(ctx.ServiceProvider);
-        return handler.HandleAsync(handlerMessageContext, token);
+        var handler = _handlerFactory(ctx.ServiceProvider);
+        return handler.HandleAsync(handlerMessageContext, cancellationToken);
     }
 }

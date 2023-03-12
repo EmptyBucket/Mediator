@@ -25,17 +25,23 @@ using Mediator.Handlers;
 
 namespace Mediator.Pipes;
 
+/// <summary>
+/// Represents the pipe that ends with a handler for request/response messaging model
+/// </summary>
+/// <typeparam name="THandlerMessage"></typeparam>
+/// <typeparam name="THandlerResult"></typeparam>
 internal class HandlingPipe<THandlerMessage, THandlerResult> : IReqPipe
 {
-    private readonly Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> _factory;
+    private readonly Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> _handlingFactory;
 
-    public HandlingPipe(Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> factory)
+    public HandlingPipe(Func<IServiceProvider, IHandler<THandlerMessage, THandlerResult>> handlingFactory)
     {
-        _factory = factory;
+        _handlingFactory = handlingFactory;
     }
 
+    /// <inheritdoc />
     public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
-        CancellationToken token = default)
+        CancellationToken cancellationToken = default)
     {
         if (ctx is not MessageContext<THandlerMessage> handlerCtx ||
             !typeof(TResult).IsAssignableFrom(typeof(THandlerResult)))
@@ -44,8 +50,8 @@ internal class HandlingPipe<THandlerMessage, THandlerResult> : IReqPipe
         if (ctx.ServiceProvider is null)
             throw new InvalidOperationException($"{nameof(ctx.ServiceProvider)} missing. Handler not constructed");
 
-        var handler = _factory(ctx.ServiceProvider);
-        var result = await handler.HandleAsync(handlerCtx, token);
+        var handler = _handlingFactory(ctx.ServiceProvider);
+        var result = await handler.HandleAsync(handlerCtx, cancellationToken);
         return (TResult)(object)result!;
     }
 }

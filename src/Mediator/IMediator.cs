@@ -23,13 +23,36 @@
 
 namespace Mediator;
 
+/// <summary>
+/// Represents the mediator interface thar will deliver a message according to the built topology
+/// </summary>
 public interface IMediator : IAsyncDisposable
 {
+    /// <summary>
+    /// Send message according publish/subscribe messaging model
+    /// </summary>
+    /// <param name="message"></param>
+    /// <param name="options"></param>
+    /// <param name="cancellationToken"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <returns></returns>
     Task PublishAsync<TMessage>(TMessage message, Options? options = null,
-        CancellationToken token = default);
+        CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Send message according request/response messaging model
+    /// </summary>
+    /// <param name="message"></param>
+    /// <param name="options"></param>
+    /// <param name="cancellationToken"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    /// <returns></returns>
     Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Options? options = null,
-        CancellationToken token = default);
+        CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Topology according to which messages are routed
+    /// </summary>
     MediatorTopology Topology { get; }
 }

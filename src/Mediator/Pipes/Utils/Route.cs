@@ -23,6 +23,12 @@
 
 namespace Mediator.Pipes.Utils;
 
+/// <summary>
+/// Represents a route for routing this message, according to the built topology
+/// </summary>
+/// <param name="MessageType"></param>
+/// <param name="RoutingKey"></param>
+/// <param name="ResultType"></param>
 public readonly record struct Route(string MessageType, string RoutingKey = "", string ResultType = "")
 {
     public Route(Type messageType, string routingKey = "", Type? resultType = null)
@@ -30,9 +36,22 @@ public readonly record struct Route(string MessageType, string RoutingKey = "", 
     {
     }
 
+    /// <summary>
+    /// Build route for <typeparamref name="TMessage"/>
+    /// </summary>
+    /// <param name="routingKey"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <returns></returns>
     public static Route For<TMessage>(string routingKey = "") =>
         new(typeof(TMessage), routingKey);
 
+    /// <summary>
+    /// Build route for <typeparamref name="TMessage"/> and <typeparamref name="TResult"/>
+    /// </summary>
+    /// <param name="routingKey"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    /// <returns></returns>
     public static Route For<TMessage, TResult>(string routingKey = "") =>
         new(typeof(TMessage), routingKey, typeof(TResult));
 

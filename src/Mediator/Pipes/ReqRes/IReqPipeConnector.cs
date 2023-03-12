@@ -23,10 +23,30 @@
 
 namespace Mediator.Pipes;
 
+/// <summary>
+/// Represents the connector interface for connecting this pipe to other pipes for request/response messaging model
+/// </summary>
 public interface IReqPipeConnector : IAsyncDisposable
 {
+    /// <summary>
+    /// Connect out of this pipe to <paramref name="pipe"/>
+    /// </summary>
+    /// <param name="pipe"></param>
+    /// <param name="routingKey"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    /// <returns></returns>
     IDisposable ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "");
 
+    /// <summary>
+    /// Connect out of this pipe to <paramref name="pipe"/>
+    /// </summary>
+    /// <param name="pipe"></param>
+    /// <param name="routingKey"></param>
+    /// <param name="cancellationToken"></param>
+    /// <typeparam name="TMessage"></typeparam>
+    /// <typeparam name="TResult"></typeparam>
+    /// <returns></returns>
     Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
-        CancellationToken token = default);
+        CancellationToken cancellationToken = default);
 }

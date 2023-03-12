@@ -25,9 +25,22 @@ using Mediator.Pipes.Utils;
 
 namespace Mediator.Handlers;
 
+/// <summary>
+/// Represents the result context
+/// </summary>
+/// <param name="Route"></param>
+/// <param name="MessageId"></param>
+/// <param name="CorrelationId"></param>
+/// <typeparam name="TResult"></typeparam>
 public record ResultContext<TResult>(Route Route, string MessageId, string CorrelationId)
 {
+    /// <summary>
+    /// Result
+    /// </summary>
     public TResult? Result { get; set; }
 
+    /// <summary>
+    /// The exception that occurred while processing the message
+    /// </summary>
     public Exception? Exception { get; set; }
 };
