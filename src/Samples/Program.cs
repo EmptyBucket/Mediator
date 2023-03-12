@@ -44,7 +44,8 @@ var serviceCollection = new ServiceCollection();
 
 {
     // Configure mediator
-    // You can call AddMediator as many times as you like, adding to the configuration from different parts of your application
+    // You can call AddMediator as many times as you like,
+    // adding to the configuration from different parts of your application
     serviceCollection
         .AddMediator(bindPipes: _ => { }, connectPipes: (_, _) => { });
 }
@@ -54,8 +55,9 @@ var serviceCollection = new ServiceCollection();
     serviceCollection
         .AddMediator(bind =>
         {
-            // Pipe bindings are needed in order not to have an explicit dependency on infrastructure libs
-            // bindings register a type to itself and all its IPubPipe and IReqPipe interfaces
+            // Pipe bindings are needed in order not to have an explicit dependency on
+            // infrastructure libs.
+            // Bindings register a type to itself and all its IPubPipe and IReqPipe interfaces
             // e.g. call BindRabbitMq() will bind:
             // {IPubPipe, IReqPipe, IPipe, IConnectingPubPipe, IConnectingReqPipe, IConnectingPipe} + nameof(RabbitMqPipe) => RabbitMqPipe
             // RabbitMqPipe => RabbitMqPipe
@@ -100,12 +102,15 @@ await serviceProvider0.DisposeAsync();
             // mediator =[FooEvent]> FooEventHandler
             dispatchPipe.ConnectHandler(new FooEventHandler());
 
-            // You can connect handler or handler factory through transport, e.g rabbitmq or redis
-            // You must specify subscriptionId for persistent queues or streams, when has several consumers
+            // You can connect handler or handler factory through transport,
+            // e.g rabbitmq or redis
+            // You must specify subscriptionId for persistent queues or streams,
+            // when has several consumers
             // If you want multiple consumers in a consumer group:
             // - in rabbitmq use the same subscriptionId for several consumers
             // - in redis stream use the same groupName
-            //   (groupName is separated from the consumerName through the delimiter ':', i.e. subscriptionId = "{groupName}:{consumerName}")
+            //   (groupName is separated from the consumerName through the delimiter ':',
+            //   i.e. subscriptionId = "{groupName}:{consumerName}")
             // mediator =[FooEvent]> rabbitMqPipe =[FooEvent]> FooEventHandler#1
             // mediator =[FooEvent]> rabbitMqPipe =[FooEvent]> FooEventHandler#2
             dispatchPipe.ConnectOut<FooEvent>(rabbitMqPipe);
@@ -123,7 +128,8 @@ await serviceProvider0.DisposeAsync();
             dispatchPipe.ConnectOut<FooEvent, FooResult>(redisMqPipe);
             redisMqPipe.ConnectHandler(new FooEventHandlerWithFooResult());
 
-            // You can wait for Void when you don't want the result, but you want to wait in a synchronous manner
+            // You can wait for Void when you don't want the result,
+            // but you want to wait in a synchronous manner
             // mediator =[Event]> redisMqPipe =[Event]> mediator =[Event]> FooEventHandlerWithVoid =[Void]>
             dispatchPipe.ConnectOut<FooEvent, Void>(redisMqPipe);
             redisMqPipe.ConnectHandler(new FooEventHandlerWithVoid());
@@ -138,7 +144,8 @@ var serviceProvider1 = serviceCollection.BuildServiceProvider();
     var (_, _, pipeFactory) = mediator.Topology;
     var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
 
-    // You can skip pipe connections configuration that was above in AddMediator and configure IMediator on the fly
+    // You can skip pipe connections configuration that was above in AddMediator and
+    // configure IMediator on the fly
     var connection = await rabbitMqPipe.ConnectHandlerAsync(new FooEventHandler(), subscriptionId: "3");
 
     // You can disconnect any Pipe use Dispose[Async]

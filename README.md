@@ -17,7 +17,9 @@ serviceCollection
 ### Configure mediator
 
 ```csharp
-// You can call AddMediator as many times as you like, adding to the configuration from different parts of your application
+// You can call AddMediator as many times as you like,
+// adding to the configuration from different parts of your application
+/ You can call AddMediator as many times as you like, adding to the configuration from different parts of your application
 serviceCollection
     .AddMediator(bindPipes: _ => { }, connectPipes: (_, _) => { });
 ```
@@ -28,8 +30,9 @@ serviceCollection
 serviceCollection
     .AddMediator(bind =>
     {
-        // Pipe bindings are needed in order not to have an explicit dependency on infrastructure libs
-        // bindings register a type to itself and all its IPubPipe and IReqPipe interfaces
+        // Pipe bindings are needed in order not to have an explicit dependency on
+        // infrastructure libs.
+        // Bindings register a type to itself and all its IPubPipe and IReqPipe interfaces,
         // e.g. call BindRabbitMq() will bind:
         // {IPubPipe, IReqPipe, IPipe, IConnectingPubPipe, IConnectingReqPipe, IConnectingPipe} + nameof(RabbitMqPipe) => RabbitMqPipe
         // RabbitMqPipe => RabbitMqPipe
@@ -94,7 +97,8 @@ serviceCollection
         dispatchPipe.ConnectOut<FooEvent, FooResult>(redisMqPipe);
         redisMqPipe.ConnectHandler(new FooEventHandlerWithFooResult());
 
-        // You can wait for Void when you don't want the result, but you want to wait in a synchronous manner
+        // You can wait for Void when you don't want the result,
+        // but you want to wait in a synchronous manner
         // mediator =[Event]> redisMqPipe =[Event]> mediator =[Event]> FooEventHandlerWithVoid =[Void]>
         dispatchPipe.ConnectOut<FooEvent, Void>(redisMqPipe);
         redisMqPipe.ConnectHandler(new FooEventHandlerWithVoid());
@@ -107,7 +111,8 @@ serviceCollection
 var (_, _, pipeFactory) = mediator.Topology;
 var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
 
-// You can skip pipe connections configuration that was above in AddMediator and configure IMediator on the fly
+// You can skip pipe connections configuration that was above in AddMediator and
+// configure IMediator on the fly
 var connection = await rabbitMqPipe.ConnectHandlerAsync(new FooEventHandler(), subscriptionId: "3");
 
 // You can disconnect any Pipe use Dispose[Async]
