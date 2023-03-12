@@ -19,7 +19,6 @@ serviceCollection
 ```csharp
 // You can call AddMediator as many times as you like,
 // adding to the configuration from different parts of your application
-/ You can call AddMediator as many times as you like, adding to the configuration from different parts of your application
 serviceCollection
     .AddMediator(bindPipes: _ => { }, connectPipes: (_, _) => { });
 ```
