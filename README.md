@@ -30,7 +30,7 @@ serviceCollection
     .AddMediator(bind =>
     {
         // Pipe bindings are needed in order not to have an explicit dependency on
-        // infrastructure libs.
+        // infrastructure libs
         // Bindings register a type to itself and all its IPubPipe and IReqPipe interfaces,
         // e.g. call BindRabbitMq() will bind:
         // {IPubPipe, IReqPipe, IPipe, IConnectingPubPipe, IConnectingReqPipe, IConnectingPipe} + nameof(RabbitMqPipe) => RabbitMqPipe
