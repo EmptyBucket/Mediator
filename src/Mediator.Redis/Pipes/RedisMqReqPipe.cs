@@ -37,7 +37,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
 {
     private readonly ISubscriber _subscriber;
     private readonly IServiceProvider _serviceProvider;
-    private readonly Lazy<Task<ChannelMessageQueue>> _responseMq;
+    private readonly Lazy<Task<ChannelMessageQueue>> _resultMq;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly ConcurrentDictionary<string, Action<ChannelMessage>> _resultHandlers = new();
     private readonly ConcurrentDictionary<PipeConnection<IReqPipe>, ChannelMessageQueue> _pipeConnections = new();
@@ -47,13 +47,13 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         _subscriber = multiplexer.GetSubscriber();
         _serviceProvider = serviceProvider;
         _jsonSerializerOptions = new JsonSerializerOptions { Converters = { ObjectToInferredTypesConverter.Instance } };
-        _responseMq = new Lazy<Task<ChannelMessageQueue>>(CreateResultMq);
+        _resultMq = new Lazy<Task<ChannelMessageQueue>>(CreateResultMqAsync);
     }
 
     public async Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
         CancellationToken cancellationToken = default)
     {
-        await _responseMq.Value;
+        await _resultMq.Value;
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         void Handle(ChannelMessage m)
@@ -141,7 +141,7 @@ internal class RedisMqReqPipe : IConnectingReqPipe
         }
     }
 
-    private async Task<ChannelMessageQueue> CreateResultMq()
+    private async Task<ChannelMessageQueue> CreateResultMqAsync()
     {
         void Handle(ChannelMessage m)
         {
@@ -160,6 +160,6 @@ internal class RedisMqReqPipe : IConnectingReqPipe
     {
         foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
 
-        if (_responseMq.IsValueCreated) _responseMq.Value.Dispose();
+        if (_resultMq.IsValueCreated) _resultMq.Value.Dispose();
     }
 }
