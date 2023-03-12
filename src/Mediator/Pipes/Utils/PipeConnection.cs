@@ -56,9 +56,15 @@ public class PipeConnection<TPipe> : IDisposable, IAsyncDisposable
 
     public void Dispose()
     {
-        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 0) _disconnect(this);
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
+
+        _disconnect(this);
     }
 
-    public ValueTask DisposeAsync() =>
-        Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 0 ? _disconnectAsync(this) : new ValueTask();
+    public ValueTask DisposeAsync()
+    {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return new ValueTask();
+
+        return _disconnectAsync(this);
+    }
 }

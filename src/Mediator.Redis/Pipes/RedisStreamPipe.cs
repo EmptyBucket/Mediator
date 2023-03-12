@@ -35,6 +35,7 @@ namespace Mediator.Redis.Pipes;
 
 public class RedisStreamPipe : IConnectingPubPipe
 {
+    private int _isDisposed;
     private readonly IDatabase _database;
     private readonly IServiceProvider _serviceProvider;
     private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, CancellationTokenSource> _pipeConnections = new();
@@ -165,6 +166,8 @@ public class RedisStreamPipe : IConnectingPubPipe
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
+
         foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
     }
 }

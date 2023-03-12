@@ -34,6 +34,7 @@ namespace Mediator.RabbitMq.Pipes;
 
 internal class RabbitMqReqPipe : IConnectingReqPipe
 {
+    private int _isDisposed;
     private readonly IBus _bus;
     private readonly IServiceProvider _serviceProvider;
     private readonly Lazy<Task<IDisposable>> _resultMq;
@@ -194,6 +195,8 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
+
         foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
 
         if (_resultMq.IsValueCreated) _resultMq.Value.Dispose();

@@ -162,7 +162,7 @@ var serviceProvider1 = serviceCollection.BuildServiceProvider();
     // Publish and send events
     var mediator = serviceProvider1.GetRequiredService<IMediator>();
 
-    // Mediator, MediatorTopology, Pipes are thread safe
+    // Mediator, MediatorTopology, Pipes, PipeConnections are thread safe
     await mediator.PublishAsync(new FooEvent());
     await mediator.PublishAsync(new FooEvent(), new Options { RoutingKey = "foo-routing-key" });
     var result = await mediator.SendAsync<FooEvent, FooResult>(new FooEvent());

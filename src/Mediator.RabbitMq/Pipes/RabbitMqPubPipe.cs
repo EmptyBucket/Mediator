@@ -34,6 +34,7 @@ namespace Mediator.RabbitMq.Pipes;
 
 internal class RabbitMqPubPipe : IConnectingPubPipe
 {
+    private int _isDisposed;
     private readonly IBus _bus;
     private readonly IServiceProvider _serviceProvider;
     private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, IDisposable> _pipeConnections = new();
@@ -123,6 +124,8 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
+
         foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
     }
 }

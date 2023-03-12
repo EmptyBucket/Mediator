@@ -35,6 +35,7 @@ namespace Mediator.Redis.Pipes;
 
 internal class RedisMqReqPipe : IConnectingReqPipe
 {
+    private int _isDisposed;
     private readonly ISubscriber _subscriber;
     private readonly IServiceProvider _serviceProvider;
     private readonly Lazy<Task<ChannelMessageQueue>> _resultMq;
@@ -158,6 +159,8 @@ internal class RedisMqReqPipe : IConnectingReqPipe
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
+
         foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
 
         if (_resultMq.IsValueCreated) _resultMq.Value.Dispose();

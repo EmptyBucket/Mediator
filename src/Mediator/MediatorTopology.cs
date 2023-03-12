@@ -30,6 +30,8 @@ namespace Mediator;
 /// </summary>
 public class MediatorTopology : IAsyncDisposable
 {
+    private int _isDisposed;
+
     public MediatorTopology(IConnectingPipe dispatch, IConnectingPipe receive, IPipeFactory pipeFactory)
     {
         Dispatch = dispatch;
@@ -64,6 +66,8 @@ public class MediatorTopology : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
+
         await Dispatch.DisposeAsync();
         await Receive.DisposeAsync();
     }

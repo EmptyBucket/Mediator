@@ -35,6 +35,7 @@ namespace Mediator.Redis.Pipes;
 
 internal class RedisMqPubPipe : IConnectingPubPipe
 {
+    private int _isDisposed;
     private readonly ISubscriber _subscriber;
     private readonly IServiceProvider _serviceProvider;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
@@ -107,6 +108,8 @@ internal class RedisMqPubPipe : IConnectingPubPipe
 
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
+
         foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
     }
 }

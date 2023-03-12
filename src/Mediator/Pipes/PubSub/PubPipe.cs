@@ -33,6 +33,7 @@ namespace Mediator.Pipes;
 /// </summary>
 internal class PubPipe : IConnectingPubPipe
 {
+    private int _isDisposed;
     private readonly IServiceProvider _serviceProvider;
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, ImmutableList<PipeConnection<IPubPipe>>> _pipeConnections = new();
@@ -97,6 +98,8 @@ internal class PubPipe : IConnectingPubPipe
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
+
         foreach (var pipeConnection in _pipeConnections.SelectMany(c => c.Value)) await pipeConnection.DisposeAsync();
 
         _lock.Dispose();

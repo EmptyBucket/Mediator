@@ -30,6 +30,7 @@ namespace Mediator.Pipes;
 /// </summary>
 public class Pipe : IConnectingPipe
 {
+    private int _isDisposed;
     private readonly IConnectingPubPipe _connectingPubPipe;
     private readonly IConnectingReqPipe _connectingReqPipe;
 
@@ -74,6 +75,8 @@ public class Pipe : IConnectingPipe
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
+
         await _connectingPubPipe.DisposeAsync();
         await _connectingReqPipe.DisposeAsync();
     }
