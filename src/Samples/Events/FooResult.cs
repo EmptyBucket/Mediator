@@ -21,15 +21,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Handlers;
-using Samples.Events;
+namespace Samples.Events;
 
-namespace Samples.Handlers;
-
-public class EventHandler : IHandler<Event>
-{
-    public Task HandleAsync(MessageContext<Event> ctx, CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
-}
+public record FooResult;

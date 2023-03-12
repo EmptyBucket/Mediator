@@ -21,6 +21,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-namespace Samples.Events;
+using Mediator.Handlers;
+using Samples.Events;
+using Void = Mediator.Handlers.Void;
 
-public record Event;
+namespace Samples.Handlers;
+
+public class FooEventHandlerWithVoid : IHandler<FooEvent, Void>
+{
+    public Task<Void> HandleAsync(MessageContext<FooEvent> ctx, CancellationToken cancellationToken)
+    {
+        return Task.FromResult(new Void());
+    }
+}

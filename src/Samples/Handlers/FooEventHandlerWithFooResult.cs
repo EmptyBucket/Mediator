@@ -23,14 +23,13 @@
 
 using Mediator.Handlers;
 using Samples.Events;
-using Void = Mediator.Handlers.Void;
 
 namespace Samples.Handlers;
 
-public class EventHandlerWithVoid : IHandler<Event, Void>
+public class FooEventHandlerWithFooResult : IHandler<FooEvent, FooResult>
 {
-    public Task<Void> HandleAsync(MessageContext<Event> ctx, CancellationToken cancellationToken)
+    public Task<FooResult> HandleAsync(MessageContext<FooEvent> ctx, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new Void());
+        return Task.FromResult(new FooResult());
     }
 }

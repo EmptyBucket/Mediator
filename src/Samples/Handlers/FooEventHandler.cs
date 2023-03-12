@@ -26,10 +26,10 @@ using Samples.Events;
 
 namespace Samples.Handlers;
 
-public class EventHandlerWithAnotherResult : IHandler<Event, EventAnotherResult>
+public class FooEventHandler : IHandler<FooEvent>
 {
-    public Task<EventAnotherResult> HandleAsync(MessageContext<Event> ctx, CancellationToken cancellationToken)
+    public Task HandleAsync(MessageContext<FooEvent> ctx, CancellationToken cancellationToken)
     {
-        return Task.FromResult(new EventAnotherResult());
+        return Task.CompletedTask;
     }
 }
