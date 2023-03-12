@@ -73,12 +73,15 @@ serviceCollection
         // mediator =[FooEvent]> FooEventHandler
         dispatchPipe.ConnectHandler(new FooEventHandler());
 
-        // You can connect handler or handler factory through transport, e.g rabbitmq or redis
-        // You must specify subscriptionId for persistent queues or streams, when has several consumers
+        // You can connect handler or handler factory through transport,
+        // e.g rabbitmq or redis
+        // You must specify subscriptionId for persistent queues or streams,
+        // when has several consumers
         // If you want multiple consumers in a consumer group:
         // - in rabbitmq use the same subscriptionId for several consumers
         // - in redis stream use the same groupName
-        //   (groupName is separated from the consumerName through the delimiter ':', i.e. subscriptionId = "{groupName}:{consumerName}")
+        //   (groupName is separated from the consumerName through the delimiter ':',
+        //   i.e. subscriptionId = "{groupName}:{consumerName}")
         // mediator =[FooEvent]> rabbitMqPipe =[FooEvent]> FooEventHandler#1
         // mediator =[FooEvent]> rabbitMqPipe =[FooEvent]> FooEventHandler#2
         dispatchPipe.ConnectOut<FooEvent>(rabbitMqPipe);
