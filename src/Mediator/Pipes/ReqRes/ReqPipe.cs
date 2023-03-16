@@ -59,20 +59,28 @@ internal class ReqPipe : IConnectingReqPipe
     }
 
     /// <inheritdoc />
-    public IDisposable ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "")
+    public IEnumerable<PipeConnection<IReqPipe>> GetReqConnections()
+    {
+        using var scope = _lock.EnterReadScope();
+        return _pipeConnections.SelectMany(l => l.Value);
+    }
+
+    /// <inheritdoc />
+    public PipeConnection<IReqPipe> ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
+        string connectionName = "")
     {
         var route = Route.For<TMessage, TResult>(routingKey);
-        var pipeConnection = ConnectPipe(route, pipe);
+        var pipeConnection = ConnectPipe(connectionName, route, pipe);
         return pipeConnection;
     }
 
     /// <inheritdoc />
-    public Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
-        CancellationToken cancellationToken = default)
+    public Task<PipeConnection<IReqPipe>> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
+        string connectionName = "", CancellationToken cancellationToken = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
-        var pipeConnection = ConnectPipe(route, pipe);
-        return Task.FromResult<IAsyncDisposable>(pipeConnection);
+        var pipeConnection = ConnectPipe(connectionName, route, pipe);
+        return Task.FromResult(pipeConnection);
     }
 
     private IList<PipeConnection<IReqPipe>> GetPipeConnections(Route route)
@@ -81,9 +89,9 @@ internal class ReqPipe : IConnectingReqPipe
         return _pipeConnections.GetValueOrDefault(route) ?? ImmutableList<PipeConnection<IReqPipe>>.Empty;
     }
 
-    private PipeConnection<IReqPipe> ConnectPipe(Route route, IReqPipe pipe)
+    private PipeConnection<IReqPipe> ConnectPipe(string connectionName, Route route, IReqPipe pipe)
     {
-        var pipeConnection = new PipeConnection<IReqPipe>(route, pipe, DisconnectPipe);
+        var pipeConnection = new PipeConnection<IReqPipe>(connectionName, route, pipe, DisconnectPipe);
         using var scope = _lock.EnterWriteScope();
         _pipeConnections.TryAdd(pipeConnection.Route, ImmutableList<PipeConnection<IReqPipe>>.Empty);
         _pipeConnections[pipeConnection.Route] = _pipeConnections[pipeConnection.Route].Add(pipeConnection);
@@ -102,7 +110,7 @@ internal class ReqPipe : IConnectingReqPipe
     {
         if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
-        foreach (var pipeConnection in _pipeConnections.SelectMany(c => c.Value)) await pipeConnection.DisposeAsync();
+        foreach (var pipeConnection in _pipeConnections.SelectMany(l => l.Value)) await pipeConnection.DisposeAsync();
 
         _lock.Dispose();
     }

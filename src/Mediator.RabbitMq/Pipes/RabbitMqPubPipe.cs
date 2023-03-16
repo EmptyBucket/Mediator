@@ -45,6 +45,7 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
         _serviceProvider = serviceProvider;
     }
 
+    /// <inheritdoc />
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
         var exchange = await DeclareExchangeAsync(ctx.Route, cancellationToken);
@@ -53,27 +54,34 @@ internal class RabbitMqPubPipe : IConnectingPubPipe
         await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, cancellationToken).ConfigureAwait(false);
     }
 
-    public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
+    /// <inheritdoc />
+    public IEnumerable<PipeConnection<IPubPipe>> GetPubConnections() => _pipeConnections.Keys;
+
+    /// <inheritdoc />
+    public PipeConnection<IPubPipe> ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "",
+        string connectionName = "", string subscriptionId = "")
     {
         var route = Route.For<TMessage>(routingKey);
         var queue = DeclareQueue(route, subscriptionId);
-        var pipeConnection = ConnectPipe<TMessage>(route, pipe, queue);
+        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, queue);
         return pipeConnection;
     }
 
-    public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
-        string subscriptionId = "", CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    public async Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
+        string connectionName = "", string subscriptionId = "", CancellationToken cancellationToken = default)
     {
         var route = Route.For<TMessage>(routingKey);
         var queue = await DeclareQueueAsync(route, subscriptionId, cancellationToken);
-        var pipeConnection = ConnectPipe<TMessage>(route, pipe, queue);
+        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, queue);
         return pipeConnection;
     }
 
-    private PipeConnection<IPubPipe> ConnectPipe<TMessage>(Route route, IPubPipe pipe, IQueue queue)
+    private PipeConnection<IPubPipe> ConnectPipe<TMessage>(string connectionName, Route route, IPubPipe pipe,
+        IQueue queue)
     {
         var subscription = _bus.Advanced.Consume<MessageContext<TMessage>>(queue, (m, _) => HandleAsync(pipe, m));
-        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe);
+        var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe);
         _pipeConnections.TryAdd(pipeConnection, subscription);
         return pipeConnection;
     }

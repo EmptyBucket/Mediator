@@ -57,20 +57,28 @@ internal class PubPipe : IConnectingPubPipe
     }
 
     /// <inheritdoc />
-    public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
+    public IEnumerable<PipeConnection<IPubPipe>> GetPubConnections()
+    {
+        using var scope = _lock.EnterReadScope();
+        return _pipeConnections.SelectMany(l => l.Value);
+    }
+
+    /// <inheritdoc />
+    public PipeConnection<IPubPipe> ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "",
+        string connectionName = "", string subscriptionId = "")
     {
         var route = Route.For<TMessage>(routingKey);
-        var pipeConnection = ConnectPipe(route, pipe);
+        var pipeConnection = ConnectPipe(connectionName, route, pipe);
         return pipeConnection;
     }
 
     /// <inheritdoc />
-    public Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
-        string subscriptionId = "", CancellationToken cancellationToken = default)
+    public Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
+        string connectionName = "", string subscriptionId = "", CancellationToken cancellationToken = default)
     {
         var route = Route.For<TMessage>(routingKey);
-        var pipeConnection = ConnectPipe(route, pipe);
-        return Task.FromResult<IAsyncDisposable>(pipeConnection);
+        var pipeConnection = ConnectPipe(connectionName, route, pipe);
+        return Task.FromResult(pipeConnection);
     }
 
     private IEnumerable<PipeConnection<IPubPipe>> GetPipeConnections(Route route)
@@ -79,9 +87,9 @@ internal class PubPipe : IConnectingPubPipe
         return _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection<IPubPipe>>();
     }
 
-    private PipeConnection<IPubPipe> ConnectPipe(Route route, IPubPipe pipe)
+    private PipeConnection<IPubPipe> ConnectPipe(string connectionName, Route route, IPubPipe pipe)
     {
-        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe);
+        var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe);
         using var scope = _lock.EnterWriteScope();
         _pipeConnections.TryAdd(pipeConnection.Route, ImmutableList<PipeConnection<IPubPipe>>.Empty);
         _pipeConnections[pipeConnection.Route] = _pipeConnections[pipeConnection.Route].Add(pipeConnection);
@@ -100,7 +108,7 @@ internal class PubPipe : IConnectingPubPipe
     {
         if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
-        foreach (var pipeConnection in _pipeConnections.SelectMany(c => c.Value)) await pipeConnection.DisposeAsync();
+        foreach (var pipeConnection in _pipeConnections.SelectMany(l => l.Value)) await pipeConnection.DisposeAsync();
 
         _lock.Dispose();
     }

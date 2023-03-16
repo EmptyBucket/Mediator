@@ -29,17 +29,18 @@ public class PipeConnection<TPipe> : IDisposable, IAsyncDisposable
     private readonly Action<PipeConnection<TPipe>> _disconnect;
     private readonly Func<PipeConnection<TPipe>, ValueTask> _disconnectAsync;
 
-    public PipeConnection(Route route, TPipe pipe, Action<PipeConnection<TPipe>> disconnect,
+    public PipeConnection(string name, Route route, TPipe pipe, Action<PipeConnection<TPipe>> disconnect,
         Func<PipeConnection<TPipe>, ValueTask> disconnectAsync)
     {
+        Name = name;
         Route = route;
         Pipe = pipe;
         _disconnect = disconnect;
         _disconnectAsync = disconnectAsync;
     }
 
-    public PipeConnection(Route route, TPipe pipe, Action<PipeConnection<TPipe>> disconnect)
-        : this(route, pipe, disconnect, DisconnectAsync(disconnect))
+    public PipeConnection(string name, Route route, TPipe pipe, Action<PipeConnection<TPipe>> disconnect)
+        : this(name, route, pipe, disconnect, DisconnectAsync(disconnect))
     {
     }
 
@@ -49,6 +50,8 @@ public class PipeConnection<TPipe> : IDisposable, IAsyncDisposable
             disconnect(p);
             return new ValueTask();
         };
+
+    public string Name { get; }
 
     public Route Route { get; }
 

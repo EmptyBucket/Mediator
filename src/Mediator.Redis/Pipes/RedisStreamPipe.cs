@@ -48,6 +48,7 @@ public class RedisStreamPipe : IConnectingPubPipe
         _jsonSerializerOptions = new JsonSerializerOptions { Converters = { ObjectToInferredTypesConverter.Instance } };
     }
 
+    /// <inheritdoc />
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
         var message = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
@@ -58,27 +59,33 @@ public class RedisStreamPipe : IConnectingPubPipe
             .ConfigureAwait(false);
     }
 
-    public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
+    /// <inheritdoc />
+    public IEnumerable<PipeConnection<IPubPipe>> GetPubConnections() => _pipeConnections.Keys;
+
+    /// <inheritdoc />
+    public PipeConnection<IPubPipe> ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "",
+        string connectionName = "", string subscriptionId = "")
     {
         var route = Route.For<TMessage>(routingKey);
         var (groupName, consumerName) = ParseSubscriptionId(subscriptionId);
         CreateConsumerGroup(route, groupName);
-        var pipeConnection = ConnectPipe<TMessage>(route, pipe, groupName, consumerName);
+        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, groupName, consumerName);
         return pipeConnection;
     }
 
-    public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
-        string subscriptionId = "", CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    public async Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
+        string connectionName = "", string subscriptionId = "", CancellationToken cancellationToken = default)
     {
         var route = Route.For<TMessage>(routingKey);
         var (groupName, consumerName) = ParseSubscriptionId(subscriptionId);
         await CreateConsumerGroupAsync(route, groupName);
-        var pipeConnection = ConnectPipe<TMessage>(route, pipe, groupName, consumerName);
+        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, groupName, consumerName);
         return pipeConnection;
     }
 
-    private PipeConnection<IPubPipe> ConnectPipe<TMessage>(Route route, IPubPipe pipe, string groupName,
-        string consumerName)
+    private PipeConnection<IPubPipe> ConnectPipe<TMessage>(string connectionName, Route route, IPubPipe pipe,
+        string groupName, string consumerName)
     {
         var cts = new CancellationTokenSource();
         Task.Run(async () =>
@@ -94,7 +101,7 @@ public class RedisStreamPipe : IConnectingPubPipe
                 await Task.Delay(millisecondsDelay, cts.Token).ConfigureAwait(false);
             }
         }, cts.Token);
-        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe);
+        var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe);
         _pipeConnections.TryAdd(pipeConnection, cts);
         return pipeConnection;
     }

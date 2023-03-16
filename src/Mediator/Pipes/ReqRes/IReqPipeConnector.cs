@@ -21,6 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Mediator.Pipes.Utils;
+
 namespace Mediator.Pipes;
 
 /// <summary>
@@ -29,24 +31,35 @@ namespace Mediator.Pipes;
 public interface IReqPipeConnector : IAsyncDisposable
 {
     /// <summary>
-    /// Connect out of this pipe to <paramref name="pipe"/>
+    /// Get connected pipe connections
+    /// </summary>
+    /// <returns></returns>
+    IEnumerable<PipeConnection<IReqPipe>> GetReqConnections();
+
+    /// <summary>
+    /// Connect out of this pipe to <paramref name="pipe"/> with <typeparamref name="TMessage"/>,
+    /// <typeparamref name="TResult"/> and <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="routingKey"></param>
+    /// <param name="connectionName"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
-    IDisposable ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "");
+    PipeConnection<IReqPipe> ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
+        string connectionName = "");
 
     /// <summary>
-    /// Connect out of this pipe to <paramref name="pipe"/>
+    /// Connect out of this pipe to <paramref name="pipe"/> with <typeparamref name="TMessage"/>,
+    /// <typeparamref name="TResult"/> and <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="routingKey"></param>
+    /// <param name="connectionName"></param>
     /// <param name="cancellationToken"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
-    Task<IAsyncDisposable> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
-        CancellationToken cancellationToken = default);
+    Task<PipeConnection<IReqPipe>> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
+        string connectionName = "", CancellationToken cancellationToken = default);
 }

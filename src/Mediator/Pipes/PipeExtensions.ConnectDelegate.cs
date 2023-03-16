@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 using Mediator.Handlers;
+using Mediator.Pipes.Utils;
 
 namespace Mediator.Pipes;
 
@@ -33,13 +34,14 @@ public static partial class PipeExtensions
     /// <param name="pipeConnector"></param>
     /// <param name="func"></param>
     /// <param name="routingKey"></param>
+    /// <param name="connectionName"></param>
     /// <param name="subscriptionId"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <returns></returns>
-    public static IDisposable ConnectDelegate<TMessage>(this IPubPipeConnector pipeConnector,
+    public static PipeConnection<IPubPipe> ConnectDelegate<TMessage>(this IPubPipeConnector pipeConnector,
         Func<MessageContext<TMessage>, CancellationToken, Task> func, string routingKey = "",
-        string subscriptionId = "") =>
-        pipeConnector.ConnectHandler(new LambdaHandler<TMessage>(func), routingKey, subscriptionId);
+        string connectionName = "", string subscriptionId = "") =>
+        pipeConnector.ConnectHandler(new LambdaHandler<TMessage>(func), routingKey, connectionName, subscriptionId);
 
     /// <summary>
     /// Connect handler with <paramref name="func"/> delegate for request/response messaging model
@@ -47,10 +49,12 @@ public static partial class PipeExtensions
     /// <param name="pipeConnector"></param>
     /// <param name="func"></param>
     /// <param name="routingKey"></param>
+    /// <param name="connectionName"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
-    public static IDisposable ConnectDelegate<TMessage, TResult>(this IReqPipeConnector pipeConnector,
-        Func<MessageContext<TMessage>, CancellationToken, Task<TResult>> func, string routingKey = "") =>
-        pipeConnector.ConnectHandler(new LambdaHandler<TMessage, TResult>(func), routingKey);
+    public static PipeConnection<IReqPipe> ConnectDelegate<TMessage, TResult>(this IReqPipeConnector pipeConnector,
+        Func<MessageContext<TMessage>, CancellationToken, Task<TResult>> func, string routingKey = "",
+        string connectionName = "") =>
+        pipeConnector.ConnectHandler(new LambdaHandler<TMessage, TResult>(func), routingKey, connectionName);
 }

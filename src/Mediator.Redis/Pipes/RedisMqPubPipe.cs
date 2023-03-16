@@ -48,6 +48,7 @@ internal class RedisMqPubPipe : IConnectingPubPipe
         _jsonSerializerOptions = new JsonSerializerOptions { Converters = { ObjectToInferredTypesConverter.Instance } };
     }
 
+    /// <inheritdoc />
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
         var message = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
@@ -55,35 +56,44 @@ internal class RedisMqPubPipe : IConnectingPubPipe
         await _subscriber.PublishAsync(ctx.Route.ToString(), message, messageProperties.Flags).ConfigureAwait(false);
     }
 
-    public IDisposable ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string subscriptionId = "")
+    /// <inheritdoc />
+    public IEnumerable<PipeConnection<IPubPipe>> GetPubConnections() => _pipeConnections.Keys;
+
+    /// <inheritdoc />
+    public PipeConnection<IPubPipe> ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "",
+        string connectionName = "", string subscriptionId = "")
     {
         var route = Route.For<TMessage>(routingKey);
-        var pipeConnection = ConnectPipe<TMessage>(route, pipe);
+        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe);
         return pipeConnection;
     }
 
-    public async Task<IAsyncDisposable> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
-        string subscriptionId = "", CancellationToken cancellationToken = default)
+    /// <inheritdoc />
+    public async Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
+        string connectionName = "", string subscriptionId = "", CancellationToken cancellationToken = default)
     {
         var route = Route.For<TMessage>(routingKey);
-        var pipeConnection = await ConnectPipeAsync<TMessage>(route, pipe);
+        var pipeConnection = await ConnectPipeAsync<TMessage>(connectionName, route, pipe);
         return pipeConnection;
     }
 
-    private PipeConnection<IPubPipe> ConnectPipe<TMessage>(Route route, IPubPipe pipe)
+    private PipeConnection<IPubPipe> ConnectPipe<TMessage>(string connectionName, Route route, IPubPipe pipe)
     {
         var channelMq = _subscriber.Subscribe(route.ToString());
         channelMq.OnMessage(m => HandleAsync<TMessage>(pipe, m));
-        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe, DisconnectPipeAsync);
+        var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe,
+            DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, channelMq);
         return pipeConnection;
     }
 
-    private async Task<PipeConnection<IPubPipe>> ConnectPipeAsync<TMessage>(Route route, IPubPipe pipe)
+    private async Task<PipeConnection<IPubPipe>> ConnectPipeAsync<TMessage>(string connectionName, Route route,
+        IPubPipe pipe)
     {
         var channelMq = await _subscriber.SubscribeAsync(route.ToString()).ConfigureAwait(false);
         channelMq.OnMessage(m => HandleAsync<TMessage>(pipe, m));
-        var pipeConnection = new PipeConnection<IPubPipe>(route, pipe, DisconnectPipe, DisconnectPipeAsync);
+        var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe,
+            DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, channelMq);
         return pipeConnection;
     }
