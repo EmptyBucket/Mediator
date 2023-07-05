@@ -21,26 +21,20 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
-using Mediator.Pipes.Utils;
-
 namespace Mediator.Handlers;
 
 /// <summary>
-/// Represents the result context
+/// Represents the message unhandled exception
 /// </summary>
-/// <param name="Route"></param>
-/// <param name="MessageId"></param>
-/// <param name="CorrelationId"></param>
-/// <typeparam name="TResult"></typeparam>
-public record ResultContext<TResult>(Route Route, string MessageId, string CorrelationId)
+public class MessageUnhandledException : Exception
 {
-    /// <summary>
-    /// Result
-    /// </summary>
-    public TResult? Result { get; set; }
+    public MessageUnhandledException(string handlerMessage) : base("The message was not handled")
+    {
+        HandlerMessage = handlerMessage;
+    }
 
     /// <summary>
     /// The exception message that occurred while handled the message
     /// </summary>
-    public string? ExceptionMessage { get; set; }
+    public string HandlerMessage { get; }
 }

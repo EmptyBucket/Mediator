@@ -60,9 +60,8 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
             // ReSharper disable once VariableHidesOuterVariable
             var ctx = (ResultContext<TResult>)m.GetBody();
 
-            if (ctx.Result != null) tcs.TrySetResult(ctx.Result);
-            else if (ctx.Exception != null) tcs.TrySetException(ctx.Exception);
-            else tcs.TrySetException(new InvalidOperationException("Message was not be processed"));
+            if (ctx.ExceptionMessage == null && ctx.Result != null) tcs.TrySetResult(ctx.Result);
+            else tcs.TrySetException(new MessageUnhandledException(ctx.ExceptionMessage ?? string.Empty));
         }
 
         var exchange = await DeclareMessageExchangeAsync(ctx.Route, cancellationToken);
@@ -133,7 +132,7 @@ internal class RabbitMqReqPipe : IConnectingReqPipe
         finally
         {
             var resultCtx = new ResultContext<TResult>(ctx.Route, Guid.NewGuid().ToString(), ctx.CorrelationId!)
-                { Result = result, Exception = exception };
+                { Result = result, ExceptionMessage = exception?.Message };
             var resultMessage = new Message<ResultContext<TResult>>(resultCtx);
             await _bus.Advanced.PublishAsync(exchange, WellKnown.ResultMq, false, resultMessage).ConfigureAwait(false);
         }

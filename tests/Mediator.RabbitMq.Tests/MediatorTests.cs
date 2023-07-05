@@ -185,6 +185,23 @@ public class MediatorTests
 
         actualResult.Should().Be(expectedResult);
     }
+
+    [Test]
+    public async Task SendAsync_WhenRabbitMqTopologyWithException_ReturnException()
+    {
+        var (dispatch, _, pipeFactory) = _mediator.Topology;
+        await using var pipe = pipeFactory.Create<RabbitMqPipe>();
+        var someEvent = new SomeEvent(Guid.NewGuid());
+        _fEndPipe.Setup(p => p.PassAsync<SomeEvent, SomeResult>(
+                It.Is<MessageContext<SomeEvent>>(m => m.Message.Equals(someEvent)), It.IsAny<CancellationToken>()))
+            .Throws(() => new ArgumentException("Some exception message"));
+
+        await dispatch.ConnectOutAsync<SomeEvent, SomeResult>(pipe);
+        await pipe.ConnectOutAsync<SomeEvent, SomeResult>(_fEndPipe.Object);
+        var func = new Func<Task>(async () => await _mediator.SendAsync<SomeEvent, SomeResult>(someEvent));
+
+        await func.Should().ThrowAsync<MessageUnhandledException>();
+    }
 }
 
 public readonly record struct SomeEvent(Guid Id);
