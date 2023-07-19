@@ -55,6 +55,7 @@ public static class ServiceCollectionExtensions
 
             return mediator;
         }, lifetime));
+        serviceCollection.AddHostedService<MediatorHostedService>();
 
         return serviceCollection;
     }
