@@ -28,7 +28,8 @@ namespace Mediator.Pipes;
 public static partial class PipeExtensions
 {
     /// <summary>
-    /// Connect in of this pipe to <paramref name="pipeConnector"/>
+    /// Connect in of this pipe to <paramref name="pipeConnector"/> with <typeparamref name="TMessage"/> and
+    /// <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="pipeConnector"></param>
@@ -42,7 +43,8 @@ public static partial class PipeExtensions
         pipeConnector.ConnectOut<TMessage>(pipe, routingKey, connectionName, subscriptionId);
 
     /// <summary>
-    /// Connect in of this pipe to <paramref name="pipeConnector"/>
+    /// Connect in of this pipe to <paramref name="pipeConnector"/> with <typeparamref name="TMessage"/> and
+    /// <typeparamref name="TResult"/> and <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="pipeConnector"></param>
