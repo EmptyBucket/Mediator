@@ -43,7 +43,7 @@ public interface IHandler<TMessage>
 /// </summary>
 /// <typeparam name="TMessage"></typeparam>
 /// <typeparam name="TResult"></typeparam>
-public interface IHandler<TMessage, TResult> : IHandler<TMessage>
+public interface IHandler<TMessage, TResult>
 {
     /// <summary>
     /// Processes received message inside <paramref name="ctx"/> and returns a result of type <typeparamref name="TResult"/>
@@ -51,14 +51,5 @@ public interface IHandler<TMessage, TResult> : IHandler<TMessage>
     /// <param name="ctx"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    new Task<TResult> HandleAsync(MessageContext<TMessage> ctx, CancellationToken cancellationToken);
-
-    /// <summary>
-    /// Processes received message inside <paramref name="ctx"/>
-    /// </summary>
-    /// <param name="ctx"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task IHandler<TMessage>.HandleAsync(MessageContext<TMessage> ctx, CancellationToken cancellationToken) =>
-        HandleAsync(ctx, cancellationToken);
+    Task<TResult> HandleAsync(MessageContext<TMessage> ctx, CancellationToken cancellationToken);
 }
