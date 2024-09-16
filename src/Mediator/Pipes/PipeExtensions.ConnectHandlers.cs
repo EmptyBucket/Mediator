@@ -10,14 +10,14 @@ public static partial class PipeExtensions
     /// </summary>
     /// <param name="pipeConnector"></param>
     /// <param name="assembly"></param>
-    /// <param name="routingKey"></param>
     /// <param name="handlerPredicate"></param>
+    /// <param name="routingKey"></param>
     /// <returns></returns>
     public static void ConnectHandlers(this IPipeConnector pipeConnector, Assembly assembly,
-        string routingKey = "", Func<Type, bool>? handlerPredicate = null)
+        Func<Type, bool>? handlerPredicate = null, string routingKey = "")
     {
-        ((IPubPipeConnector)pipeConnector).ConnectHandlers(assembly, routingKey, handlerPredicate);
-        ((IReqPipeConnector)pipeConnector).ConnectHandlers(assembly, routingKey, handlerPredicate);
+        ((IPubPipeConnector)pipeConnector).ConnectHandlers(assembly, handlerPredicate, routingKey);
+        ((IReqPipeConnector)pipeConnector).ConnectHandlers(assembly, handlerPredicate, routingKey);
     }
 
     /// <summary>
@@ -25,11 +25,11 @@ public static partial class PipeExtensions
     /// </summary>
     /// <param name="pipeConnector"></param>
     /// <param name="assembly"></param>
-    /// <param name="routingKey"></param>
     /// <param name="handlerPredicate"></param>
+    /// <param name="routingKey"></param>
     /// <returns></returns>
     public static void ConnectHandlers(this IPubPipeConnector pipeConnector, Assembly assembly,
-        string routingKey = "", Func<Type, bool>? handlerPredicate = null)
+        Func<Type, bool>? handlerPredicate = null, string routingKey = "")
     {
         handlerPredicate ??= _ => true;
         var handlerInterface = typeof(IHandler<>);
@@ -48,11 +48,11 @@ public static partial class PipeExtensions
     /// </summary>
     /// <param name="pipeConnector"></param>
     /// <param name="assembly"></param>
-    /// <param name="routingKey"></param>
     /// <param name="handlerPredicate"></param>
+    /// <param name="routingKey"></param>
     /// <returns></returns>
     public static void ConnectHandlers(this IReqPipeConnector pipeConnector, Assembly assembly,
-        string routingKey = "", Func<Type, bool>? handlerPredicate = null)
+        Func<Type, bool>? handlerPredicate = null, string routingKey = "")
     {
         handlerPredicate ??= _ => true;
         var handlerInterface = typeof(IHandler<,>);
