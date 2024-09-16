@@ -47,11 +47,12 @@ public class Pipe : IConnectingPipe
     }
 
     /// <inheritdoc />
-    public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default) =>
+    public virtual Task PassAsync<TMessage>(MessageContext<TMessage> ctx,
+        CancellationToken cancellationToken = default) =>
         _connectingPubPipe.PassAsync(ctx, cancellationToken);
 
     /// <inheritdoc />
-    public Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
+    public virtual Task<TResult> PassAsync<TMessage, TResult>(MessageContext<TMessage> ctx,
         CancellationToken cancellationToken = default) =>
         _connectingReqPipe.PassAsync<TMessage, TResult>(ctx, cancellationToken);
 
@@ -59,12 +60,12 @@ public class Pipe : IConnectingPipe
     public IEnumerable<PipeConnection<IPubPipe>> GetPubConnections() => _connectingPubPipe.GetPubConnections();
 
     /// <inheritdoc />
-    public PipeConnection<IPubPipe> ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "",
+    public virtual PipeConnection<IPubPipe> ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "",
         string connectionName = "", string subscriptionId = "") =>
         _connectingPubPipe.ConnectOut<TMessage>(pipe, routingKey, connectionName, subscriptionId);
 
     /// <inheritdoc />
-    public Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
+    public virtual Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string connectionName = "", string subscriptionId = "", CancellationToken cancellationToken = default) =>
         _connectingPubPipe.ConnectOutAsync<TMessage>(pipe, routingKey, connectionName, subscriptionId,
             cancellationToken);
@@ -73,13 +74,13 @@ public class Pipe : IConnectingPipe
     public IEnumerable<PipeConnection<IReqPipe>> GetReqConnections() => _connectingReqPipe.GetReqConnections();
 
     /// <inheritdoc />
-    public PipeConnection<IReqPipe> ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
+    public virtual PipeConnection<IReqPipe> ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
         string connectionName = "") =>
         _connectingReqPipe.ConnectOut<TMessage, TResult>(pipe, routingKey, connectionName);
 
     /// <inheritdoc />
-    public Task<PipeConnection<IReqPipe>> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
-        string connectionName = "", CancellationToken cancellationToken = default) =>
+    public virtual Task<PipeConnection<IReqPipe>> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe,
+        string routingKey = "", string connectionName = "", CancellationToken cancellationToken = default) =>
         _connectingReqPipe.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, connectionName, cancellationToken);
 
     /// <inheritdoc />
