@@ -161,7 +161,7 @@ var serviceProvider1 = serviceCollection.BuildServiceProvider();
     // You can specify routingKey for routing in same type
     await dispatchPipe.ConnectOutAsync<FooEvent>(rabbitMqPipe, "foo-routing-key");
     // You can use receivePipe for a single point configuration receive topology
-    await receivePipe.ConnectInAsync<FooEvent>(rabbitMqPipe, "foo-routing-key", subscriptionId: "4");
+    await rabbitMqPipe.ConnectOutAsync<FooEvent>(receivePipe, "foo-routing-key", subscriptionId: "4");
     await receivePipe.ConnectHandlerAsync(new FooEventHandler(), "foo-routing-key");
 }
 
