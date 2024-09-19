@@ -31,14 +31,14 @@ namespace Mediator.Pipes;
 /// <summary>
 /// Represents the pipe for publish/subscribe messaging model 
 /// </summary>
-internal class MulticastPubPipe : IMulticastPubPipe
+internal class BroadcastPubPipe : IBroadcastPubPipe
 {
     private int _isDisposed;
     private readonly IServiceProvider _serviceProvider;
     private readonly ReaderWriterLockSlim _lock = new();
-    private readonly Dictionary<Route, ImmutableList<PipeConnection<IPubPipe>>> _pipeConnections = new();
+    private ImmutableList<PipeConnection<IPubPipe>> _pipeConnections = ImmutableList<PipeConnection<IPubPipe>>.Empty;
 
-    public MulticastPubPipe(IServiceProvider serviceProvider)
+    public BroadcastPubPipe(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }
@@ -46,7 +46,7 @@ internal class MulticastPubPipe : IMulticastPubPipe
     /// <inheritdoc />
     public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
-        var pipeConnections = GetPipeConnections(ctx.Route);
+        var pipeConnections = GetPubConnections();
 
         using var scope = _serviceProvider.CreateScope();
         ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
@@ -59,52 +59,36 @@ internal class MulticastPubPipe : IMulticastPubPipe
     public IEnumerable<PipeConnection<IPubPipe>> GetPubConnections()
     {
         using var scope = _lock.EnterReadScope();
-        return _pipeConnections.SelectMany(l => l.Value);
+        return _pipeConnections;
     }
 
     /// <inheritdoc />
-    public PipeConnection<IPubPipe> ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "",
-        string connectionName = "", string subscriptionId = "")
+    public PipeConnection<IPubPipe> ConnectOut(IPubPipe pipe, string connectionName = "", string subscriptionId = "")
     {
-        var route = Route.For<TMessage>(routingKey);
-        var pipeConnection = ConnectPipe(connectionName, route, pipe);
+        var pipeConnection = ConnectPipe(connectionName, pipe);
         return pipeConnection;
     }
 
     /// <inheritdoc />
-    public Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
-        string connectionName = "", string subscriptionId = "", CancellationToken cancellationToken = default)
+    public Task<PipeConnection<IPubPipe>> ConnectOutAsync(IPubPipe pipe, string connectionName = "",
+        string subscriptionId = "", CancellationToken cancellationToken = default)
     {
-        var route = Route.For<TMessage>(routingKey);
-        var pipeConnection = ConnectPipe(connectionName, route, pipe);
+        var pipeConnection = ConnectPipe(connectionName, pipe);
         return Task.FromResult(pipeConnection);
     }
 
-    private IEnumerable<PipeConnection<IPubPipe>> GetPipeConnections(Route route)
+    private PipeConnection<IPubPipe> ConnectPipe(string connectionName, IPubPipe pipe)
     {
-        using var scope = _lock.EnterReadScope();
-        return _pipeConnections.GetValueOrDefault(route) ?? Enumerable.Empty<PipeConnection<IPubPipe>>();
-    }
-
-    private PipeConnection<IPubPipe> ConnectPipe(string connectionName, Route route, IPubPipe pipe)
-    {
-        var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe);
+        var pipeConnection = new PipeConnection<IPubPipe>(connectionName, Route.Empty, pipe, DisconnectPipe);
         using var scope = _lock.EnterWriteScope();
-        _pipeConnections.TryAdd(pipeConnection.Route, ImmutableList<PipeConnection<IPubPipe>>.Empty);
-        _pipeConnections[pipeConnection.Route] = _pipeConnections[pipeConnection.Route].Add(pipeConnection);
+        _pipeConnections = _pipeConnections.Add(pipeConnection);
         return pipeConnection;
     }
 
     private void DisconnectPipe(PipeConnection<IPubPipe> pipeConnection)
     {
         using var scope = _lock.EnterWriteScope();
-        if (_pipeConnections.TryGetValue(pipeConnection.Route, out var list))
-        {
-            list = list.Remove(pipeConnection);
-
-            if (list.IsEmpty) _pipeConnections.Remove(pipeConnection.Route);
-            else _pipeConnections[pipeConnection.Route] = list.Remove(pipeConnection);
-        }
+        _pipeConnections = _pipeConnections.Remove(pipeConnection);
     }
 
     /// <inheritdoc />
@@ -112,7 +96,7 @@ internal class MulticastPubPipe : IMulticastPubPipe
     {
         if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
-        foreach (var pipeConnection in _pipeConnections.SelectMany(l => l.Value)) await pipeConnection.DisposeAsync();
+        foreach (var pipeConnection in _pipeConnections) await pipeConnection.DisposeAsync();
 
         _lock.Dispose();
     }

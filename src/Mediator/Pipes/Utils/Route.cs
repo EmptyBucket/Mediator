@@ -29,7 +29,7 @@ namespace Mediator.Pipes.Utils;
 /// <param name="MessageType"></param>
 /// <param name="RoutingKey"></param>
 /// <param name="ResultType"></param>
-public readonly record struct Route(string MessageType, string RoutingKey = "", string ResultType = "")
+public readonly record struct Route(string MessageType, string RoutingKey, string ResultType)
 {
     public Route(Type messageType, string routingKey = "", Type? resultType = null)
         : this(messageType.FullName ?? messageType.Name, routingKey, resultType?.FullName ?? resultType?.Name ?? "")
@@ -37,13 +37,18 @@ public readonly record struct Route(string MessageType, string RoutingKey = "", 
     }
 
     /// <summary>
+    /// Build empty route
+    /// </summary>
+    /// <returns></returns>
+    public static Route Empty { get; } = new(string.Empty, string.Empty, string.Empty);
+
+    /// <summary>
     /// Build route for <typeparamref name="TMessage"/>
     /// </summary>
     /// <param name="routingKey"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <returns></returns>
-    public static Route For<TMessage>(string routingKey = "") =>
-        new(typeof(TMessage), routingKey);
+    public static Route For<TMessage>(string routingKey = "") => new(typeof(TMessage), routingKey);
 
     /// <summary>
     /// Build route for <typeparamref name="TMessage"/> and <typeparamref name="TResult"/>

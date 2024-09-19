@@ -21,11 +21,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Mediator.Pipes.Utils;
+
 namespace Mediator.Pipes;
 
 /// <summary>
-/// Represents the connecting pipe interface that combines a IPipe and a IMulticastConnector for publish/subscribe and request/response models
+/// Represents the connector interface for connecting to other pipes for request/response messaging model
 /// </summary>
-public interface IMulticastPipe : IPipe, IMulticastConnector, IMulticastPubPipe, IMulticastReqPipe
+public interface IBroadcastReqConnector : IAsyncDisposable
 {
+    /// <summary>
+    /// Get connected pipe connections
+    /// </summary>
+    /// <returns></returns>
+    IEnumerable<PipeConnection<IReqPipe>> GetReqConnections();
+
+    /// <summary>
+    /// Connect out to <paramref name="pipe"/> with <paramref name="connectionName"/>
+    /// </summary>
+    /// <param name="pipe"></param>
+    /// <param name="connectionName"></param>
+    /// <returns></returns>
+    PipeConnection<IReqPipe> ConnectOut(IReqPipe pipe, string connectionName = "");
+
+    /// <summary>
+    /// Connect out to <paramref name="pipe"/> with <paramref name="connectionName"/>
+    /// </summary>
+    /// <param name="pipe"></param>
+    /// <param name="connectionName"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<PipeConnection<IReqPipe>> ConnectOutAsync(IReqPipe pipe, string connectionName = "",
+        CancellationToken cancellationToken = default);
 }

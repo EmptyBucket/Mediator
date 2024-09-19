@@ -24,8 +24,8 @@
 namespace Mediator.Pipes;
 
 /// <summary>
-/// Represents the connecting pipe interface that combines a IPipe and a IMulticastConnector for publish/subscribe and request/response models
+/// Represents the connecting pipe interface that combines a IPipe and a IBroadcastConnector for publish/subscribe and request/response models
 /// </summary>
-public interface IMulticastPipe : IPipe, IMulticastConnector, IMulticastPubPipe, IMulticastReqPipe
+public interface IBroadcastPipe : IPipe, IBroadcastConnector, IBroadcastPubPipe, IBroadcastReqPipe
 {
 }

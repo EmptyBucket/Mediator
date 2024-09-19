@@ -30,18 +30,13 @@ public class PipeConnection<TPipe> : IDisposable, IAsyncDisposable
     private readonly Func<PipeConnection<TPipe>, ValueTask> _disconnectAsync;
 
     public PipeConnection(string name, Route route, TPipe pipe, Action<PipeConnection<TPipe>> disconnect,
-        Func<PipeConnection<TPipe>, ValueTask> disconnectAsync)
+        Func<PipeConnection<TPipe>, ValueTask>? disconnectAsync = null)
     {
         Name = name;
         Route = route;
         Pipe = pipe;
         _disconnect = disconnect;
-        _disconnectAsync = disconnectAsync;
-    }
-
-    public PipeConnection(string name, Route route, TPipe pipe, Action<PipeConnection<TPipe>> disconnect)
-        : this(name, route, pipe, disconnect, DisconnectAsync(disconnect))
-    {
+        _disconnectAsync = disconnectAsync ?? DisconnectAsync(disconnect);
     }
 
     private static Func<PipeConnection<TPipe>, ValueTask> DisconnectAsync(Action<PipeConnection<TPipe>> disconnect) =>
