@@ -38,11 +38,29 @@ public static class ServiceCollectionExtensions
         Action<IPipeBinder>? bindPipes, Action<IServiceProvider, MediatorTopology>? connectPipes = null,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        TryAddPipeFactory(serviceCollection, bindPipes, lifetime);
+        if (bindPipes is not null) serviceCollection.AddSingleton(new BindPipes(bindPipes));
 
         if (connectPipes is not null) serviceCollection.AddSingleton(new ConnectPipes(connectPipes));
 
+        TryAddPipeBinder(serviceCollection);
+        TryAddPipeFactory(serviceCollection, lifetime);
+        TryAddMediatorTopology(serviceCollection, lifetime);
+        TryAddMediator(serviceCollection, lifetime);
+        serviceCollection.AddHostedService<MediatorHostedService>();
+
+        return serviceCollection;
+    }
+
+    private static void TryAddMediator(IServiceCollection serviceCollection, ServiceLifetime lifetime) =>
         serviceCollection.TryAdd(new ServiceDescriptor(typeof(IMediator), p =>
+        {
+            var mediatorTopology = p.GetRequiredService<MediatorTopology>();
+
+            return new Mediator(mediatorTopology);
+        }, lifetime));
+
+    private static void TryAddMediatorTopology(IServiceCollection serviceCollection, ServiceLifetime lifetime) =>
+        serviceCollection.TryAdd(new ServiceDescriptor(typeof(MediatorTopology), p =>
         {
             var pipeFactory = p.GetRequiredService<IPipeFactory>();
             var dispatchPipe = pipeFactory.Create<MulticastPipe>();
@@ -51,17 +69,19 @@ public static class ServiceCollectionExtensions
 
             var connect = p.GetServices<ConnectPipes>().Aggregate(new ConnectPipes((_, _) => { }), (a, n) => a + n);
             connect(p, mediatorTopology);
-            var mediator = new Mediator(mediatorTopology);
 
-            return mediator;
+            return mediatorTopology;
         }, lifetime));
-        serviceCollection.AddHostedService<MediatorHostedService>();
 
-        return serviceCollection;
-    }
+    private static void TryAddPipeFactory(IServiceCollection serviceCollection, ServiceLifetime lifetime) =>
+        serviceCollection.TryAdd(new ServiceDescriptor(typeof(IPipeFactory), p =>
+        {
+            var pipeBinds = p.GetRequiredService<PipeBinder>().Build();
 
-    private static void TryAddPipeFactory(IServiceCollection serviceCollection, Action<IPipeBinder>? bindPipes = null,
-        ServiceLifetime lifetime = ServiceLifetime.Singleton)
+            return new PipeFactory(pipeBinds, p);
+        }, lifetime));
+
+    private static void TryAddPipeBinder(IServiceCollection serviceCollection)
     {
         static void BindDefaultPipes(IPipeBinder pipeBinder) =>
             pipeBinder
@@ -72,8 +92,6 @@ public static class ServiceCollectionExtensions
                 .Bind<MulticastPipe>()
                 .BindInterfaces<MulticastPipe>(nameof(MulticastPipe));
 
-        if (bindPipes is not null) serviceCollection.AddSingleton(new BindPipes(bindPipes));
-
         serviceCollection.TryAddSingleton(p =>
         {
             var pipeBinder = new PipeBinder();
@@ -83,8 +101,6 @@ public static class ServiceCollectionExtensions
 
             return pipeBinder;
         });
-        serviceCollection.TryAdd(new ServiceDescriptor(typeof(IPipeFactory),
-            p => new PipeFactory(p.GetRequiredService<PipeBinder>().Build(), p), lifetime));
     }
 
     private delegate void BindPipes(IPipeBinder pipeBinder);
