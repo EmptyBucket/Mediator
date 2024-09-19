@@ -32,7 +32,7 @@ public static partial class PipeExtensions
     /// <summary>
     /// Connect the handler that the <paramref name="factory"/> builds for publish/subscribe messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="factory"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
@@ -40,16 +40,16 @@ public static partial class PipeExtensions
     /// <param name="cancellationToken"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <returns></returns>
-    public static Task<PipeConnection<IPubPipe>> ConnectHandlerAsync<TMessage>(this IPubPipeConnector pipeConnector,
+    public static Task<PipeConnection<IPubPipe>> ConnectHandlerAsync<TMessage>(this IMulticastPubConnector connector,
         Func<IServiceProvider, IHandler<TMessage>> factory, string routingKey = "", string connectionName = "",
         string subscriptionId = "", CancellationToken cancellationToken = default) =>
-        pipeConnector.ConnectOutAsync<TMessage>(new HandlingPipe<TMessage>(factory), routingKey, connectionName,
+        connector.ConnectOutAsync<TMessage>(new HandlingPipe<TMessage>(factory), routingKey, connectionName,
             subscriptionId, cancellationToken);
 
     /// <summary>
     /// Connect the handler for publish/subscribe messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="handler"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
@@ -57,15 +57,15 @@ public static partial class PipeExtensions
     /// <param name="cancellationToken"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <returns></returns>
-    public static Task<PipeConnection<IPubPipe>> ConnectHandlerAsync<TMessage>(this IPubPipeConnector pipeConnector,
+    public static Task<PipeConnection<IPubPipe>> ConnectHandlerAsync<TMessage>(this IMulticastPubConnector connector,
         IHandler<TMessage> handler, string routingKey = "", string connectionName = "", string subscriptionId = "",
         CancellationToken cancellationToken = default) =>
-        pipeConnector.ConnectHandlerAsync(_ => handler, routingKey, connectionName, subscriptionId, cancellationToken);
+        connector.ConnectHandlerAsync(_ => handler, routingKey, connectionName, subscriptionId, cancellationToken);
 
     /// <summary>
     /// Connect the handler that the ServiceProvider builds for publish/subscribe messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
     /// <param name="subscriptionId"></param>
@@ -74,16 +74,16 @@ public static partial class PipeExtensions
     /// <typeparam name="THandler"></typeparam>
     /// <returns></returns>
     public static Task<PipeConnection<IPubPipe>> ConnectHandlerAsync<TMessage, THandler>(
-        this IPubPipeConnector pipeConnector, string routingKey = "", string connectionName = "",
+        this IMulticastPubConnector connector, string routingKey = "", string connectionName = "",
         string subscriptionId = "", CancellationToken cancellationToken = default)
         where THandler : IHandler<TMessage> =>
-        pipeConnector.ConnectHandlerAsync(p => p.GetRequiredService<THandler>(), routingKey, connectionName,
+        connector.ConnectHandlerAsync(p => p.GetRequiredService<THandler>(), routingKey, connectionName,
             subscriptionId, cancellationToken);
 
     /// <summary>
     /// Connect the handler that the <paramref name="factory"/> builds for request/response messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="factory"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
@@ -92,15 +92,15 @@ public static partial class PipeExtensions
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
     public static Task<PipeConnection<IReqPipe>> ConnectHandlerAsync<TMessage, TResult>(
-        this IReqPipeConnector pipeConnector, Func<IServiceProvider, IHandler<TMessage, TResult>> factory,
+        this IMulticastReqConnector connector, Func<IServiceProvider, IHandler<TMessage, TResult>> factory,
         string routingKey = "", string connectionName = "", CancellationToken cancellationToken = default) =>
-        pipeConnector.ConnectOutAsync<TMessage, TResult>(new HandlingPipe<TMessage, TResult>(factory), routingKey,
+        connector.ConnectOutAsync<TMessage, TResult>(new HandlingPipe<TMessage, TResult>(factory), routingKey,
             connectionName, cancellationToken);
 
     /// <summary>
     /// Connect the handler for request/response messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="handler"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
@@ -109,14 +109,14 @@ public static partial class PipeExtensions
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
     public static Task<PipeConnection<IReqPipe>> ConnectHandlerAsync<TMessage, TResult>(
-        this IReqPipeConnector pipeConnector, IHandler<TMessage, TResult> handler, string routingKey = "",
+        this IMulticastReqConnector connector, IHandler<TMessage, TResult> handler, string routingKey = "",
         string connectionName = "", CancellationToken cancellationToken = default) =>
-        pipeConnector.ConnectHandlerAsync(_ => handler, routingKey, connectionName, cancellationToken);
+        connector.ConnectHandlerAsync(_ => handler, routingKey, connectionName, cancellationToken);
 
     /// <summary>
     /// Connect the handler that the ServiceProvider builds for request/response messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
     /// <param name="cancellationToken"></param>
@@ -125,9 +125,9 @@ public static partial class PipeExtensions
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
     public static Task<PipeConnection<IReqPipe>> ConnectHandlerAsync<TMessage, TResult, THandler>(
-        this IReqPipeConnector pipeConnector, string routingKey = "", string connectionName = "",
+        this IMulticastReqConnector connector, string routingKey = "", string connectionName = "",
         CancellationToken cancellationToken = default)
         where THandler : IHandler<TMessage, TResult> =>
-        pipeConnector.ConnectHandlerAsync(p => p.GetRequiredService<THandler>(), routingKey, connectionName,
+        connector.ConnectHandlerAsync(p => p.GetRequiredService<THandler>(), routingKey, connectionName,
             cancellationToken);
 }

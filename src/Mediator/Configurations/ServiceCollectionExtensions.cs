@@ -45,8 +45,8 @@ public static class ServiceCollectionExtensions
         serviceCollection.TryAdd(new ServiceDescriptor(typeof(IMediator), p =>
         {
             var pipeFactory = p.GetRequiredService<IPipeFactory>();
-            var dispatchPipe = pipeFactory.Create<Pipe>();
-            var receivePipe = pipeFactory.Create<Pipe>();
+            var dispatchPipe = pipeFactory.Create<MulticastPipe>();
+            var receivePipe = pipeFactory.Create<MulticastPipe>();
             var mediatorTopology = new MediatorTopology(dispatchPipe, receivePipe, pipeFactory);
 
             var connect = p.GetServices<ConnectPipes>().Aggregate(new ConnectPipes((_, _) => { }), (a, n) => a + n);
@@ -69,8 +69,8 @@ public static class ServiceCollectionExtensions
                 .BindInterfaces(typeof(HandlingPipe<>), "HandlingPipe<>")
                 .Bind(typeof(HandlingPipe<,>))
                 .BindInterfaces(typeof(HandlingPipe<,>), "HandlingPipe<,>")
-                .Bind<Pipe>()
-                .BindInterfaces<Pipe>(nameof(Pipe));
+                .Bind<MulticastPipe>()
+                .BindInterfaces<MulticastPipe>(nameof(MulticastPipe));
 
         if (bindPipes is not null) serviceCollection.AddSingleton(new BindPipes(bindPipes));
 

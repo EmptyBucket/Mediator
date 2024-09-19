@@ -26,40 +26,40 @@ using Mediator.Pipes.Utils;
 namespace Mediator.Pipes;
 
 /// <summary>
-/// Represents the connector interface for connecting this pipe to other pipes for request/response messaging model
+/// Represents the connector interface for connecting to other pipes for publish/subscribe messaging model
 /// </summary>
-public interface IReqPipeConnector : IAsyncDisposable
+public interface IMulticastPubConnector : IAsyncDisposable
 {
     /// <summary>
     /// Get connected pipe connections
     /// </summary>
     /// <returns></returns>
-    IEnumerable<PipeConnection<IReqPipe>> GetReqConnections();
+    IEnumerable<PipeConnection<IPubPipe>> GetPubConnections();
 
     /// <summary>
-    /// Connect out of this pipe to <paramref name="pipe"/> with <typeparamref name="TMessage"/>,
-    /// <typeparamref name="TResult"/> and <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
+    /// Connect out to <paramref name="pipe"/> with <typeparamref name="TMessage"/> and
+    /// <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
+    /// <param name="subscriptionId"></param>
     /// <typeparam name="TMessage"></typeparam>
-    /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
-    PipeConnection<IReqPipe> ConnectOut<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
-        string connectionName = "");
+    PipeConnection<IPubPipe> ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "", string connectionName = "",
+        string subscriptionId = "");
 
     /// <summary>
-    /// Connect out of this pipe to <paramref name="pipe"/> with <typeparamref name="TMessage"/>,
-    /// <typeparamref name="TResult"/> and <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
+    /// Connect out to <paramref name="pipe"/> with <typeparamref name="TMessage"/> and
+    /// <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
+    /// <param name="subscriptionId"></param>
     /// <param name="cancellationToken"></param>
     /// <typeparam name="TMessage"></typeparam>
-    /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
-    Task<PipeConnection<IReqPipe>> ConnectOutAsync<TMessage, TResult>(IReqPipe pipe, string routingKey = "",
-        string connectionName = "", CancellationToken cancellationToken = default);
+    Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
+        string connectionName = "", string subscriptionId = "", CancellationToken cancellationToken = default);
 }

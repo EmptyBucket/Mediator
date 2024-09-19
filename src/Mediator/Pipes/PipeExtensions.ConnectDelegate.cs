@@ -31,30 +31,30 @@ public static partial class PipeExtensions
     /// <summary>
     /// Connect handler with <paramref name="func"/> delegate for publish/subscribe messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="func"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
     /// <param name="subscriptionId"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <returns></returns>
-    public static PipeConnection<IPubPipe> ConnectDelegate<TMessage>(this IPubPipeConnector pipeConnector,
+    public static PipeConnection<IPubPipe> ConnectDelegate<TMessage>(this IMulticastPubConnector connector,
         Func<MessageContext<TMessage>, CancellationToken, Task> func, string routingKey = "",
         string connectionName = "", string subscriptionId = "") =>
-        pipeConnector.ConnectHandler(new LambdaHandler<TMessage>(func), routingKey, connectionName, subscriptionId);
+        connector.ConnectHandler(new LambdaHandler<TMessage>(func), routingKey, connectionName, subscriptionId);
 
     /// <summary>
     /// Connect handler with <paramref name="func"/> delegate for request/response messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="func"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
-    public static PipeConnection<IReqPipe> ConnectDelegate<TMessage, TResult>(this IReqPipeConnector pipeConnector,
+    public static PipeConnection<IReqPipe> ConnectDelegate<TMessage, TResult>(this IMulticastReqConnector connector,
         Func<MessageContext<TMessage>, CancellationToken, Task<TResult>> func, string routingKey = "",
         string connectionName = "") =>
-        pipeConnector.ConnectHandler(new LambdaHandler<TMessage, TResult>(func), routingKey, connectionName);
+        connector.ConnectHandler(new LambdaHandler<TMessage, TResult>(func), routingKey, connectionName);
 }

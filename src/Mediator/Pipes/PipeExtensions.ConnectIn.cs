@@ -28,32 +28,32 @@ namespace Mediator.Pipes;
 public static partial class PipeExtensions
 {
     /// <summary>
-    /// Connect in of this pipe to <paramref name="pipeConnector"/> with <typeparamref name="TMessage"/> and
+    /// Connect in of this pipe to <paramref name="connector"/> with <typeparamref name="TMessage"/> and
     /// <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
     /// </summary>
     /// <param name="pipe"></param>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
     /// <param name="subscriptionId"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <returns></returns>
-    public static PipeConnection<IPubPipe> ConnectIn<TMessage>(this IPubPipe pipe, IPubPipeConnector pipeConnector,
+    public static PipeConnection<IPubPipe> ConnectIn<TMessage>(this IPubPipe pipe, IMulticastPubConnector connector,
         string routingKey = "", string connectionName = "", string subscriptionId = "") =>
-        pipeConnector.ConnectOut<TMessage>(pipe, routingKey, connectionName, subscriptionId);
+        connector.ConnectOut<TMessage>(pipe, routingKey, connectionName, subscriptionId);
 
     /// <summary>
-    /// Connect in of this pipe to <paramref name="pipeConnector"/> with <typeparamref name="TMessage"/> and
+    /// Connect in of this pipe to <paramref name="connector"/> with <typeparamref name="TMessage"/> and
     /// <typeparamref name="TResult"/> and <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
     /// </summary>
     /// <param name="pipe"></param>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
     public static PipeConnection<IReqPipe> ConnectIn<TMessage, TResult>(this IReqPipe pipe,
-        IReqPipeConnector pipeConnector, string routingKey = "", string connectionName = "") =>
-        pipeConnector.ConnectOut<TMessage, TResult>(pipe, routingKey, connectionName);
+        IMulticastReqConnector connector, string routingKey = "", string connectionName = "") =>
+        connector.ConnectOut<TMessage, TResult>(pipe, routingKey, connectionName);
 }

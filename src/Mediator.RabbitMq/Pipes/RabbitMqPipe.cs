@@ -26,7 +26,7 @@ using Mediator.Pipes;
 
 namespace Mediator.RabbitMq.Pipes;
 
-public class RabbitMqPipe : Pipe
+public class RabbitMqPipe : MulticastPipe
 {
     public RabbitMqPipe(IBus bus, IServiceProvider serviceProvider)
         : base(new RabbitMqPubPipe(bus, serviceProvider), new RabbitMqReqPipe(bus, serviceProvider))

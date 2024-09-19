@@ -28,11 +28,11 @@ namespace Mediator.Pipes;
 public static partial class PipeExtensions
 {
     /// <summary>
-    /// Connect in of this pipe to <paramref name="pipeConnector"/> with <typeparamref name="TMessage"/> and
+    /// Connect in of this pipe to <paramref name="connector"/> with <typeparamref name="TMessage"/> and
     /// <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
     /// </summary>
     /// <param name="pipe"></param>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
     /// <param name="subscriptionId"></param>
@@ -40,16 +40,16 @@ public static partial class PipeExtensions
     /// <typeparam name="TMessage"></typeparam>
     /// <returns></returns>
     public static Task<PipeConnection<IPubPipe>> ConnectInAsync<TMessage>(this IPubPipe pipe,
-        IPubPipeConnector pipeConnector, string routingKey = "", string connectionName = "", string subscriptionId = "",
-        CancellationToken cancellationToken = default) =>
-        pipeConnector.ConnectOutAsync<TMessage>(pipe, routingKey, connectionName, subscriptionId, cancellationToken);
+        IMulticastPubConnector connector, string routingKey = "", string connectionName = "",
+        string subscriptionId = "", CancellationToken cancellationToken = default) =>
+        connector.ConnectOutAsync<TMessage>(pipe, routingKey, connectionName, subscriptionId, cancellationToken);
 
     /// <summary>
-    /// Connect in of this pipe to <paramref name="pipeConnector"/> with <typeparamref name="TMessage"/>,
+    /// Connect in of this pipe to <paramref name="connector"/> with <typeparamref name="TMessage"/>,
     /// <typeparamref name="TResult"/> and <paramref name="routingKey"/> routing and <paramref name="connectionName"/>
     /// </summary>
     /// <param name="pipe"></param>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
     /// <param name="cancellationToken"></param>
@@ -57,7 +57,7 @@ public static partial class PipeExtensions
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
     public static Task<PipeConnection<IReqPipe>> ConnectInAsync<TMessage, TResult>(this IReqPipe pipe,
-        IReqPipeConnector pipeConnector, string routingKey = "", string connectionName = "",
+        IMulticastReqConnector connector, string routingKey = "", string connectionName = "",
         CancellationToken cancellationToken = default) =>
-        pipeConnector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, connectionName, cancellationToken);
+        connector.ConnectOutAsync<TMessage, TResult>(pipe, routingKey, connectionName, cancellationToken);
 }

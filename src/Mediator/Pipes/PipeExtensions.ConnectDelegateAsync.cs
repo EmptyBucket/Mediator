@@ -31,7 +31,7 @@ public static partial class PipeExtensions
     /// <summary>
     /// Connect handler with <paramref name="func"/> delegate for publish/subscribe messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="func"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
@@ -39,16 +39,16 @@ public static partial class PipeExtensions
     /// <param name="cancellationToken"></param>
     /// <typeparam name="TMessage"></typeparam>
     /// <returns></returns>
-    public static Task<PipeConnection<IPubPipe>> ConnectDelegateAsync<TMessage>(this IPubPipeConnector pipeConnector,
+    public static Task<PipeConnection<IPubPipe>> ConnectDelegateAsync<TMessage>(this IMulticastPubConnector connector,
         Func<MessageContext<TMessage>, CancellationToken, Task> func, string routingKey = "",
         string connectionName = "", string subscriptionId = "", CancellationToken cancellationToken = default) =>
-        pipeConnector.ConnectHandlerAsync(new LambdaHandler<TMessage>(func), routingKey, connectionName, subscriptionId,
+        connector.ConnectHandlerAsync(new LambdaHandler<TMessage>(func), routingKey, connectionName, subscriptionId,
             cancellationToken);
 
     /// <summary>
     /// Connect handler with <paramref name="func"/> delegate for request/response messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="func"></param>
     /// <param name="routingKey"></param>
     /// <param name="connectionName"></param>
@@ -57,8 +57,8 @@ public static partial class PipeExtensions
     /// <typeparam name="TResult"></typeparam>
     /// <returns></returns>
     public static Task<PipeConnection<IReqPipe>> ConnectDelegateAsync<TMessage, TResult>(
-        this IReqPipeConnector pipeConnector, Func<MessageContext<TMessage>, CancellationToken, Task<TResult>> func,
+        this IMulticastReqConnector connector, Func<MessageContext<TMessage>, CancellationToken, Task<TResult>> func,
         string routingKey = "", string connectionName = "", CancellationToken cancellationToken = default) =>
-        pipeConnector.ConnectHandlerAsync(new LambdaHandler<TMessage, TResult>(func), routingKey, connectionName,
+        connector.ConnectHandlerAsync(new LambdaHandler<TMessage, TResult>(func), routingKey, connectionName,
             cancellationToken);
 }

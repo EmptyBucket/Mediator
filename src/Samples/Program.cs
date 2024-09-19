@@ -59,7 +59,7 @@ var serviceCollection = new ServiceCollection();
             // infrastructure libs
             // Bindings register a type to itself and all its IPubPipe and IReqPipe interfaces,
             // e.g. call BindRabbitMq() will bind:
-            // {IPubPipe, IReqPipe, IPipe, IConnectingPubPipe, IConnectingReqPipe, IConnectingPipe} + nameof(RabbitMqPipe) => RabbitMqPipe
+            // {IPipe, IPubPipe, IReqPipe, IMulticastPipe, IMulticastPubPipe, IMulticastReqPipe} + nameof(RabbitMqPipe) => RabbitMqPipe
             // RabbitMqPipe => RabbitMqPipe
             bind.BindRabbitMq().BindRedis();
         });
@@ -77,13 +77,13 @@ var serviceProvider0 = serviceCollection.BuildServiceProvider();
 
     // You can create pipe with interface, but then you must specify name
     rabbitMqPipe = pipeFactory.Create<IPipe>("RabbitMqPipe");
-    rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
+    rabbitMqPipe = pipeFactory.Create<IMulticastPipe>("RabbitMqPipe");
 
     // Pipe and HandlingPipe are also bound by default
-    var pipe = pipeFactory.Create<Pipe>();
+    var pipe = pipeFactory.Create<MulticastPipe>();
 
-    // Notice that the stream support only publish/subscribe model so it uses IConnectingPubPipe
-    var redisStreamPipe = pipeFactory.Create<IConnectingPubPipe>("RedisStreamPipe");
+    // Notice that the stream support only publish/subscribe model so it uses IMulticastPubPipe
+    var redisStreamPipe = pipeFactory.Create<IMulticastPubPipe>("RedisStreamPipe");
 }
 
 await serviceProvider0.DisposeAsync();
@@ -94,9 +94,9 @@ await serviceProvider0.DisposeAsync();
         .AddMediator((provider, topology) =>
         {
             var (dispatchPipe, _, pipeFactory) = topology;
-            var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
-            var redisMqPipe = pipeFactory.Create<IConnectingPipe>("RedisMqPipe");
-            var redisStreamPipe = pipeFactory.Create<IConnectingPubPipe>("RedisStreamPipe");
+            var rabbitMqPipe = pipeFactory.Create<IMulticastPipe>("RabbitMqPipe");
+            var redisMqPipe = pipeFactory.Create<IMulticastPipe>("RedisMqPipe");
+            var redisStreamPipe = pipeFactory.Create<IMulticastPubPipe>("RedisStreamPipe");
 
             // You can connect handler or handler factory directly to mediator
             // mediator =[FooEvent]> FooEventHandler
@@ -142,7 +142,7 @@ var serviceProvider1 = serviceCollection.BuildServiceProvider();
     // Dynamic configure pipe connections
     var mediator = serviceProvider1.GetRequiredService<IMediator>();
     var (_, _, pipeFactory) = mediator.Topology;
-    var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
+    var rabbitMqPipe = pipeFactory.Create<IMulticastPipe>("RabbitMqPipe");
 
     // You can skip pipe connections configuration that was above in AddMediator and
     // configure IMediator on the fly
@@ -156,7 +156,7 @@ var serviceProvider1 = serviceCollection.BuildServiceProvider();
     // Configure routing
     var mediator = serviceProvider1.GetRequiredService<IMediator>();
     var (dispatchPipe, receivePipe, pipeFactory) = mediator.Topology;
-    var rabbitMqPipe = pipeFactory.Create<IConnectingPipe>("RabbitMqPipe");
+    var rabbitMqPipe = pipeFactory.Create<IMulticastPipe>("RabbitMqPipe");
 
     // You can specify routingKey for routing in same type
     await dispatchPipe.ConnectOutAsync<FooEvent>(rabbitMqPipe, "foo-routing-key");

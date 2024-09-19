@@ -33,7 +33,7 @@ using StackExchange.Redis;
 
 namespace Mediator.Redis.Pipes;
 
-public class RedisStreamPipe : IConnectingPubPipe
+public class RedisStreamPipe : IMulticastPubPipe
 {
     private int _isDisposed;
     private readonly IDatabase _database;

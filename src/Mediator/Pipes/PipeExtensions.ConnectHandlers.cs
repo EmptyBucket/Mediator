@@ -31,27 +31,27 @@ public static partial class PipeExtensions
     /// <summary>
     /// Connect the handlers that the ServiceProvider builds for publish/subscribe and request/response messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="assembly"></param>
     /// <param name="handlerPredicate"></param>
     /// <param name="routingKey"></param>
     /// <returns></returns>
-    public static void ConnectHandlers(this IPipeConnector pipeConnector, Assembly assembly,
+    public static void ConnectHandlers(this IMulticastConnector connector, Assembly assembly,
         Func<Type, bool>? handlerPredicate = null, string routingKey = "")
     {
-        ((IPubPipeConnector)pipeConnector).ConnectHandlers(assembly, handlerPredicate, routingKey);
-        ((IReqPipeConnector)pipeConnector).ConnectHandlers(assembly, handlerPredicate, routingKey);
+        ((IMulticastPubConnector)connector).ConnectHandlers(assembly, handlerPredicate, routingKey);
+        ((IMulticastReqConnector)connector).ConnectHandlers(assembly, handlerPredicate, routingKey);
     }
 
     /// <summary>
     /// Connect the handlers that the ServiceProvider builds for publish/subscribe messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="assembly"></param>
     /// <param name="handlerPredicate"></param>
     /// <param name="routingKey"></param>
     /// <returns></returns>
-    public static void ConnectHandlers(this IPubPipeConnector pipeConnector, Assembly assembly,
+    public static void ConnectHandlers(this IMulticastPubConnector connector, Assembly assembly,
         Func<Type, bool>? handlerPredicate = null, string routingKey = "")
     {
         handlerPredicate ??= _ => true;
@@ -62,19 +62,19 @@ public static partial class PipeExtensions
                      .Where(i => i.IsGenericType && handlerInterface == i.GetGenericTypeDefinition()))
         {
             var messageType = @interface.GetGenericArguments()[0];
-            pipeConnector.ConnectHandler(messageType, type, routingKey);
+            connector.ConnectHandler(messageType, type, routingKey);
         }
     }
 
     /// <summary>
     /// Connect the handlers that the ServiceProvider builds for request/response messaging model
     /// </summary>
-    /// <param name="pipeConnector"></param>
+    /// <param name="connector"></param>
     /// <param name="assembly"></param>
     /// <param name="handlerPredicate"></param>
     /// <param name="routingKey"></param>
     /// <returns></returns>
-    public static void ConnectHandlers(this IReqPipeConnector pipeConnector, Assembly assembly,
+    public static void ConnectHandlers(this IMulticastReqConnector connector, Assembly assembly,
         Func<Type, bool>? handlerPredicate = null, string routingKey = "")
     {
         handlerPredicate ??= _ => true;
@@ -86,15 +86,15 @@ public static partial class PipeExtensions
         {
             var messageType = @interface.GetGenericArguments()[0];
             var resultType = @interface.GetGenericArguments()[1];
-            pipeConnector.ConnectHandler(messageType, resultType, type, routingKey);
+            connector.ConnectHandler(messageType, resultType, type, routingKey);
         }
     }
 
-    private static void ConnectHandler(this IPubPipeConnector pipeConnector, Type messageType, Type handlerType,
+    private static void ConnectHandler(this IMulticastPubConnector connector, Type messageType, Type handlerType,
         string routingKey)
     {
         var genericTypes = new[] { messageType, handlerType };
-        var args = new object[] { pipeConnector, routingKey, string.Empty, string.Empty };
+        var args = new object[] { connector, routingKey, string.Empty, string.Empty };
         var argTypes = args.Select(a => a.GetType()).ToArray();
         var connectHandlerMethod = typeof(PipeExtensions)
             .GetMethod(nameof(ConnectHandler), genericTypes.Length, argTypes)
@@ -102,11 +102,11 @@ public static partial class PipeExtensions
         connectHandlerMethod.Invoke(null, args);
     }
 
-    private static void ConnectHandler(this IReqPipeConnector pipeConnector, Type messageType, Type resultType,
+    private static void ConnectHandler(this IMulticastReqConnector connector, Type messageType, Type resultType,
         Type handlerType, string routingKey)
     {
         var genericTypes = new[] { messageType, resultType, handlerType };
-        var args = new object[] { pipeConnector, routingKey, string.Empty };
+        var args = new object[] { connector, routingKey, string.Empty };
         var argTypes = args.Select(a => a.GetType()).ToArray();
         var connectHandlerMethod = typeof(PipeExtensions)
             .GetMethod(nameof(ConnectHandler), genericTypes.Length, argTypes)

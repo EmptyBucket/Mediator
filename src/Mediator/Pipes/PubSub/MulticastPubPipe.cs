@@ -31,14 +31,14 @@ namespace Mediator.Pipes;
 /// <summary>
 /// Represents the pipe for publish/subscribe messaging model 
 /// </summary>
-internal class PubPipe : IConnectingPubPipe
+internal class MulticastPubPipe : IMulticastPubPipe
 {
     private int _isDisposed;
     private readonly IServiceProvider _serviceProvider;
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, ImmutableList<PipeConnection<IPubPipe>>> _pipeConnections = new();
 
-    public PubPipe(IServiceProvider serviceProvider)
+    public MulticastPubPipe(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }

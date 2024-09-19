@@ -24,8 +24,8 @@
 namespace Mediator.Pipes;
 
 /// <summary>
-/// Represents the connecting pipe interface that combines a IReqPipe and a IReqPipeConnector for request/response model
+/// Represents the connecting pipe interface that combines a IReqPipe and a IMulticastReqConnector for request/response model
 /// </summary>
-public interface IConnectingReqPipe : IReqPipe, IReqPipeConnector
+public interface IMulticastReqPipe : IReqPipe, IMulticastReqConnector
 {
 }

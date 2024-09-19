@@ -31,14 +31,14 @@ namespace Mediator.Pipes;
 /// <summary>
 /// Represents the pipe for request/response messaging model 
 /// </summary>
-internal class ReqPipe : IConnectingReqPipe
+internal class MulticastReqPipe : IMulticastReqPipe
 {
     private int _isDisposed;
     private readonly IServiceProvider _serviceProvider;
     private readonly ReaderWriterLockSlim _lock = new();
     private readonly Dictionary<Route, ImmutableList<PipeConnection<IReqPipe>>> _pipeConnections = new();
 
-    public ReqPipe(IServiceProvider serviceProvider)
+    public MulticastReqPipe(IServiceProvider serviceProvider)
     {
         _serviceProvider = serviceProvider;
     }

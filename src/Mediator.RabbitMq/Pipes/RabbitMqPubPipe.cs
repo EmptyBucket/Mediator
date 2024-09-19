@@ -32,7 +32,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.RabbitMq.Pipes;
 
-internal class RabbitMqPubPipe : IConnectingPubPipe
+internal class RabbitMqPubPipe : IMulticastPubPipe
 {
     private int _isDisposed;
     private readonly IBus _bus;

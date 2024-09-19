@@ -33,7 +33,7 @@ using StackExchange.Redis;
 
 namespace Mediator.Redis.Pipes;
 
-internal class RedisMqReqPipe : IConnectingReqPipe
+internal class RedisMqReqPipe : IMulticastReqPipe
 {
     private int _isDisposed;
     private readonly ISubscriber _subscriber;
