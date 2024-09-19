@@ -49,13 +49,12 @@ internal class ReqPipe : IConnectingReqPipe
     {
         var pipeConnections = GetPipeConnections(ctx.Route);
 
-        if (pipeConnections.Count != 1)
-            throw new InvalidOperationException($"Message with route: {ctx.Route} must have only one registered pipe");
-
         using var scope = _serviceProvider.CreateScope();
         ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
-        var pipeConnection = pipeConnections.First();
-        return await pipeConnection.Pipe.PassAsync<TMessage, TResult>(ctx, cancellationToken);
+
+        var tasks = pipeConnections.Select(c => c.Pipe.PassAsync<TMessage, TResult>(ctx, cancellationToken));
+        var completedTask = await Task.WhenAny(tasks);
+        return completedTask.Result;
     }
 
     /// <inheritdoc />

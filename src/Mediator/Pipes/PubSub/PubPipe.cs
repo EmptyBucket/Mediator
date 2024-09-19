@@ -51,9 +51,8 @@ internal class PubPipe : IConnectingPubPipe
         using var scope = _serviceProvider.CreateScope();
         ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
 
-        foreach (var pipeConnection in pipeConnections) pipeConnection.Pipe.PassAsync(ctx, cancellationToken);
-
-        return Task.CompletedTask;
+        var tasks = pipeConnections.Select(c => c.Pipe.PassAsync(ctx, cancellationToken));
+        return Task.WhenAll(tasks);
     }
 
     /// <inheritdoc />
