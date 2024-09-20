@@ -49,6 +49,10 @@ internal class MulticastReqPipe : IMulticastReqPipe
     {
         var pipeConnections = GetPipeConnections(ctx.Route);
 
+        if (!pipeConnections.Any())
+            throw new InvalidOperationException(
+                $"Message with route: {ctx.Route} must have at least one connected pipe");
+
         using var scope = _serviceProvider.CreateScope();
         ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
 
