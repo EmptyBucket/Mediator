@@ -164,8 +164,9 @@ public class MediatorTests
         await pipe.ConnectOutAsync<SomeEvent, SomeResult>(_fEndPipe.Object);
         await _mediator.SendAsync<SomeEvent, SomeResult>(someEvent);
 
-        _fEndPipe.Verify(p => p.PassAsync<SomeEvent, SomeResult>(
-            It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()));
+        await _fEndPipe.VerifyAsync(p => p.PassAsync<SomeEvent, SomeResult>(
+                It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()),
+            Times.Once());
     }
 
     [Test]
