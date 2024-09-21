@@ -35,23 +35,23 @@ using Void = Mediator.Handlers.Void;
 
 var serviceCollection = new ServiceCollection();
 
+// Configure RabbitMq and Redis
 {
-    // Configure RabbitMq and Redis
     serviceCollection
         .RegisterEasyNetQ("host=localhost")
         .AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect("localhost"));
 }
 
+// Configure mediator
 {
-    // Configure mediator
     // You can call AddMediator as many times as you like,
     // adding to the configuration from different parts of your application
     serviceCollection
         .AddMediator(bindPipes: _ => { }, connectPipes: (_, _) => { });
 }
 
+// Configure pipe bindings
 {
-    // Configure pipe bindings
     serviceCollection
         .AddMediator(bind =>
         {
@@ -67,8 +67,8 @@ var serviceCollection = new ServiceCollection();
 
 var serviceProvider0 = serviceCollection.BuildServiceProvider();
 
+// Bindings usage
 {
-    // Bindings usage
     var mediator = serviceProvider0.GetRequiredService<IMediator>();
     var (_, _, pipeFactory) = mediator.Topology;
 
@@ -88,8 +88,8 @@ var serviceProvider0 = serviceCollection.BuildServiceProvider();
 
 await serviceProvider0.DisposeAsync();
 
+// Configure pipe connections
 {
-    // Configure pipe connections
     serviceCollection
         .AddMediator((provider, topology) =>
         {
@@ -138,8 +138,8 @@ await serviceProvider0.DisposeAsync();
 
 var serviceProvider1 = serviceCollection.BuildServiceProvider();
 
+// Dynamic configure pipe connections
 {
-    // Dynamic configure pipe connections
     var mediator = serviceProvider1.GetRequiredService<IMediator>();
     var (_, _, pipeFactory) = mediator.Topology;
     var rabbitMqPipe = pipeFactory.Create<IMulticastPipe>("RabbitMqPipe");
@@ -152,8 +152,8 @@ var serviceProvider1 = serviceCollection.BuildServiceProvider();
     await connection.DisposeAsync();
 }
 
+// Configure routing
 {
-    // Configure routing
     var mediator = serviceProvider1.GetRequiredService<IMediator>();
     var (dispatchPipe, receivePipe, pipeFactory) = mediator.Topology;
     var rabbitMqPipe = pipeFactory.Create<IMulticastPipe>("RabbitMqPipe");
@@ -165,8 +165,8 @@ var serviceProvider1 = serviceCollection.BuildServiceProvider();
     await receivePipe.ConnectHandlerAsync(new FooEventHandler(), "foo-routing-key");
 }
 
+// Publish and send events
 {
-    // Publish and send events
     var mediator = serviceProvider1.GetRequiredService<IMediator>();
 
     // Mediator, MediatorTopology, Pipes, PipeConnections are thread safe
