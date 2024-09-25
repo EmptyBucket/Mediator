@@ -38,23 +38,23 @@ internal class Mediator : IMediator
     }
 
     /// <inheritdoc />
-    public async Task PublishAsync<TMessage>(TMessage message, Options? options = null,
+    public Task PublishAsync<TMessage>(TMessage message, Options? options = null,
         CancellationToken cancellationToken = default)
     {
         options ??= new Options();
         var route = Route.For<TMessage>(options.RoutingKey);
         var ctx = CreateMessageContext(route, message, options);
-        await Topology.Dispatch.PassAsync(ctx, cancellationToken);
+        return Topology.Dispatch.PassAsync(ctx, cancellationToken);
     }
 
     /// <inheritdoc />
-    public async Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Options? options = null,
+    public Task<TResult> SendAsync<TMessage, TResult>(TMessage message, Options? options = null,
         CancellationToken cancellationToken = default)
     {
         options ??= new Options();
         var route = Route.For<TMessage, TResult>(options.RoutingKey);
         var ctx = CreateMessageContext(route, message, options);
-        return await Topology.Dispatch.PassAsync<TMessage, TResult>(ctx, cancellationToken);
+        return Topology.Dispatch.PassAsync<TMessage, TResult>(ctx, cancellationToken);
     }
 
     /// <inheritdoc />
