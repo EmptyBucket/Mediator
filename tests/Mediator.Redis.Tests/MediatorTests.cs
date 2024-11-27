@@ -28,7 +28,6 @@ using FluentAssertions;
 using Mediator.Configurations;
 using Mediator.Handlers;
 using Mediator.Pipes;
-using Mediator.Redis.Configurations;
 using Mediator.Redis.Pipes;
 using Mediator.Tests;
 using Microsoft.Extensions.DependencyInjection;
@@ -55,7 +54,7 @@ public class MediatorTests
             .AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(
                 new ConfigurationOptions { EndPoints = { RedisEndpoint }, AllowAdmin = true, DefaultDatabase = 1 }))
             .AddSingleton(p => p.GetRequiredService<IConnectionMultiplexer>().GetServer(RedisEndpoint))
-            .AddMediator(b => b.BindRedis(), lifetime: ServiceLifetime.Transient);
+            .AddMediator(b => b.Bind<RedisMqPipe>().Bind<RedisStreamPipe>(), lifetime: ServiceLifetime.Transient);
         _serviceProvider = serviceCollection.BuildServiceProvider();
     }
 
@@ -96,7 +95,7 @@ public class MediatorTests
                 It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()),
             Times.Once());
     }
-    
+
     [Test]
     public async Task PublishAsync_WhenRedisMqTopologyWithTwoConsumers_CallPassAsyncOnBoth()
     {
@@ -132,7 +131,7 @@ public class MediatorTests
                 It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()),
             Times.Once());
     }
-    
+
     [Test]
     public async Task PublishAsync_WhenRedisStreamTopologyWithTwoConsumers_CallPassAsyncOnBoth()
     {

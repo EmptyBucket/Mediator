@@ -30,7 +30,6 @@ using FluentAssertions;
 using Mediator.Configurations;
 using Mediator.Handlers;
 using Mediator.Pipes;
-using Mediator.RabbitMq.Configurations;
 using Mediator.RabbitMq.Pipes;
 using Mediator.Tests;
 using Microsoft.Extensions.DependencyInjection;
@@ -56,7 +55,7 @@ public class MediatorTests
         serviceCollection
             .RegisterEasyNetQ($"host={RabbitMqEndpoint};virtualHost={VhostName}")
             .AddSingleton<IManagementClient>(new ManagementClient(RabbitMqEndpoint, "guest", "guest"))
-            .AddMediator(b => b.BindRabbitMq(), lifetime: ServiceLifetime.Transient);
+            .AddMediator(b => b.Bind<RabbitMqPipe>(), lifetime: ServiceLifetime.Transient);
         _serviceProvider = serviceCollection.BuildServiceProvider();
     }
 

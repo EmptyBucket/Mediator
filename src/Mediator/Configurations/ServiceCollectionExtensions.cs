@@ -67,7 +67,7 @@ public static class ServiceCollectionExtensions
             var pipeProvider = p.GetRequiredService<IPipeProvider>();
             var mediatorTopology = new MediatorTopology(dispatchPipe, receivePipe, pipeProvider);
 
-            var connect = p.GetServices<ConnectPipes>().Aggregate((a, n) => a + n);
+            var connect = p.GetServices<ConnectPipes>().Aggregate(new ConnectPipes((_, _) => { }), (a, n) => a + n);
             connect(p, mediatorTopology);
 
             return mediatorTopology;
@@ -86,7 +86,7 @@ public static class ServiceCollectionExtensions
         {
             var pipeBinder = new PipeBinder();
 
-            var bind = p.GetServices<BindPipes>().Aggregate((a, n) => a + n);
+            var bind = p.GetServices<BindPipes>().Aggregate(new BindPipes(_ => { }), (a, n) => a + n);
             bind(pipeBinder);
 
             return pipeBinder;

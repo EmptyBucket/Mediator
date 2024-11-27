@@ -24,9 +24,8 @@
 using Mediator;
 using Mediator.Configurations;
 using Mediator.Pipes;
-using Mediator.RabbitMq.Configurations;
 using Mediator.RabbitMq.Pipes;
-using Mediator.Redis.Configurations;
+using Mediator.Redis.Pipes;
 using Microsoft.Extensions.DependencyInjection;
 using Samples.Events;
 using Samples.Handlers;
@@ -55,13 +54,17 @@ var serviceCollection = new ServiceCollection();
     serviceCollection
         .AddMediator(bind =>
         {
-            // Pipe bindings are needed in order not to have an explicit dependency on
-            // infrastructure libs
-            // Bindings register a type to itself and all its IPubPipe and IReqPipe interfaces,
-            // e.g. call BindRabbitMq() will bind:
-            // {IPipe, IPubPipe, IReqPipe, IMulticastPipe, IMulticastPubPipe, IMulticastReqPipe} + nameof(RabbitMqPipe) => RabbitMqPipe
-            // RabbitMqPipe => RabbitMqPipe
-            bind.BindRabbitMq().BindRedis();
+            // Pipe binds are needed to simply create and store pipes and transfer them from one part of the application to another.
+            // If you request a pipe with the same binding, you will receive the same pipe instance
+            bind
+                .Bind<RabbitMqPipe>()
+                .Bind<RedisMqPipe>()
+                .Bind<RedisStreamPipe>();
+            // They are also needed in order not to have an explicit dependency on infrastructure libs see #Bindings usage
+            bind
+                .BindInterfaces<RabbitMqPipe>("RabbitMqPipe")
+                .BindInterfaces<RedisMqPipe>("RedisMqPipe")
+                .BindInterfaces<RedisStreamPipe>("RedisStreamPipe");
         });
 }
 
@@ -78,9 +81,7 @@ var serviceProvider0 = serviceCollection.BuildServiceProvider();
     // You can create pipe with interface, but then you must specify name
     rabbitMqPipe = pipeProvider.Get<IPipe>("RabbitMqPipe");
     rabbitMqPipe = pipeProvider.Get<IMulticastPipe>("RabbitMqPipe");
-
-    // Pipe and HandlingPipe are also bound by default
-    var pipe = pipeProvider.Get<MulticastPipe>();
+    // Both will be the same pipe because the same name
 
     // Notice that the stream support only publish/subscribe model so it uses IMulticastPubPipe
     var redisStreamPipe = pipeProvider.Get<IMulticastPubPipe>("RedisStreamPipe");
@@ -91,7 +92,10 @@ await serviceProvider0.DisposeAsync();
 // Configure pipe connections
 {
     serviceCollection
-        .AddMediator((provider, topology) =>
+        .AddMediator(b => b
+            .BindInterfaces<RabbitMqPipe>(nameof(RabbitMqPipe))
+            .BindInterfaces<RedisMqPipe>(nameof(RedisMqPipe))
+            .BindInterfaces<RedisStreamPipe>(nameof(RedisStreamPipe)), (_, topology) =>
         {
             var (dispatchPipe, _, pipeProvider) = topology;
             var rabbitMqPipe = pipeProvider.Get<IMulticastPipe>("RabbitMqPipe");
