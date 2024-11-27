@@ -22,6 +22,7 @@
 // SOFTWARE.
 
 using Mediator.Handlers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Pipes;
 
@@ -47,7 +48,8 @@ internal class HandlingPipe<THandlerMessage> : IPubPipe
         if (ctx.ServiceProvider is null)
             throw new InvalidOperationException($"{nameof(ctx.ServiceProvider)} missing. Handler not constructed");
 
-        var handler = _handlerFactory(ctx.ServiceProvider);
+        using var serviceScope = ctx.ServiceProvider.CreateScope();
+        var handler = _handlerFactory(serviceScope.ServiceProvider);
         return handler.HandleAsync(handlerMessageContext, cancellationToken);
     }
 }

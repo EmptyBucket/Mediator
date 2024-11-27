@@ -24,7 +24,6 @@
 using System.Collections.Immutable;
 using Mediator.Handlers;
 using Mediator.Pipes.Utils;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Pipes;
 
@@ -49,8 +48,7 @@ internal class BroadcastReqPipe : IBroadcastReqPipe
     {
         var pipeConnections = GetReqConnections();
 
-        using var scope = _serviceProvider.CreateScope();
-        ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
+        ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = _serviceProvider };
 
         var tasks = pipeConnections.Select(c => c.Pipe.PassAsync<TMessage, TResult>(ctx, cancellationToken));
         var completedTask = await Task.WhenAny(tasks);
