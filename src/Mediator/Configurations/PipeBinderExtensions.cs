@@ -25,7 +25,7 @@ using Mediator.Pipes;
 
 namespace Mediator.Configurations;
 
-public static class PipeBindsBuilderExtensions
+public static class PipeBinderExtensions
 {
     /// <summary>
     /// Bind <paramref name="pipeType"/> to itself with <paramref name="pipeName"/>

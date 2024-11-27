@@ -94,8 +94,8 @@ public class MediatorTests
     [Test]
     public async Task PublishAsync_WhenRabbitMqTopology_CallPassAsync()
     {
-        var (dispatch, _, pipeFactory) = _mediator.Topology;
-        await using var pipe = pipeFactory.Create<RabbitMqPipe>();
+        var (dispatch, _, pipeProvider) = _mediator.Topology;
+        await using var pipe = pipeProvider.Get<RabbitMqPipe>();
         var someEvent = new SomeEvent(Guid.NewGuid());
 
         await dispatch.ConnectOutAsync<SomeEvent>(pipe);
@@ -110,8 +110,8 @@ public class MediatorTests
     [Test]
     public async Task PublishAsync_WhenRabbitMqTopologyWithTwoConsumers_CallPassAsyncOnBoth()
     {
-        var (dispatch, _, pipeFactory) = _mediator.Topology;
-        await using var pipe = pipeFactory.Create<RabbitMqPipe>();
+        var (dispatch, _, pipeProvider) = _mediator.Topology;
+        await using var pipe = pipeProvider.Get<RabbitMqPipe>();
         var someEvent = new SomeEvent(Guid.NewGuid());
 
         await dispatch.ConnectOutAsync<SomeEvent>(pipe);
@@ -130,8 +130,8 @@ public class MediatorTests
     [Test]
     public async Task PublishAsyncTwice_WhenRabbitMqTopologyWithConsumerGroup_CallPassAsyncOnBoth()
     {
-        var (dispatch, _, pipeFactory) = _mediator.Topology;
-        await using var pipe = pipeFactory.Create<RabbitMqPipe>();
+        var (dispatch, _, pipeProvider) = _mediator.Topology;
+        await using var pipe = pipeProvider.Get<RabbitMqPipe>();
         var someEvent = new SomeEvent(Guid.NewGuid());
         async Task DoSomeWork() => await Task.Delay(1_000);
         _fEndPipe.Setup(p => p.PassAsync(It.IsAny<MessageContext<SomeEvent>>(), It.IsAny<CancellationToken>()))
@@ -156,8 +156,8 @@ public class MediatorTests
     [Test]
     public async Task SendAsync_WhenRabbitMqTopologyWithResult_CallPassAsync()
     {
-        var (dispatch, _, pipeFactory) = _mediator.Topology;
-        await using var pipe = pipeFactory.Create<RabbitMqPipe>();
+        var (dispatch, _, pipeProvider) = _mediator.Topology;
+        await using var pipe = pipeProvider.Get<RabbitMqPipe>();
         var someEvent = new SomeEvent(Guid.NewGuid());
 
         await dispatch.ConnectOutAsync<SomeEvent, SomeResult>(pipe);
@@ -172,8 +172,8 @@ public class MediatorTests
     [Test]
     public async Task SendAsync_WhenRabbitMqTopologyWithResult_ReturnResult()
     {
-        var (dispatch, _, pipeFactory) = _mediator.Topology;
-        await using var pipe = pipeFactory.Create<RabbitMqPipe>();
+        var (dispatch, _, pipeProvider) = _mediator.Topology;
+        await using var pipe = pipeProvider.Get<RabbitMqPipe>();
         var someEvent = new SomeEvent(Guid.NewGuid());
         var expectedResult = new SomeResult(Guid.NewGuid());
         _fEndPipe.Setup(p => p.PassAsync<SomeEvent, SomeResult>(
@@ -190,8 +190,8 @@ public class MediatorTests
     [Test]
     public async Task SendAsync_WhenRabbitMqTopologyWithException_ReturnException()
     {
-        var (dispatch, _, pipeFactory) = _mediator.Topology;
-        await using var pipe = pipeFactory.Create<RabbitMqPipe>();
+        var (dispatch, _, pipeProvider) = _mediator.Topology;
+        await using var pipe = pipeProvider.Get<RabbitMqPipe>();
         var someEvent = new SomeEvent(Guid.NewGuid());
         _fEndPipe.Setup(p => p.PassAsync<SomeEvent, SomeResult>(
                 It.Is<MessageContext<SomeEvent>>(m => m.Message.Equals(someEvent)), It.IsAny<CancellationToken>()))

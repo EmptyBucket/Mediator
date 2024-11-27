@@ -24,15 +24,15 @@
 namespace Mediator.Pipes;
 
 /// <summary>
-/// Represents the pipe factory interface to create pipes
+/// Represents the pipe provider interface to create or provide existing pipes
 /// </summary>
-public interface IPipeFactory
+public interface IPipeProvider
 {
     /// <summary>
-    /// Create pipe bounded with <typeparamref name="TPipe"/> and <paramref name="pipeName"/> through PipeBind
+    /// Create or provide pipe bounded with <typeparamref name="TPipe"/> and <paramref name="pipeName"/> through PipeBind
     /// </summary>
     /// <param name="pipeName"></param>
     /// <typeparam name="TPipe"></typeparam>
     /// <returns></returns>
-    TPipe Create<TPipe>(string pipeName = "");
+    TPipe Get<TPipe>(string pipeName = "");
 }

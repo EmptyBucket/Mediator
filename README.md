@@ -43,20 +43,20 @@ serviceCollection
 
 ```csharp
 var mediator = serviceProvider0.GetRequiredService<IMediator>();
-var (_, _, pipeFactory) = mediator.Topology;
+var (_, _, pipeProvider) = mediator.Topology;
 
 // You can create pipe with explicit type
-IPipe rabbitMqPipe = pipeFactory.Create<RabbitMqPipe>();
+IPipe rabbitMqPipe = pipeProvider.Create<RabbitMqPipe>();
 
 // You can create pipe with interface, but then you must specify name
-rabbitMqPipe = pipeFactory.Create<IPipe>("RabbitMqPipe");
-rabbitMqPipe = pipeFactory.Create<IMulticastPipe>("RabbitMqPipe");
+rabbitMqPipe = pipeProvider.Create<IPipe>("RabbitMqPipe");
+rabbitMqPipe = pipeProvider.Create<IMulticastPipe>("RabbitMqPipe");
 
 // Pipe and HandlingPipe are also bound by default
-var pipe = pipeFactory.Create<MulticastPipe>();
+var pipe = pipeProvider.Create<MulticastPipe>();
 
 // Notice that the stream support only publish/subscribe model so it uses IMulticastPubPipe
-var redisStreamPipe = pipeFactory.Create<IMulticastPubPipe>("RedisStreamPipe");
+var redisStreamPipe = pipeProvider.Create<IMulticastPubPipe>("RedisStreamPipe");
 ```
 
 ### Configure pipe connections
@@ -65,10 +65,10 @@ var redisStreamPipe = pipeFactory.Create<IMulticastPubPipe>("RedisStreamPipe");
 serviceCollection
     .AddMediator((provider, topology) =>
     {
-        var (dispatchPipe, _, pipeFactory) = topology;
-        var rabbitMqPipe = pipeFactory.Create<IMulticastPipe>("RabbitMqPipe");
-        var redisMqPipe = pipeFactory.Create<IMulticastPipe>("RedisMqPipe");
-        var redisStreamPipe = pipeFactory.Create<IMulticastPubPipe>("RedisStreamPipe");
+        var (dispatchPipe, _, pipeProvider) = topology;
+        var rabbitMqPipe = pipeProvider.Create<IMulticastPipe>("RabbitMqPipe");
+        var redisMqPipe = pipeProvider.Create<IMulticastPipe>("RedisMqPipe");
+        var redisStreamPipe = pipeProvider.Create<IMulticastPubPipe>("RedisStreamPipe");
 
         // You can connect handler or handler factory directly to mediator
         // mediator =[FooEvent]> FooEventHandler
@@ -112,8 +112,8 @@ serviceCollection
 
 ```csharp
 var mediator = serviceProvider1.GetRequiredService<IMediator>();
-var (_, _, pipeFactory) = mediator.Topology;
-var rabbitMqPipe = pipeFactory.Create<IMulticastPipe>("RabbitMqPipe");
+var (_, _, pipeProvider) = mediator.Topology;
+var rabbitMqPipe = pipeProvider.Create<IMulticastPipe>("RabbitMqPipe");
 
 // You can skip pipe connections configuration that was above in AddMediator and
 // configure IMediator on the fly
@@ -127,8 +127,8 @@ await connection.DisposeAsync();
 
 ```csharp
 var mediator = serviceProvider1.GetRequiredService<IMediator>();
-var (dispatchPipe, receivePipe, pipeFactory) = mediator.Topology;
-var rabbitMqPipe = pipeFactory.Create<IMulticastPipe>("RabbitMqPipe");
+var (dispatchPipe, receivePipe, pipeProvider) = mediator.Topology;
+var rabbitMqPipe = pipeProvider.Create<IMulticastPipe>("RabbitMqPipe");
 
 // You can specify routingKey for routing in same type
 await dispatchPipe.ConnectOutAsync<FooEvent>(rabbitMqPipe, "foo-routing-key");

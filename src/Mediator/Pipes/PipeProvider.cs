@@ -21,38 +21,45 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System.Collections.Concurrent;
 using Mediator.Configurations;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Mediator.Pipes;
 
 /// <summary>
-/// Represents the pipe factory to create pipes
+/// Represents the pipe provider to create or provide existing pipes
 /// </summary>
-internal class PipeFactory : IPipeFactory
+internal class PipeProvider : IPipeProvider
 {
     private readonly IReadOnlyDictionary<PipeBind, Type> _pipeBinds;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ConcurrentDictionary<PipeBind, object> _pipes = new();
 
-    public PipeFactory(IReadOnlyDictionary<PipeBind, Type> pipeBinds, IServiceProvider serviceProvider)
+    public PipeProvider(IReadOnlyDictionary<PipeBind, Type> pipeBinds, IServiceProvider serviceProvider)
     {
         _pipeBinds = pipeBinds;
         _serviceProvider = serviceProvider;
     }
 
     /// <inheritdoc />
-    public TPipe Create<TPipe>(string pipeName = "")
+    public TPipe Get<TPipe>(string pipeName = "")
     {
         var pipeType = typeof(TPipe);
 
-        if (_pipeBinds.TryGetValue(new PipeBind(pipeType, pipeName), out var type))
-            return (TPipe)ActivatorUtilities.CreateInstance(_serviceProvider, type);
+        if (!typeof(IPubPipe).IsAssignableFrom(pipeType) && !typeof(IReqPipe).IsAssignableFrom(pipeType))
+            throw new ArgumentException($"{pipeType} must be {nameof(IPubPipe)} or {nameof(IReqPipe)}");
+
+        if (_pipeBinds.TryGetValue(new PipeBind(pipeType, pipeName), out var pipeImplType))
+            return (TPipe)_pipes.GetOrAdd(new PipeBind(pipeImplType, pipeName),
+                _ => ActivatorUtilities.CreateInstance(_serviceProvider, pipeImplType));
 
         if (pipeType.IsGenericType &&
-            _pipeBinds.TryGetValue(new PipeBind(pipeType.GetGenericTypeDefinition(), pipeName), out var gType))
+            _pipeBinds.TryGetValue(new PipeBind(pipeType.GetGenericTypeDefinition(), pipeName), out pipeImplType))
         {
-            gType = gType.MakeGenericType(pipeType.GetGenericArguments());
-            return (TPipe)ActivatorUtilities.CreateInstance(_serviceProvider, gType);
+            pipeImplType = pipeImplType.MakeGenericType(pipeType.GetGenericArguments());
+            return (TPipe)_pipes.GetOrAdd(new PipeBind(pipeImplType, pipeName),
+                _ => ActivatorUtilities.CreateInstance(_serviceProvider, pipeImplType));
         }
 
         throw new InvalidOperationException($"{typeof(TPipe)} was not bounded");

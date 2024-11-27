@@ -21,6 +21,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using Mediator.Pipes;
+
 namespace Mediator.Configurations;
 
 /// <summary>
@@ -33,6 +35,12 @@ internal class PipeBinder : IPipeBinder
     /// <inheritdoc />
     public IPipeBinder Bind(Type pipeType, Type pipeImplType, string pipeName = "")
     {
+        if (!typeof(IPubPipe).IsAssignableFrom(pipeType) && !typeof(IReqPipe).IsAssignableFrom(pipeType))
+            throw new ArgumentException($"{pipeType} must be {nameof(IPubPipe)} or {nameof(IReqPipe)}");
+
+        if (!typeof(IPubPipe).IsAssignableFrom(pipeImplType) && !typeof(IReqPipe).IsAssignableFrom(pipeImplType))
+            throw new ArgumentException($"{pipeImplType} must be {nameof(IPubPipe)} or {nameof(IReqPipe)}");
+
         _pipeBinds[new PipeBind(pipeType, pipeName)] = pipeImplType;
 
         return this;
