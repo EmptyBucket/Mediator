@@ -40,7 +40,7 @@ internal class HandlingPipe<THandlerMessage> : IPubPipe
     }
 
     /// <inheritdoc />
-    public Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
+    public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
         if (ctx is not MessageContext<THandlerMessage> handlerMessageContext)
             throw new InvalidOperationException($"Message with route: {ctx.Route} cannot be processed");
@@ -50,6 +50,6 @@ internal class HandlingPipe<THandlerMessage> : IPubPipe
 
         using var serviceScope = ctx.ServiceProvider.CreateScope();
         var handler = _handlerFactory(serviceScope.ServiceProvider);
-        return handler.HandleAsync(handlerMessageContext, cancellationToken);
+        await handler.HandleAsync(handlerMessageContext, cancellationToken);
     }
 }
