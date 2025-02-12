@@ -57,7 +57,7 @@ public static partial class PipeExtensions
         handlerPredicate ??= _ => true;
         var handlerInterface = typeof(IHandler<>);
 
-        foreach (var type in assembly.GetTypes().Where(handlerPredicate))
+        foreach (var type in assembly.GetTypes().Where(t => !t.IsGenericTypeDefinition).Where(handlerPredicate))
         foreach (var @interface in type.GetInterfaces()
                      .Where(i => i.IsGenericType && handlerInterface == i.GetGenericTypeDefinition()))
         {
@@ -80,7 +80,7 @@ public static partial class PipeExtensions
         handlerPredicate ??= _ => true;
         var handlerInterface = typeof(IHandler<,>);
 
-        foreach (var type in assembly.GetTypes().Where(handlerPredicate))
+        foreach (var type in assembly.GetTypes().Where(t => !t.IsGenericTypeDefinition).Where(handlerPredicate))
         foreach (var @interface in type.GetInterfaces()
                      .Where(i => i.IsGenericType && handlerInterface == i.GetGenericTypeDefinition()))
         {
