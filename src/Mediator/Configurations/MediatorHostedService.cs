@@ -29,7 +29,6 @@ namespace Mediator.Configurations;
 internal class MediatorHostedService : IHostedService
 {
     private readonly IServiceProvider _serviceProvider;
-    private IMediator? _mediator;
 
     public MediatorHostedService(IServiceProvider serviceProvider)
     {
@@ -38,12 +37,10 @@ internal class MediatorHostedService : IHostedService
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _mediator = _serviceProvider.GetRequiredService<IMediator>();
+        // to initiate infrastructure connections, e.g. redis subscribers
+        _serviceProvider.GetRequiredService<IMediator>();
         return Task.CompletedTask;
     }
 
-    public async Task StopAsync(CancellationToken cancellationToken)
-    {
-        if (_mediator != null) await _mediator.DisposeAsync();
-    }
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
