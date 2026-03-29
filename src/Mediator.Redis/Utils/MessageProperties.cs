@@ -29,7 +29,7 @@ internal class MessageProperties
 {
     public RedisValue? MessageId { get; set; } = null;
 
-    public int? MaxLenght { get; set; } = null;
+    public int? MaxLength { get; set; } = null;
 
     public bool UseApproximateMaxLength { get; set; } = false;
 

@@ -54,7 +54,7 @@ public class RedisStreamPipe : IMulticastPubPipe
         var message = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
         var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
         await _database.StreamAddAsync(ctx.Route.ToString(), WellKnown.MessageKey, message,
-                messageProperties.MessageId, messageProperties.MaxLenght, messageProperties.UseApproximateMaxLength,
+                messageProperties.MessageId, messageProperties.MaxLength, messageProperties.UseApproximateMaxLength,
                 messageProperties.Flags)
             .ConfigureAwait(false);
     }
