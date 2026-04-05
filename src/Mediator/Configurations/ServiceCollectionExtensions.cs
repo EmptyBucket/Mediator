@@ -31,19 +31,10 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
         Action<IServiceProvider, MediatorTopology>? connectPipes = null,
-        ServiceLifetime lifetime = ServiceLifetime.Singleton) =>
-        serviceCollection.AddMediator(null, connectPipes, lifetime);
-
-    public static IServiceCollection AddMediator(this IServiceCollection serviceCollection,
-        Action<IPipeBinder>? bindPipes, Action<IServiceProvider, MediatorTopology>? connectPipes = null,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        if (bindPipes is not null) serviceCollection.AddSingleton(new BindPipes(bindPipes));
-
         if (connectPipes is not null) serviceCollection.AddSingleton(new ConnectPipes(connectPipes));
 
-        TryAddPipeBinder(serviceCollection);
-        TryAddPipeProvider(serviceCollection, lifetime);
         TryAddMediatorTopology(serviceCollection, lifetime);
         TryAddMediator(serviceCollection, lifetime);
         serviceCollection.AddHostedService<MediatorHostedService>();
@@ -64,35 +55,13 @@ public static class ServiceCollectionExtensions
         {
             var dispatchPipe = new MulticastPipe(p);
             var receivePipe = new MulticastPipe(p);
-            var pipeProvider = p.GetRequiredService<IPipeProvider>();
-            var mediatorTopology = new MediatorTopology(dispatchPipe, receivePipe, pipeProvider);
+            var mediatorTopology = new MediatorTopology(dispatchPipe, receivePipe);
 
             var connect = p.GetServices<ConnectPipes>().Aggregate(new ConnectPipes((_, _) => { }), (a, n) => a + n);
             connect(p, mediatorTopology);
 
             return mediatorTopology;
         }, lifetime));
-
-    private static void TryAddPipeProvider(IServiceCollection serviceCollection, ServiceLifetime lifetime) =>
-        serviceCollection.TryAdd(new ServiceDescriptor(typeof(IPipeProvider), p =>
-        {
-            var pipeBinds = p.GetRequiredService<PipeBinder>().Build();
-
-            return new PipeProvider(pipeBinds, p);
-        }, lifetime));
-
-    private static void TryAddPipeBinder(IServiceCollection serviceCollection) =>
-        serviceCollection.TryAddSingleton(p =>
-        {
-            var pipeBinder = new PipeBinder();
-
-            var bind = p.GetServices<BindPipes>().Aggregate(new BindPipes(_ => { }), (a, n) => a + n);
-            bind(pipeBinder);
-
-            return pipeBinder;
-        });
-
-    private delegate void BindPipes(IPipeBinder pipeBinder);
 
     private delegate void ConnectPipes(IServiceProvider serviceProvider, MediatorTopology mediatorTopology);
 }

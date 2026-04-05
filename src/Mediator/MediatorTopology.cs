@@ -32,25 +32,16 @@ public class MediatorTopology : IAsyncDisposable
 {
     private int _isDisposed;
 
-    public MediatorTopology(IMulticastPipe dispatchPipe, IMulticastPipe receivePipe, IPipeProvider pipeProvider)
+    public MediatorTopology(IMulticastPipe dispatchPipe, IMulticastPipe receivePipe)
     {
         Dispatch = dispatchPipe;
         Receive = receivePipe;
-        PipeProvider = pipeProvider;
     }
 
     public void Deconstruct(out IMulticastPipe dispatchPipe, out IMulticastPipe receivePipe)
     {
         dispatchPipe = Dispatch;
         receivePipe = Receive;
-    }
-
-    public void Deconstruct(out IMulticastPipe dispatchPipe, out IMulticastPipe receivePipe,
-        out IPipeProvider pipeProvider)
-    {
-        dispatchPipe = Dispatch;
-        receivePipe = Receive;
-        pipeProvider = PipeProvider;
     }
 
     /// <summary>
@@ -62,8 +53,6 @@ public class MediatorTopology : IAsyncDisposable
     /// Connecting pipe to connect the receive topology
     /// </summary>
     public IMulticastPipe Receive { get; set; }
-
-    public IPipeProvider PipeProvider { get; }
 
     public async ValueTask DisposeAsync()
     {
