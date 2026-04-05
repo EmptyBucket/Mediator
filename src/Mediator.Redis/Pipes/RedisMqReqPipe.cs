@@ -43,11 +43,13 @@ internal class RedisMqReqPipe : IMulticastReqPipe
     private readonly ConcurrentDictionary<string, Action<ChannelMessage>> _resultHandlers = new();
     private readonly ConcurrentDictionary<PipeConnection<IReqPipe>, ChannelMessageQueue> _pipeConnections = new();
 
-    public RedisMqReqPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider)
+    public RedisMqReqPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider,
+        JsonSerializerOptions? jsonSerializerOptions = null)
     {
         _subscriber = multiplexer.GetSubscriber();
         _serviceProvider = serviceProvider;
-        _jsonSerializerOptions = new JsonSerializerOptions { Converters = { ObjectToInferredTypesConverter.Instance } };
+        _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions
+            { Converters = { ObjectToInferredTypesConverter.Instance } };
         _resultMq = new Lazy<Task<ChannelMessageQueue>>(CreateResultMqAsync);
     }
 
@@ -129,7 +131,7 @@ internal class RedisMqReqPipe : IMulticastReqPipe
     {
         var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(message.Message, _jsonSerializerOptions)!;
         TResult? result = default;
-        Exception? exception = default;
+        Exception? exception = null;
 
         try
         {

@@ -38,14 +38,20 @@ public class RedisStreamPipe : IMulticastPubPipe
     private int _isDisposed;
     private readonly IDatabase _database;
     private readonly IServiceProvider _serviceProvider;
-    private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, CancellationTokenSource> _pipeConnections = new();
     private readonly JsonSerializerOptions _jsonSerializerOptions;
+    private readonly int _batchSize;
+    private readonly TimeSpan _pollingInterval;
+    private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, CancellationTokenSource> _pipeConnections = new();
 
-    public RedisStreamPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider)
+    public RedisStreamPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider,
+        JsonSerializerOptions? jsonSerializerOptions = null, int batchSize = 1_000, TimeSpan? pollingInterval = null)
     {
         _database = multiplexer.GetDatabase();
         _serviceProvider = serviceProvider;
-        _jsonSerializerOptions = new JsonSerializerOptions { Converters = { ObjectToInferredTypesConverter.Instance } };
+        _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions
+            { Converters = { ObjectToInferredTypesConverter.Instance } };
+        _batchSize = batchSize;
+        _pollingInterval = pollingInterval ?? TimeSpan.FromMilliseconds(100);
     }
 
     /// <inheritdoc />
@@ -90,15 +96,12 @@ public class RedisStreamPipe : IMulticastPubPipe
         var cts = new CancellationTokenSource();
         Task.Run(async () =>
         {
-            const int batchSize = 1_000;
-            const int millisecondsDelay = 100;
-
-            await HandleAsync<TMessage>(route, pipe, groupName, consumerName, "0", batchSize);
+            await HandleAsync<TMessage>(route, pipe, groupName, consumerName, "0", _batchSize);
 
             while (!cts.Token.IsCancellationRequested)
             {
-                await HandleAsync<TMessage>(route, pipe, groupName, consumerName, ">", batchSize);
-                await Task.Delay(millisecondsDelay, cts.Token).ConfigureAwait(false);
+                await HandleAsync<TMessage>(route, pipe, groupName, consumerName, ">", _batchSize);
+                await Task.Delay(_pollingInterval, cts.Token).ConfigureAwait(false);
             }
         }, cts.Token);
         var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe);

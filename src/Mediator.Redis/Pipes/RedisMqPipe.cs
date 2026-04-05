@@ -21,6 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using System.Text.Json;
 using Mediator.Pipes;
 using StackExchange.Redis;
 
@@ -28,8 +29,10 @@ namespace Mediator.Redis.Pipes;
 
 public class RedisMqPipe : MulticastPipe
 {
-    public RedisMqPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider)
-        : base(new RedisMqPubPipe(multiplexer, serviceProvider), new RedisMqReqPipe(multiplexer, serviceProvider))
+    public RedisMqPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider,
+        JsonSerializerOptions? jsonSerializerOptions = null)
+        : base(new RedisMqPubPipe(multiplexer, serviceProvider, jsonSerializerOptions),
+            new RedisMqReqPipe(multiplexer, serviceProvider, jsonSerializerOptions))
     {
     }
 }

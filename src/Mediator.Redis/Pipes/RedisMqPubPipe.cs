@@ -41,11 +41,13 @@ internal class RedisMqPubPipe : IMulticastPubPipe
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, ChannelMessageQueue> _pipeConnections = new();
 
-    public RedisMqPubPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider)
+    public RedisMqPubPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider,
+        JsonSerializerOptions? jsonSerializerOptions = null)
     {
         _subscriber = multiplexer.GetSubscriber();
         _serviceProvider = serviceProvider;
-        _jsonSerializerOptions = new JsonSerializerOptions { Converters = { ObjectToInferredTypesConverter.Instance } };
+        _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions
+            { Converters = { ObjectToInferredTypesConverter.Instance } };
     }
 
     /// <inheritdoc />
