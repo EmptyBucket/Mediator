@@ -41,7 +41,8 @@ public class RedisStreamPipe : IMulticastPubPipe
     private readonly JsonSerializerOptions _jsonSerializerOptions;
     private readonly int _batchSize;
     private readonly TimeSpan _pollingInterval;
-    private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, CancellationTokenSource> _pipeConnections = new();
+    private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, (CancellationTokenSource Cts, Task Task)>
+        _pipeConnections = new();
 
     public RedisStreamPipe(IConnectionMultiplexer multiplexer, IServiceProvider serviceProvider,
         JsonSerializerOptions? jsonSerializerOptions = null, int batchSize = 1_000, TimeSpan? pollingInterval = null)
@@ -94,7 +95,7 @@ public class RedisStreamPipe : IMulticastPubPipe
         string groupName, string consumerName)
     {
         var cts = new CancellationTokenSource();
-        Task.Run(async () =>
+        var task = Task.Run(async () =>
         {
             await HandleAsync<TMessage>(route, pipe, groupName, consumerName, "0", _batchSize);
 
@@ -104,17 +105,28 @@ public class RedisStreamPipe : IMulticastPubPipe
                 await Task.Delay(_pollingInterval, cts.Token).ConfigureAwait(false);
             }
         }, cts.Token);
-        var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe);
-        _pipeConnections.TryAdd(pipeConnection, cts);
+        var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe,
+            DisconnectPipeAsync);
+        _pipeConnections.TryAdd(pipeConnection, (cts, task));
         return pipeConnection;
     }
 
-    private void DisconnectPipe(PipeConnection<IPubPipe> pipeConnection)
-    {
-        if (!_pipeConnections.TryRemove(pipeConnection, out var cts)) return;
+    private void DisconnectPipe(PipeConnection<IPubPipe> c) => DisconnectPipeAsync(c).AsTask().GetAwaiter().GetResult();
 
-        cts.Cancel();
-        cts.Dispose();
+    private async ValueTask DisconnectPipeAsync(PipeConnection<IPubPipe> pipeConnection)
+    {
+        if (!_pipeConnections.TryRemove(pipeConnection, out var tuple)) return;
+
+        tuple.Cts.Cancel();
+
+        try
+        {
+            await tuple.Task.ConfigureAwait(false);
+        }
+        finally
+        {
+            tuple.Cts.Dispose();
+        }
     }
 
     private async Task HandleAsync<TMessage>(Route route, IPubPipe pipe, string groupName, string consumerName,
@@ -138,8 +150,10 @@ public class RedisStreamPipe : IMulticastPubPipe
                     MessageId = entry.Id, DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider
                 };
                 await pipe.PassAsync(ctx);
-                await _database.StreamAcknowledgeAsync(route.ToString(), groupName, entry.Id).ConfigureAwait(false);
             }
+
+            await _database.StreamAcknowledgeAsync(route.ToString(), groupName, entries.Select(e => e.Id).ToArray())
+                .ConfigureAwait(false);
         } while (entries.Any());
     }
 
