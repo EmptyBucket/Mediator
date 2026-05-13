@@ -123,6 +123,9 @@ public class RedisStreamPipe : IMulticastPubPipe
         {
             await tuple.Task.ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+        }
         finally
         {
             tuple.Cts.Dispose();
@@ -152,8 +155,9 @@ public class RedisStreamPipe : IMulticastPubPipe
                 await pipe.PassAsync(ctx);
             }
 
-            await _database.StreamAcknowledgeAsync(route.ToString(), groupName, entries.Select(e => e.Id).ToArray())
-                .ConfigureAwait(false);
+            if (entries.Length > 0)
+                await _database.StreamAcknowledgeAsync(route.ToString(), groupName, entries.Select(e => e.Id).ToArray())
+                    .ConfigureAwait(false);
         } while (entries.Any());
     }
 
