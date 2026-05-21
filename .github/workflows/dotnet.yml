@@ -27,6 +27,7 @@ jobs:
         dotnet pack -c Release -o packages src/Mediator
         dotnet pack -c Release -o packages src/Mediator.RabbitMq
         dotnet pack -c Release -o packages src/Mediator.Redis
+        dotnet pack -c Release -o packages src/Mediator.Nats
       
     - name: Push to GitHub Feed
       run: |

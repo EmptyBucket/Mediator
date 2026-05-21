@@ -75,7 +75,7 @@ public class RedisStreamPipe : IMulticastPubPipe
     {
         var route = Route.For<TMessage>(routingKey);
         var (groupName, consumerName) = ParseSubscriptionId(subscriptionId);
-        CreateConsumerGroup(route, groupName);
+        EnsureConsumerGroup(route, groupName);
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, groupName, consumerName);
         return pipeConnection;
     }
@@ -86,7 +86,7 @@ public class RedisStreamPipe : IMulticastPubPipe
     {
         var route = Route.For<TMessage>(routingKey);
         var (groupName, consumerName) = ParseSubscriptionId(subscriptionId);
-        await CreateConsumerGroupAsync(route, groupName);
+        await EnsureConsumerGroupAsync(route, groupName);
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, groupName, consumerName);
         return pipeConnection;
     }
@@ -163,7 +163,7 @@ public class RedisStreamPipe : IMulticastPubPipe
 
     private static string ConsumerGroupExistsExceptionMessage => "BUSYGROUP Consumer Group name already exists";
 
-    private void CreateConsumerGroup(Route route, string groupName)
+    private void EnsureConsumerGroup(Route route, string groupName)
     {
         try
         {
@@ -175,7 +175,7 @@ public class RedisStreamPipe : IMulticastPubPipe
         }
     }
 
-    private async Task CreateConsumerGroupAsync(Route route, string groupName)
+    private async Task EnsureConsumerGroupAsync(Route route, string groupName)
     {
         try
         {
@@ -196,6 +196,7 @@ public class RedisStreamPipe : IMulticastPubPipe
     {
         if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
-        foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
+        foreach (var pipeConnection in _pipeConnections.Keys)
+            await pipeConnection.DisposeAsync();
     }
 }
