@@ -39,6 +39,7 @@ namespace Mediator.Nats.Pipes;
 public class NatsStreamPipe : IMulticastPubPipe
 {
     private int _isDisposed;
+    private readonly INatsConnection _natsConnection;
     private readonly INatsJSContext _jetStream;
     private readonly IServiceProvider _serviceProvider;
     private readonly JsonSerializerOptions _jsonSerializerOptions;
@@ -52,7 +53,8 @@ public class NatsStreamPipe : IMulticastPubPipe
         JsonSerializerOptions? jsonSerializerOptions = null, Func<StreamConfig>? streamConfigFactory = null,
         Func<ConsumerConfig>? configureConfigFactory = null, NatsJSConsumeOpts? consumeOpts = null)
     {
-        _jetStream = natsConnection.CreateJetStreamContext();
+        _natsConnection = natsConnection;
+        _jetStream = _natsConnection.CreateJetStreamContext();
         _serviceProvider = serviceProvider;
         _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions
             { Converters = { ObjectToInferredTypesConverter.Instance } };
@@ -64,6 +66,7 @@ public class NatsStreamPipe : IMulticastPubPipe
     /// <inheritdoc />
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
+        await _natsConnection.ConnectAsync();
         var serializer = new NatsJsonSerializer<MessageContext<TMessage>>(_jsonSerializerOptions);
         var natsJsPubOpts = new PropertyBinder<NatsJSPubOpts>().Bind(ctx.ServiceProps).Build();
         await _jetStream.PublishAsync(RouteToString(ctx.Route), ctx, serializer, natsJsPubOpts,
@@ -77,6 +80,7 @@ public class NatsStreamPipe : IMulticastPubPipe
     public PipeConnection<IPubPipe> ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "",
         string connectionName = "", string subscriptionId = "default")
     {
+        _natsConnection.ConnectAsync().GetAwaiter().GetResult();
         var route = Route.For<TMessage>(routingKey);
         EnsureStreamAndConsumerAsync(route, subscriptionId, CancellationToken.None).GetAwaiter().GetResult();
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, subscriptionId);
@@ -87,6 +91,7 @@ public class NatsStreamPipe : IMulticastPubPipe
     public async Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string connectionName = "", string subscriptionId = "default", CancellationToken cancellationToken = default)
     {
+        await _natsConnection.ConnectAsync();
         var route = Route.For<TMessage>(routingKey);
         await EnsureStreamAndConsumerAsync(route, subscriptionId, cancellationToken);
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, subscriptionId);

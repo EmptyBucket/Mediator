@@ -25,11 +25,10 @@ public class NatsStreamPipeTests
     private Mock<IPipe> _sEndPipe;
 
     [OneTimeSetUp]
-    public async Task OneTimeSetup()
+    public void OneTimeSetup()
     {
         var serviceCollection = new ServiceCollection();
         _natsConnection = new NatsConnection(new NatsOpts { Url = NatsEndpoint });
-        await _natsConnection.ConnectAsync();
         serviceCollection
             .AddSingleton(_natsConnection)
             .AddSingleton<NatsStreamPipe>()
