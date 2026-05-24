@@ -40,6 +40,8 @@ namespace Mediator.Nats.Pipes;
 public class NatsStreamPipe : IMulticastPubPipe
 {
     private int _isDisposed;
+    private int _isStreamCreated;
+    private int _isConsumerCreated;
     private readonly INatsConnection _natsConnection;
     private readonly INatsJSContext _jetStream;
     private readonly IServiceProvider _serviceProvider;
@@ -52,7 +54,7 @@ public class NatsStreamPipe : IMulticastPubPipe
 
     public NatsStreamPipe(INatsConnection natsConnection, IServiceProvider serviceProvider,
         JsonSerializerOptions? jsonSerializerOptions = null, Func<StreamConfig>? streamConfigFactory = null,
-        Func<ConsumerConfig>? configureConfigFactory = null, NatsJSConsumeOpts? consumeOpts = null)
+        Func<ConsumerConfig>? consumerConfigFactory = null, NatsJSConsumeOpts? consumeOpts = null)
     {
         _natsConnection = natsConnection;
         _jetStream = _natsConnection.CreateJetStreamContext();
@@ -60,18 +62,20 @@ public class NatsStreamPipe : IMulticastPubPipe
         _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions
             { Converters = { ObjectToInferredTypesConverter.Instance } };
         _streamConfigFactory = streamConfigFactory ?? (() => new StreamConfig());
-        _configureConfigFactory = configureConfigFactory ?? (() => new ConsumerConfig());
+        _configureConfigFactory = consumerConfigFactory ?? (() => new ConsumerConfig());
         _consumeOpts = consumeOpts ?? new NatsJSConsumeOpts { MaxMsgs = 1_000 };
     }
 
     /// <inheritdoc />
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
-        await _natsConnection.ConnectAsync();
+        await _natsConnection.ConnectAsync().ConfigureAwait(false);
+        var streamName = ctx.Route.ToStreamName();
+        await EnsureStreamAsync(streamName, cancellationToken).ConfigureAwait(false);
         var serializer = new NatsJsonSerializer<MessageContext<TMessage>>(_jsonSerializerOptions);
         var natsJsPubOpts = new PropertyBinder<NatsJSPubOpts>().Bind(ctx.ServiceProps).Build();
-        await _jetStream.PublishAsync(ctx.Route.ToStreamName(), ctx, serializer, natsJsPubOpts,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        await _jetStream.PublishAsync(streamName, ctx, serializer, natsJsPubOpts, cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -84,7 +88,8 @@ public class NatsStreamPipe : IMulticastPubPipe
         _natsConnection.ConnectAsync().GetAwaiter().GetResult();
         var route = Route.For<TMessage>(routingKey);
         var streamName = route.ToStreamName();
-        EnsureStreamAndConsumerAsync(streamName, subscriptionId, CancellationToken.None).GetAwaiter().GetResult();
+        EnsureStreamAsync(streamName, CancellationToken.None).GetAwaiter().GetResult();
+        EnsureConsumerAsync(streamName, subscriptionId, CancellationToken.None).GetAwaiter().GetResult();
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, streamName, subscriptionId);
         return pipeConnection;
     }
@@ -93,10 +98,11 @@ public class NatsStreamPipe : IMulticastPubPipe
     public async Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string connectionName = "", string subscriptionId = "default", CancellationToken cancellationToken = default)
     {
-        await _natsConnection.ConnectAsync();
+        await _natsConnection.ConnectAsync().ConfigureAwait(false);
         var route = Route.For<TMessage>(routingKey);
         var streamName = route.ToStreamName();
-        await EnsureStreamAndConsumerAsync(streamName, subscriptionId, cancellationToken);
+        await EnsureStreamAsync(streamName, cancellationToken).ConfigureAwait(false);
+        await EnsureConsumerAsync(streamName, subscriptionId, cancellationToken).ConfigureAwait(false);
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, streamName, subscriptionId);
         return pipeConnection;
     }
@@ -137,38 +143,35 @@ public class NatsStreamPipe : IMulticastPubPipe
         CancellationToken cancellationToken)
     {
         var serializer = new NatsJsonSerializer<MessageContext<TMessage>>(_jsonSerializerOptions);
-        var consumer = await _jetStream.GetConsumerAsync(streamName, consumerName, cancellationToken);
+        var consumer = await _jetStream.GetConsumerAsync(streamName, consumerName, cancellationToken)
+            .ConfigureAwait(false);
 
-        await foreach (var message in consumer.ConsumeAsync(serializer, _consumeOpts,
-                           cancellationToken: cancellationToken))
+        await foreach (var message in consumer.ConsumeAsync(serializer, _consumeOpts, cancellationToken))
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
 
             if (message.Data != null)
             {
                 var ctx = message.Data with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
-                await pipe.PassAsync(ctx, cancellationToken);
+                await pipe.PassAsync(ctx, cancellationToken).ConfigureAwait(false);
             }
 
-            await message.AckAsync(cancellationToken: cancellationToken);
+            await message.AckAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
         }
-    }
-
-    private async Task EnsureStreamAndConsumerAsync(string streamName, string consumerName,
-        CancellationToken cancellationToken)
-    {
-        await EnsureStreamAsync(streamName, cancellationToken).ConfigureAwait(false);
-        await EnsureConsumerAsync(streamName, consumerName, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task EnsureStreamAsync(string streamName, CancellationToken cancellationToken)
     {
+        if (Interlocked.Exchange(ref _isStreamCreated, 1) == 1) return;
+
         var streamConfig = _streamConfigFactory() with { Name = streamName, Subjects = new[] { streamName } };
         await _jetStream.CreateOrUpdateStreamAsync(streamConfig, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task EnsureConsumerAsync(string streamName, string consumerName, CancellationToken cancellationToken)
     {
+        if (Interlocked.Exchange(ref _isConsumerCreated, 1) == 1) return;
+
         var consumerConfig = _configureConfigFactory() with
         {
             Name = consumerName,
