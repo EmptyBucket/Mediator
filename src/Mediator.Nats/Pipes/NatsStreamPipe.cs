@@ -40,8 +40,8 @@ namespace Mediator.Nats.Pipes;
 public class NatsStreamPipe : IMulticastPubPipe
 {
     private int _isDisposed;
-    private int _isStreamCreated;
-    private int _isConsumerCreated;
+    private readonly ConcurrentDictionary<string, byte> _knownStreams = new();
+    private readonly ConcurrentDictionary<string, byte> _knownConsumers = new();
     private readonly INatsConnection _natsConnection;
     private readonly INatsJSContext _jetStream;
     private readonly IServiceProvider _serviceProvider;
@@ -88,7 +88,6 @@ public class NatsStreamPipe : IMulticastPubPipe
         _natsConnection.ConnectAsync().GetAwaiter().GetResult();
         var route = Route.For<TMessage>(routingKey);
         var streamName = route.ToStreamName();
-        EnsureStreamAsync(streamName, CancellationToken.None).GetAwaiter().GetResult();
         EnsureConsumerAsync(streamName, subscriptionId, CancellationToken.None).GetAwaiter().GetResult();
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, streamName, subscriptionId);
         return pipeConnection;
@@ -101,7 +100,6 @@ public class NatsStreamPipe : IMulticastPubPipe
         await _natsConnection.ConnectAsync().ConfigureAwait(false);
         var route = Route.For<TMessage>(routingKey);
         var streamName = route.ToStreamName();
-        await EnsureStreamAsync(streamName, cancellationToken).ConfigureAwait(false);
         await EnsureConsumerAsync(streamName, subscriptionId, cancellationToken).ConfigureAwait(false);
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, streamName, subscriptionId);
         return pipeConnection;
@@ -162,7 +160,7 @@ public class NatsStreamPipe : IMulticastPubPipe
 
     private async Task EnsureStreamAsync(string streamName, CancellationToken cancellationToken)
     {
-        if (Interlocked.Exchange(ref _isStreamCreated, 1) == 1) return;
+        if (!_knownStreams.TryAdd(streamName, 0)) return;
 
         var streamConfig = _streamConfigFactory() with { Name = streamName, Subjects = new[] { streamName } };
         await _jetStream.CreateOrUpdateStreamAsync(streamConfig, cancellationToken).ConfigureAwait(false);
@@ -170,8 +168,9 @@ public class NatsStreamPipe : IMulticastPubPipe
 
     private async Task EnsureConsumerAsync(string streamName, string consumerName, CancellationToken cancellationToken)
     {
-        if (Interlocked.Exchange(ref _isConsumerCreated, 1) == 1) return;
+        if (!_knownConsumers.TryAdd(consumerName, 0)) return;
 
+        await EnsureStreamAsync(streamName, cancellationToken);
         var consumerConfig = _configureConfigFactory() with
         {
             Name = consumerName,
