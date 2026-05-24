@@ -32,6 +32,7 @@ using NATS.Client.JetStream;
 using NATS.Client.JetStream.Models;
 using System.Collections.Concurrent;
 using System.Text.Json;
+using Mediator.Nats.Utils;
 using NATS.Client.Serializers.Json;
 
 namespace Mediator.Nats.Pipes;
@@ -69,7 +70,7 @@ public class NatsStreamPipe : IMulticastPubPipe
         await _natsConnection.ConnectAsync();
         var serializer = new NatsJsonSerializer<MessageContext<TMessage>>(_jsonSerializerOptions);
         var natsJsPubOpts = new PropertyBinder<NatsJSPubOpts>().Bind(ctx.ServiceProps).Build();
-        await _jetStream.PublishAsync(RouteToString(ctx.Route), ctx, serializer, natsJsPubOpts,
+        await _jetStream.PublishAsync(ctx.Route.ToStreamName(), ctx, serializer, natsJsPubOpts,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
@@ -82,8 +83,9 @@ public class NatsStreamPipe : IMulticastPubPipe
     {
         _natsConnection.ConnectAsync().GetAwaiter().GetResult();
         var route = Route.For<TMessage>(routingKey);
-        EnsureStreamAndConsumerAsync(route, subscriptionId, CancellationToken.None).GetAwaiter().GetResult();
-        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, subscriptionId);
+        var streamName = route.ToStreamName();
+        EnsureStreamAndConsumerAsync(streamName, subscriptionId, CancellationToken.None).GetAwaiter().GetResult();
+        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, streamName, subscriptionId);
         return pipeConnection;
     }
 
@@ -93,16 +95,17 @@ public class NatsStreamPipe : IMulticastPubPipe
     {
         await _natsConnection.ConnectAsync();
         var route = Route.For<TMessage>(routingKey);
-        await EnsureStreamAndConsumerAsync(route, subscriptionId, cancellationToken);
-        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, subscriptionId);
+        var streamName = route.ToStreamName();
+        await EnsureStreamAndConsumerAsync(streamName, subscriptionId, cancellationToken);
+        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, streamName, subscriptionId);
         return pipeConnection;
     }
 
     private PipeConnection<IPubPipe> ConnectPipe<TMessage>(string connectionName, Route route, IPubPipe pipe,
-        string consumerName)
+        string streamName, string consumerName)
     {
         var cts = new CancellationTokenSource();
-        var task = HandleAsync<TMessage>(pipe, route, consumerName, cts.Token);
+        var task = HandleAsync<TMessage>(pipe, streamName, consumerName, cts.Token);
         var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe,
             DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, (cts, task));
@@ -130,11 +133,11 @@ public class NatsStreamPipe : IMulticastPubPipe
         }
     }
 
-    private async Task HandleAsync<TMessage>(IPubPipe pipe, Route route, string consumerName,
+    private async Task HandleAsync<TMessage>(IPubPipe pipe, string streamName, string consumerName,
         CancellationToken cancellationToken)
     {
         var serializer = new NatsJsonSerializer<MessageContext<TMessage>>(_jsonSerializerOptions);
-        var consumer = await _jetStream.GetConsumerAsync(RouteToString(route), consumerName, cancellationToken);
+        var consumer = await _jetStream.GetConsumerAsync(streamName, consumerName, cancellationToken);
 
         await foreach (var message in consumer.ConsumeAsync(serializer, _consumeOpts,
                            cancellationToken: cancellationToken))
@@ -151,21 +154,20 @@ public class NatsStreamPipe : IMulticastPubPipe
         }
     }
 
-    private async Task EnsureStreamAndConsumerAsync(Route route, string consumerName,
+    private async Task EnsureStreamAndConsumerAsync(string streamName, string consumerName,
         CancellationToken cancellationToken)
     {
-        await EnsureStreamAsync(route, cancellationToken).ConfigureAwait(false);
-        await EnsureConsumerAsync(route, consumerName, cancellationToken).ConfigureAwait(false);
+        await EnsureStreamAsync(streamName, cancellationToken).ConfigureAwait(false);
+        await EnsureConsumerAsync(streamName, consumerName, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task EnsureStreamAsync(Route route, CancellationToken cancellationToken)
+    private async Task EnsureStreamAsync(string streamName, CancellationToken cancellationToken)
     {
-        var streamName = RouteToString(route);
         var streamConfig = _streamConfigFactory() with { Name = streamName, Subjects = new[] { streamName } };
         await _jetStream.CreateOrUpdateStreamAsync(streamConfig, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task EnsureConsumerAsync(Route route, string consumerName, CancellationToken cancellationToken)
+    private async Task EnsureConsumerAsync(string streamName, string consumerName, CancellationToken cancellationToken)
     {
         var consumerConfig = _configureConfigFactory() with
         {
@@ -173,7 +175,7 @@ public class NatsStreamPipe : IMulticastPubPipe
             DurableName = consumerName,
             AckPolicy = ConsumerConfigAckPolicy.Explicit
         };
-        await _jetStream.CreateOrUpdateConsumerAsync(RouteToString(route), consumerConfig, cancellationToken)
+        await _jetStream.CreateOrUpdateConsumerAsync(streamName, consumerConfig, cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -183,15 +185,5 @@ public class NatsStreamPipe : IMulticastPubPipe
 
         foreach (var pipeConnection in _pipeConnections.Keys)
             await pipeConnection.DisposeAsync();
-    }
-
-    private static string RouteToString(Route route)
-    {
-        var chars = route.ToString().ToCharArray();
-
-        for (var i = 0; i < chars.Length; i++)
-            chars[i] = chars[i] switch { '.' or '*' or '>' or ' ' or '\t' => '_', _ => chars[i] };
-
-        return new string(chars);
     }
 }
