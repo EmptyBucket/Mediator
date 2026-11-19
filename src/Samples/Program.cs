@@ -21,6 +21,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+using EasyNetQ;
 using Mediator;
 using Mediator.Configurations;
 using Mediator.Pipes;
@@ -37,7 +38,8 @@ var serviceCollection = new ServiceCollection();
 // Configure RabbitMq and Redis
 {
     serviceCollection
-        .RegisterEasyNetQ("host=localhost")
+        .AddEasyNetQ("host=localhost")
+        .Services
         .AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect("localhost"));
 }
 

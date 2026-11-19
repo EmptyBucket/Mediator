@@ -25,6 +25,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using EasyNetQ;
 using EasyNetQ.Management.Client;
 using FluentAssertions;
 using Mediator.Configurations;
@@ -53,9 +54,10 @@ public class MediatorTests
     {
         var serviceCollection = new ServiceCollection();
         serviceCollection
-            .RegisterEasyNetQ($"host={RabbitMqEndpoint};virtualHost={VhostName}")
+            .AddEasyNetQ($"host={RabbitMqEndpoint};virtualHost={VhostName}")
+            .Services
             .AddSingleton<IManagementClient>(new ManagementClient(RabbitMqEndpoint, "guest", "guest"))
-            .AddSingleton<RabbitMqPipe>()
+            .AddTransient<RabbitMqPipe>()
             .AddMediator(lifetime: ServiceLifetime.Transient);
         _serviceProvider = serviceCollection.BuildServiceProvider();
     }

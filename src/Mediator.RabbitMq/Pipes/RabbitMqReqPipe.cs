@@ -110,7 +110,7 @@ internal class RabbitMqReqPipe : IMulticastReqPipe
         IReqPipe pipe, Queue queue)
     {
         var subscription = await _bus.Advanced.ConsumeAsync<SerializableMessageContext<TMessage>>(queue,
-            (m, _) => HandleAsync<TMessage, TResult>(pipe, m));
+            (m, _) => HandleAsync<TMessage, TResult>(pipe, m)).ConfigureAwait(false);
         var pipeConnection = new PipeConnection<IReqPipe>(connectionName, route, pipe, DisconnectPipe);
         _pipeConnections.TryAdd(pipeConnection, subscription);
 

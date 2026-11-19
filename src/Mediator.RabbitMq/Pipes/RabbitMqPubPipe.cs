@@ -84,7 +84,7 @@ internal class RabbitMqPubPipe : IMulticastPubPipe
         IPubPipe pipe, Queue queue)
     {
         var subscription = await _bus.Advanced.ConsumeAsync<SerializableMessageContext<TMessage>>(queue,
-            (m, _) => HandleAsync(pipe, m));
+            (m, _) => HandleAsync(pipe, m)).ConfigureAwait(false);
         var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe,
             DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, subscription);

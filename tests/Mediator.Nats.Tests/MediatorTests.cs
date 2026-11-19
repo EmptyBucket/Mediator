@@ -33,7 +33,7 @@ public class NatsStreamPipeTests
             { Url = NatsEndpoint, SerializerRegistry = NatsJsonSerializerRegistry.Default });
         serviceCollection
             .AddSingleton(_natsConnection)
-            .AddSingleton<NatsStreamPipe>()
+            .AddTransient<NatsStreamPipe>()
             .AddMediator(lifetime: ServiceLifetime.Transient);
         _serviceProvider = serviceCollection.BuildServiceProvider();
     }
@@ -73,7 +73,7 @@ public class NatsStreamPipeTests
     public async Task PublishAsync_WhenNatsStreamTopology_CallPassAsync()
     {
         var (dispatch, _) = _mediator.Topology;
-        var pipe = _serviceProvider.GetRequiredService<NatsStreamPipe>();
+        await using var pipe = _serviceProvider.GetRequiredService<NatsStreamPipe>();
         var someEvent = new SomeEvent(Guid.NewGuid());
 
         await dispatch.ConnectOutAsync<SomeEvent>(pipe);
@@ -90,7 +90,7 @@ public class NatsStreamPipeTests
     public async Task PublishAsync_WhenNatsStreamTopologyWithTwoConsumers_CallPassAsyncOnBoth()
     {
         var (dispatch, _) = _mediator.Topology;
-        var pipe = _serviceProvider.GetRequiredService<NatsStreamPipe>();
+        await using var pipe = _serviceProvider.GetRequiredService<NatsStreamPipe>();
         var someEvent = new SomeEvent(Guid.NewGuid());
 
         await dispatch.ConnectOutAsync<SomeEvent>(pipe);
@@ -111,7 +111,7 @@ public class NatsStreamPipeTests
     public async Task PublishAsync_WhenNatsStreamTopologyWithDifferentEvents_ProcessCorrectly()
     {
         var (dispatch, _) = _mediator.Topology;
-        var pipe = _serviceProvider.GetRequiredService<NatsStreamPipe>();
+        await using var pipe = _serviceProvider.GetRequiredService<NatsStreamPipe>();
         var someEvent1 = new SomeEvent(Guid.NewGuid());
         var someEvent2 = new SomeEvent(Guid.NewGuid());
 
