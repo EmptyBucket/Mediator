@@ -65,15 +65,20 @@ internal class RedisMqReqPipe : IMulticastReqPipe
             // ReSharper disable once VariableHidesOuterVariable
             var ctx = JsonSerializer.Deserialize<ResultContext<TResult>>(m.Message, _jsonSerializerOptions)!;
 
-            if (ctx.ExceptionMessage == null && ctx.Result != null) tcs.TrySetResult(ctx.Result);
-            else tcs.TrySetException(new MessageUnhandledException(ctx.ExceptionMessage ?? string.Empty));
+            if (ctx.ExceptionMessage == null && ctx.Result != null)
+                tcs.TrySetResult(ctx.Result);
+            else
+                tcs.TrySetException(new MessageUnhandledException(ctx.ExceptionMessage ?? string.Empty));
         }
 
-        if (ctx.CorrelationId == null) ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };
+        if (ctx.CorrelationId == null)
+            ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };
+
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
         var message = JsonSerializer.Serialize<SerializableMessageContext<TMessage>>(ctx, _jsonSerializerOptions);
         var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
         await _subscriber.PublishAsync(ctx.Route.ToString(), message, messageProperties.Flags).ConfigureAwait(false);
+
         return await tcs.Task.ConfigureAwait(false);
     }
 
@@ -85,6 +90,7 @@ internal class RedisMqReqPipe : IMulticastReqPipe
         string connectionName = "")
     {
         var route = Route.For<TMessage, TResult>(routingKey);
+
         return ConnectPipe<TMessage, TResult>(connectionName, route, pipe);
     }
 
@@ -93,6 +99,7 @@ internal class RedisMqReqPipe : IMulticastReqPipe
         string routingKey = "", string connectionName = "", CancellationToken cancellationToken = default)
     {
         var route = Route.For<TMessage, TResult>(routingKey);
+
         return await ConnectPipeAsync<TMessage, TResult>(connectionName, route, pipe);
     }
 
@@ -103,6 +110,7 @@ internal class RedisMqReqPipe : IMulticastReqPipe
         var pipeConnection = new PipeConnection<IReqPipe>(connectionName, route, pipe, DisconnectPipe,
             DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, channelMq);
+
         return pipeConnection;
     }
 
@@ -114,17 +122,20 @@ internal class RedisMqReqPipe : IMulticastReqPipe
         var pipeConnection = new PipeConnection<IReqPipe>(connectionName, route, pipe, DisconnectPipe,
             DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, channelMq);
+
         return pipeConnection;
     }
 
     private void DisconnectPipe(PipeConnection<IReqPipe> pipeConnection)
     {
-        if (_pipeConnections.TryRemove(pipeConnection, out var c)) c.Unsubscribe();
+        if (_pipeConnections.TryRemove(pipeConnection, out var c))
+            c.Unsubscribe();
     }
 
-    private async ValueTask DisconnectPipeAsync(PipeConnection<IReqPipe> pipeConnection)
+    private async Task DisconnectPipeAsync(PipeConnection<IReqPipe> pipeConnection)
     {
-        if (_pipeConnections.TryRemove(pipeConnection, out var c)) await c.UnsubscribeAsync().ConfigureAwait(false);
+        if (_pipeConnections.TryRemove(pipeConnection, out var c))
+            await c.UnsubscribeAsync().ConfigureAwait(false);
     }
 
     private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe, ChannelMessage channelMessage)
@@ -162,11 +173,13 @@ internal class RedisMqReqPipe : IMulticastReqPipe
             var jsonElement = JsonDocument.Parse(m.Message.ToString()).RootElement;
             var correlationId = jsonElement.GetProperty("CorrelationId").ToString();
 
-            if (_resultHandlers.TryRemove(correlationId, out var handle)) handle(m);
+            if (_resultHandlers.TryRemove(correlationId, out var handle))
+                handle(m);
         }
 
         var channelMq = await _subscriber.SubscribeAsync(WellKnown.ResultMq).ConfigureAwait(false);
         channelMq.OnMessage(Handle);
+
         return channelMq;
     }
 
@@ -174,8 +187,10 @@ internal class RedisMqReqPipe : IMulticastReqPipe
     {
         if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
-        foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
+        foreach (var pipeConnection in _pipeConnections.Keys)
+            await pipeConnection.DisposeAsync();
 
-        if (_resultMq.IsValueCreated) _resultMq.Value.Dispose();
+        if (_resultMq.IsValueCreated)
+            _resultMq.Value.Dispose();
     }
 }

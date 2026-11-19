@@ -27,10 +27,10 @@ public class PipeConnection<TPipe> : IDisposable, IAsyncDisposable
 {
     private int _isDisposed;
     private readonly Action<PipeConnection<TPipe>> _disconnect;
-    private readonly Func<PipeConnection<TPipe>, ValueTask> _disconnectAsync;
+    private readonly Func<PipeConnection<TPipe>, Task> _disconnectAsync;
 
     public PipeConnection(string name, Route route, TPipe pipe, Action<PipeConnection<TPipe>> disconnect,
-        Func<PipeConnection<TPipe>, ValueTask>? disconnectAsync = null)
+        Func<PipeConnection<TPipe>, Task>? disconnectAsync = null)
     {
         Name = name;
         Route = route;
@@ -39,12 +39,12 @@ public class PipeConnection<TPipe> : IDisposable, IAsyncDisposable
         _disconnectAsync = disconnectAsync ?? DisconnectAsync(disconnect);
     }
 
-    private static Func<PipeConnection<TPipe>, ValueTask> DisconnectAsync(Action<PipeConnection<TPipe>> disconnect) =>
-        p =>
-        {
-            disconnect(p);
-            return new ValueTask();
-        };
+    private static Func<PipeConnection<TPipe>, Task> DisconnectAsync(Action<PipeConnection<TPipe>> disconnect) => p =>
+    {
+        disconnect(p);
+
+        return Task.CompletedTask;
+    };
 
     public string Name { get; }
 
@@ -59,10 +59,10 @@ public class PipeConnection<TPipe> : IDisposable, IAsyncDisposable
         _disconnect(this);
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return new ValueTask();
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
-        return _disconnectAsync(this);
+        await _disconnectAsync(this);
     }
 }

@@ -67,6 +67,7 @@ internal class RedisMqPubPipe : IMulticastPubPipe
     {
         var route = Route.For<TMessage>(routingKey);
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe);
+
         return pipeConnection;
     }
 
@@ -76,6 +77,7 @@ internal class RedisMqPubPipe : IMulticastPubPipe
     {
         var route = Route.For<TMessage>(routingKey);
         var pipeConnection = await ConnectPipeAsync<TMessage>(connectionName, route, pipe);
+
         return pipeConnection;
     }
 
@@ -86,6 +88,7 @@ internal class RedisMqPubPipe : IMulticastPubPipe
         var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe,
             DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, channelMq);
+
         return pipeConnection;
     }
 
@@ -97,17 +100,20 @@ internal class RedisMqPubPipe : IMulticastPubPipe
         var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe,
             DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, channelMq);
+
         return pipeConnection;
     }
 
     private void DisconnectPipe(PipeConnection<IPubPipe> pipeConnection)
     {
-        if (_pipeConnections.TryRemove(pipeConnection, out var c)) c.Unsubscribe();
+        if (_pipeConnections.TryRemove(pipeConnection, out var c))
+            c.Unsubscribe();
     }
 
-    private async ValueTask DisconnectPipeAsync(PipeConnection<IPubPipe> pipeConnection)
+    private async Task DisconnectPipeAsync(PipeConnection<IPubPipe> pipeConnection)
     {
-        if (_pipeConnections.TryRemove(pipeConnection, out var c)) await c.UnsubscribeAsync().ConfigureAwait(false);
+        if (_pipeConnections.TryRemove(pipeConnection, out var c))
+            await c.UnsubscribeAsync().ConfigureAwait(false);
     }
 
     private async Task HandleAsync<TMessage>(IPubPipe pipe, ChannelMessage channelMessage)
@@ -124,6 +130,7 @@ internal class RedisMqPubPipe : IMulticastPubPipe
     {
         if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
-        foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
+        foreach (var pipeConnection in _pipeConnections.Keys)
+            await pipeConnection.DisposeAsync();
     }
 }

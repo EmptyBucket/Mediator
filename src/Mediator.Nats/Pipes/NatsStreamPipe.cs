@@ -74,15 +74,9 @@ public class NatsStreamPipe : IMulticastPubPipe
 
     /// <inheritdoc />
     public PipeConnection<IPubPipe> ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "",
-        string connectionName = "", string subscriptionId = "default")
-    {
-        _connection.ConnectAsync().GetAwaiter().GetResult();
-        var route = Route.For<TMessage>(routingKey);
-        var streamName = route.ToStreamName();
-        EnsureConsumerAsync(streamName, subscriptionId, CancellationToken.None).GetAwaiter().GetResult();
-        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, streamName, subscriptionId);
-        return pipeConnection;
-    }
+        string connectionName = "", string subscriptionId = "default") =>
+        ConnectOutAsync<TMessage>(pipe, routingKey, connectionName, subscriptionId, CancellationToken.None).GetAwaiter()
+            .GetResult();
 
     /// <inheritdoc />
     public async Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
@@ -93,6 +87,7 @@ public class NatsStreamPipe : IMulticastPubPipe
         var streamName = route.ToStreamName();
         await EnsureConsumerAsync(streamName, subscriptionId, cancellationToken).ConfigureAwait(false);
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, streamName, subscriptionId);
+
         return pipeConnection;
     }
 
@@ -104,13 +99,14 @@ public class NatsStreamPipe : IMulticastPubPipe
         var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe,
             DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, (cts, task));
+
         return pipeConnection;
     }
 
     private void DisconnectPipe(PipeConnection<IPubPipe> pipeConnection) =>
-        DisconnectPipeAsync(pipeConnection).AsTask().GetAwaiter().GetResult();
+        DisconnectPipeAsync(pipeConnection).GetAwaiter().GetResult();
 
-    private async ValueTask DisconnectPipeAsync(PipeConnection<IPubPipe> pipeConnection)
+    private async Task DisconnectPipeAsync(PipeConnection<IPubPipe> pipeConnection)
     {
         if (!_pipeConnections.TryRemove(pipeConnection, out var tuple)) return;
 

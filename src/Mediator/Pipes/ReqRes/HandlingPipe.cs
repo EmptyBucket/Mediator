@@ -54,6 +54,7 @@ internal class HandlingPipe<THandlerMessage, THandlerResult> : IReqPipe
         using var serviceScope = ctx.ServiceProvider.CreateScope();
         var handler = _handlingFactory(serviceScope.ServiceProvider);
         var result = await handler.HandleAsync(handlerCtx, cancellationToken);
+
         return (TResult)(object)result!;
     }
 }

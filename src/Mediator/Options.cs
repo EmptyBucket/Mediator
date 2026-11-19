@@ -71,8 +71,10 @@ public class Options
     /// <returns></returns>
     public void Set<T>(string propertyName, T value, bool isExtra = false)
     {
-        if (isExtra) ExtraProps[propertyName] = value;
-        else ServiceProps[propertyName] = value;
+        if (isExtra)
+            ExtraProps[propertyName] = value;
+        else
+            ServiceProps[propertyName] = value;
     }
 
     /// <summary>

@@ -9,6 +9,7 @@ using Mediator.Tests;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using NATS.Client.Core;
+using NATS.Client.Serializers.Json;
 using NATS.Net;
 using NUnit.Framework;
 
@@ -28,7 +29,8 @@ public class NatsStreamPipeTests
     public void OneTimeSetup()
     {
         var serviceCollection = new ServiceCollection();
-        _natsConnection = new NatsConnection(new NatsOpts { Url = NatsEndpoint });
+        _natsConnection = new NatsConnection(new NatsOpts
+            { Url = NatsEndpoint, SerializerRegistry = NatsJsonSerializerRegistry.Default });
         serviceCollection
             .AddSingleton(_natsConnection)
             .AddSingleton<NatsStreamPipe>()

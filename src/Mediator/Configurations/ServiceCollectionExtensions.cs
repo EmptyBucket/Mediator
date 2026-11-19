@@ -33,7 +33,8 @@ public static class ServiceCollectionExtensions
         Action<IServiceProvider, MediatorTopology>? connectPipes = null,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
     {
-        if (connectPipes is not null) serviceCollection.AddSingleton(new ConnectPipes(connectPipes));
+        if (connectPipes is not null)
+            serviceCollection.AddSingleton(new ConnectPipes(connectPipes));
 
         TryAddMediatorTopology(serviceCollection, lifetime);
         TryAddMediator(serviceCollection, lifetime);

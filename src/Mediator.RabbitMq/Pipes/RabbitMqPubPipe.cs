@@ -37,7 +37,7 @@ internal class RabbitMqPubPipe : IMulticastPubPipe
     private int _isDisposed;
     private readonly IBus _bus;
     private readonly IServiceProvider _serviceProvider;
-    private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, IDisposable> _pipeConnections = new();
+    private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, IAsyncDisposable> _pipeConnections = new();
 
     public RabbitMqPubPipe(IBus bus, IServiceProvider serviceProvider)
     {
@@ -51,7 +51,8 @@ internal class RabbitMqPubPipe : IMulticastPubPipe
         var exchange = await DeclareExchangeAsync(ctx.Route, cancellationToken);
         var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
         var message = new Message<SerializableMessageContext<TMessage>>(ctx, messageProperties);
-        await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, cancellationToken).ConfigureAwait(false);
+        await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, null, message, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -62,8 +63,9 @@ internal class RabbitMqPubPipe : IMulticastPubPipe
         string connectionName = "", string subscriptionId = "")
     {
         var route = Route.For<TMessage>(routingKey);
-        var queue = DeclareQueue(route, subscriptionId);
-        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, queue);
+        var queue = DeclareQueueAsync(route, subscriptionId).GetAwaiter().GetResult();
+        var pipeConnection = ConnectPipeAsync<TMessage>(connectionName, route, pipe, queue).GetAwaiter().GetResult();
+
         return pipeConnection;
     }
 
@@ -73,23 +75,30 @@ internal class RabbitMqPubPipe : IMulticastPubPipe
     {
         var route = Route.For<TMessage>(routingKey);
         var queue = await DeclareQueueAsync(route, subscriptionId, cancellationToken);
-        var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, queue);
+        var pipeConnection = await ConnectPipeAsync<TMessage>(connectionName, route, pipe, queue);
+
         return pipeConnection;
     }
 
-    private PipeConnection<IPubPipe> ConnectPipe<TMessage>(string connectionName, Route route, IPubPipe pipe,
-        IQueue queue)
+    private async Task<PipeConnection<IPubPipe>> ConnectPipeAsync<TMessage>(string connectionName, Route route,
+        IPubPipe pipe, Queue queue)
     {
-        var subscription = _bus.Advanced.Consume<SerializableMessageContext<TMessage>>(queue,
+        var subscription = await _bus.Advanced.ConsumeAsync<SerializableMessageContext<TMessage>>(queue,
             (m, _) => HandleAsync(pipe, m));
-        var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe);
+        var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe,
+            DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, subscription);
+
         return pipeConnection;
     }
 
-    private void DisconnectPipe(PipeConnection<IPubPipe> p)
+    private void DisconnectPipe(PipeConnection<IPubPipe> pipeConnection) =>
+        DisconnectPipeAsync(pipeConnection).GetAwaiter().GetResult();
+
+    private async Task DisconnectPipeAsync(PipeConnection<IPubPipe> pipeConnection)
     {
-        if (_pipeConnections.TryRemove(p, out var s)) s.Dispose();
+        if (_pipeConnections.TryRemove(pipeConnection, out var s))
+            await s.DisposeAsync();
     }
 
     private async Task HandleAsync<TMessage>(IPubPipe pipe, IMessage<SerializableMessageContext<TMessage>> message)
@@ -101,35 +110,23 @@ internal class RabbitMqPubPipe : IMulticastPubPipe
         await pipe.PassAsync(ctx);
     }
 
-    private IExchange DeclareExchange(Route route)
-    {
-        var exchange = _bus.Advanced.ExchangeDeclare(route, ExchangeType.Direct);
-        return exchange;
-    }
-
-    private async Task<IExchange> DeclareExchangeAsync(Route route, CancellationToken cancellationToken = default)
+    private async Task<Exchange> DeclareExchangeAsync(Route route, CancellationToken cancellationToken = default)
     {
         var exchange = await _bus.Advanced
             .ExchangeDeclareAsync(route, ExchangeType.Direct, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
+
         return exchange;
     }
 
-    private IQueue DeclareQueue(Route route, string subscriptionId)
-    {
-        var exchange = DeclareExchange(route);
-        var queue = _bus.Advanced.QueueDeclare($"{route}:{subscriptionId}");
-        _bus.Advanced.Bind(exchange, queue, route);
-        return queue;
-    }
-
-    private async Task<IQueue> DeclareQueueAsync(Route route, string subscriptionId,
+    private async Task<Queue> DeclareQueueAsync(Route route, string subscriptionId,
         CancellationToken cancellationToken = default)
     {
         var exchange = await DeclareExchangeAsync(route, cancellationToken);
         var queue = await _bus.Advanced.QueueDeclareAsync($"{route}:{subscriptionId}", cancellationToken)
             .ConfigureAwait(false);
         await _bus.Advanced.BindAsync(exchange, queue, route, cancellationToken).ConfigureAwait(false);
+
         return queue;
     }
 
@@ -137,6 +134,7 @@ internal class RabbitMqPubPipe : IMulticastPubPipe
     {
         if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
-        foreach (var pipeConnection in _pipeConnections.Keys) await pipeConnection.DisposeAsync();
+        foreach (var pipeConnection in _pipeConnections.Keys)
+            await pipeConnection.DisposeAsync();
     }
 }

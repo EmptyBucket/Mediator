@@ -50,6 +50,7 @@ internal class BroadcastPubPipe : IBroadcastPubPipe
         ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = _serviceProvider };
 
         var tasks = pipeConnections.Select(c => c.Pipe.PassAsync(ctx, cancellationToken));
+
         return Task.WhenAll(tasks);
     }
 
@@ -57,6 +58,7 @@ internal class BroadcastPubPipe : IBroadcastPubPipe
     public IEnumerable<PipeConnection<IPubPipe>> GetPubConnections()
     {
         using var scope = _lock.EnterReadScope();
+
         return _pipeConnections;
     }
 
@@ -64,6 +66,7 @@ internal class BroadcastPubPipe : IBroadcastPubPipe
     public PipeConnection<IPubPipe> ConnectOut(IPubPipe pipe, string connectionName = "", string subscriptionId = "")
     {
         var pipeConnection = ConnectPipe(connectionName, pipe);
+
         return pipeConnection;
     }
 
@@ -72,6 +75,7 @@ internal class BroadcastPubPipe : IBroadcastPubPipe
         string subscriptionId = "", CancellationToken cancellationToken = default)
     {
         var pipeConnection = ConnectPipe(connectionName, pipe);
+
         return Task.FromResult(pipeConnection);
     }
 
@@ -80,6 +84,7 @@ internal class BroadcastPubPipe : IBroadcastPubPipe
         var pipeConnection = new PipeConnection<IPubPipe>(connectionName, Route.Empty, pipe, DisconnectPipe);
         using var scope = _lock.EnterWriteScope();
         _pipeConnections = _pipeConnections.Add(pipeConnection);
+
         return pipeConnection;
     }
 
@@ -94,7 +99,8 @@ internal class BroadcastPubPipe : IBroadcastPubPipe
     {
         if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
-        foreach (var pipeConnection in _pipeConnections) await pipeConnection.DisposeAsync();
+        foreach (var pipeConnection in _pipeConnections)
+            await pipeConnection.DisposeAsync();
 
         _lock.Dispose();
     }

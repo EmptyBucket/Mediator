@@ -76,6 +76,7 @@ public class RedisStreamPipe : IMulticastPubPipe
         var (groupName, consumerName) = ParseSubscriptionId(subscriptionId);
         EnsureConsumerGroup(route, groupName);
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, groupName, consumerName);
+
         return pipeConnection;
     }
 
@@ -87,6 +88,7 @@ public class RedisStreamPipe : IMulticastPubPipe
         var (groupName, consumerName) = ParseSubscriptionId(subscriptionId);
         await EnsureConsumerGroupAsync(route, groupName);
         var pipeConnection = ConnectPipe<TMessage>(connectionName, route, pipe, groupName, consumerName);
+
         return pipeConnection;
     }
 
@@ -107,12 +109,13 @@ public class RedisStreamPipe : IMulticastPubPipe
         var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe,
             DisconnectPipeAsync);
         _pipeConnections.TryAdd(pipeConnection, (cts, task));
+
         return pipeConnection;
     }
 
-    private void DisconnectPipe(PipeConnection<IPubPipe> c) => DisconnectPipeAsync(c).AsTask().GetAwaiter().GetResult();
+    private void DisconnectPipe(PipeConnection<IPubPipe> c) => DisconnectPipeAsync(c).GetAwaiter().GetResult();
 
-    private async ValueTask DisconnectPipeAsync(PipeConnection<IPubPipe> pipeConnection)
+    private async Task DisconnectPipeAsync(PipeConnection<IPubPipe> pipeConnection)
     {
         if (!_pipeConnections.TryRemove(pipeConnection, out var tuple)) return;
 

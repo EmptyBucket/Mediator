@@ -39,6 +39,7 @@ internal class MediatorHostedService : IHostedService
     {
         // to initiate infrastructure connections, e.g. redis subscribers
         _serviceProvider.GetRequiredService<IMediator>();
+
         return Task.CompletedTask;
     }
 

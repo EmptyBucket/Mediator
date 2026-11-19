@@ -52,6 +52,7 @@ internal class BroadcastReqPipe : IBroadcastReqPipe
 
         var tasks = pipeConnections.Select(c => c.Pipe.PassAsync<TMessage, TResult>(ctx, cancellationToken));
         var completedTask = await Task.WhenAny(tasks);
+
         return completedTask.Result;
     }
 
@@ -59,6 +60,7 @@ internal class BroadcastReqPipe : IBroadcastReqPipe
     public IEnumerable<PipeConnection<IReqPipe>> GetReqConnections()
     {
         using var scope = _lock.EnterReadScope();
+
         return _pipeConnections;
     }
 
@@ -66,6 +68,7 @@ internal class BroadcastReqPipe : IBroadcastReqPipe
     public PipeConnection<IReqPipe> ConnectOut(IReqPipe pipe, string connectionName = "")
     {
         var pipeConnection = ConnectPipe(connectionName, pipe);
+
         return pipeConnection;
     }
 
@@ -74,6 +77,7 @@ internal class BroadcastReqPipe : IBroadcastReqPipe
         CancellationToken cancellationToken = default)
     {
         var pipeConnection = ConnectPipe(connectionName, pipe);
+
         return Task.FromResult(pipeConnection);
     }
 
@@ -82,6 +86,7 @@ internal class BroadcastReqPipe : IBroadcastReqPipe
         var pipeConnection = new PipeConnection<IReqPipe>(connectionName, Route.Empty, pipe, DisconnectPipe);
         using var scope = _lock.EnterWriteScope();
         _pipeConnections = _pipeConnections.Add(pipeConnection);
+
         return pipeConnection;
     }
 
@@ -96,7 +101,8 @@ internal class BroadcastReqPipe : IBroadcastReqPipe
     {
         if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
-        foreach (var pipeConnection in _pipeConnections) await pipeConnection.DisposeAsync();
+        foreach (var pipeConnection in _pipeConnections)
+            await pipeConnection.DisposeAsync();
 
         _lock.Dispose();
     }

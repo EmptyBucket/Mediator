@@ -88,7 +88,8 @@ public class MediatorTests
         var managementClient = _serviceProvider.GetRequiredService<IManagementClient>();
         var vhost = (await managementClient.GetVhostsAsync()).FirstOrDefault(v => v.Name == VhostName);
 
-        if (vhost is not null) await managementClient.DeleteVhostAsync(vhost);
+        if (vhost is not null)
+            await managementClient.DeleteVhostAsync(vhost);
     }
 
     [Test]

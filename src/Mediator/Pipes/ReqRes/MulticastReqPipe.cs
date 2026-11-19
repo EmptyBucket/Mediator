@@ -56,6 +56,7 @@ internal class MulticastReqPipe : IMulticastReqPipe
 
         var tasks = pipeConnections.Select(c => c.Pipe.PassAsync<TMessage, TResult>(ctx, cancellationToken));
         var completedTask = await Task.WhenAny(tasks);
+
         return completedTask.Result;
     }
 
@@ -63,6 +64,7 @@ internal class MulticastReqPipe : IMulticastReqPipe
     public IEnumerable<PipeConnection<IReqPipe>> GetReqConnections()
     {
         using var scope = _lock.EnterReadScope();
+
         return _pipeConnections.SelectMany(l => l.Value);
     }
 
@@ -72,6 +74,7 @@ internal class MulticastReqPipe : IMulticastReqPipe
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         var pipeConnection = ConnectPipe(connectionName, route, pipe);
+
         return pipeConnection;
     }
 
@@ -81,12 +84,14 @@ internal class MulticastReqPipe : IMulticastReqPipe
     {
         var route = Route.For<TMessage, TResult>(routingKey);
         var pipeConnection = ConnectPipe(connectionName, route, pipe);
+
         return Task.FromResult(pipeConnection);
     }
 
     private IList<PipeConnection<IReqPipe>> GetPipeConnections(Route route)
     {
         using var scope = _lock.EnterReadScope();
+
         return _pipeConnections.GetValueOrDefault(route) ?? ImmutableList<PipeConnection<IReqPipe>>.Empty;
     }
 
@@ -96,18 +101,22 @@ internal class MulticastReqPipe : IMulticastReqPipe
         using var scope = _lock.EnterWriteScope();
         _pipeConnections.TryAdd(pipeConnection.Route, ImmutableList<PipeConnection<IReqPipe>>.Empty);
         _pipeConnections[pipeConnection.Route] = _pipeConnections[pipeConnection.Route].Add(pipeConnection);
+
         return pipeConnection;
     }
 
     private void DisconnectPipe(PipeConnection<IReqPipe> pipeConnection)
     {
         using var scope = _lock.EnterWriteScope();
+
         if (_pipeConnections.TryGetValue(pipeConnection.Route, out var list))
         {
             list = list.Remove(pipeConnection);
 
-            if (list.IsEmpty) _pipeConnections.Remove(pipeConnection.Route);
-            else _pipeConnections[pipeConnection.Route] = list.Remove(pipeConnection);
+            if (list.IsEmpty)
+                _pipeConnections.Remove(pipeConnection.Route);
+            else
+                _pipeConnections[pipeConnection.Route] = list.Remove(pipeConnection);
         }
     }
 
@@ -116,7 +125,8 @@ internal class MulticastReqPipe : IMulticastReqPipe
     {
         if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
 
-        foreach (var pipeConnection in _pipeConnections.SelectMany(l => l.Value)) await pipeConnection.DisposeAsync();
+        foreach (var pipeConnection in _pipeConnections.SelectMany(l => l.Value))
+            await pipeConnection.DisposeAsync();
 
         _lock.Dispose();
     }

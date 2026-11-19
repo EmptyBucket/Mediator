@@ -44,6 +44,7 @@ internal class Mediator : IMediator
         options ??= new Options();
         var route = Route.For<TMessage>(options.RoutingKey);
         var ctx = CreateMessageContext(route, message, options);
+
         return Topology.Dispatch.PassAsync(ctx, cancellationToken);
     }
 
@@ -54,6 +55,7 @@ internal class Mediator : IMediator
         options ??= new Options();
         var route = Route.For<TMessage, TResult>(options.RoutingKey);
         var ctx = CreateMessageContext(route, message, options);
+
         return Topology.Dispatch.PassAsync<TMessage, TResult>(ctx, cancellationToken);
     }
 
@@ -69,6 +71,7 @@ internal class Mediator : IMediator
         var extraProps = options.ExtraProps.ToImmutableDictionary();
         var ctx = new MessageContext<TMessage>(route, message, serviceProps, extraProps)
             { CreatedAt = DateTime.UtcNow };
+
         return ctx;
     }
 }
