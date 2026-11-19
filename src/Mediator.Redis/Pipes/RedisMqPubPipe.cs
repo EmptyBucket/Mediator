@@ -53,7 +53,7 @@ internal class RedisMqPubPipe : IMulticastPubPipe
     /// <inheritdoc />
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
-        var message = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
+        var message = JsonSerializer.Serialize<SerializableMessageContext<TMessage>>(ctx, _jsonSerializerOptions);
         var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
         await _subscriber.PublishAsync(ctx.Route.ToString(), message, messageProperties.Flags).ConfigureAwait(false);
     }
@@ -112,9 +112,11 @@ internal class RedisMqPubPipe : IMulticastPubPipe
 
     private async Task HandleAsync<TMessage>(IPubPipe pipe, ChannelMessage channelMessage)
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
-        var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(channelMessage.Message, _jsonSerializerOptions)!;
-        ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
+        var message = JsonSerializer.Deserialize<SerializableMessageContext<TMessage>>(channelMessage.Message,
+            _jsonSerializerOptions)!;
+        await using var serviceScope = _serviceProvider.CreateAsyncScope();
+        var ctx = new MessageContext<TMessage>(message.Route, message.Message, message.ServiceProps, message.ExtraProps)
+            { DeliveredAt = DateTime.Now, ServiceProvider = serviceScope.ServiceProvider };
         await pipe.PassAsync(ctx);
     }
 

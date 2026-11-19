@@ -71,7 +71,7 @@ internal class RedisMqReqPipe : IMulticastReqPipe
 
         if (ctx.CorrelationId == null) ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
-        var message = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
+        var message = JsonSerializer.Serialize<SerializableMessageContext<TMessage>>(ctx, _jsonSerializerOptions);
         var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
         await _subscriber.PublishAsync(ctx.Route.ToString(), message, messageProperties.Flags).ConfigureAwait(false);
         return await tcs.Task.ConfigureAwait(false);
@@ -127,16 +127,18 @@ internal class RedisMqReqPipe : IMulticastReqPipe
         if (_pipeConnections.TryRemove(pipeConnection, out var c)) await c.UnsubscribeAsync().ConfigureAwait(false);
     }
 
-    private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe, ChannelMessage message)
+    private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe, ChannelMessage channelMessage)
     {
-        var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(message.Message, _jsonSerializerOptions)!;
+        var message = JsonSerializer.Deserialize<MessageContext<TMessage>>(channelMessage.Message,
+            _jsonSerializerOptions)!;
+        await using var serviceScope = _serviceProvider.CreateAsyncScope();
+        var ctx = new MessageContext<TMessage>(message.Route, message.Message, message.ServiceProps, message.ExtraProps)
+            { DeliveredAt = DateTime.Now, ServiceProvider = serviceScope.ServiceProvider };
         TResult? result = default;
-        Exception? exception = null;
+        Exception? exception = default;
 
         try
         {
-            await using var scope = _serviceProvider.CreateAsyncScope();
-            ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
             result = await pipe.PassAsync<TMessage, TResult>(ctx);
         }
         catch (Exception e)

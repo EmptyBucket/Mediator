@@ -32,6 +32,7 @@ namespace Mediator.Handlers;
 /// <param name="MessageId"></param>
 /// <param name="CorrelationId"></param>
 /// <typeparam name="TResult"></typeparam>
+[Serializable]
 public record ResultContext<TResult>(Route Route, string MessageId, string CorrelationId)
 {
     /// <summary>

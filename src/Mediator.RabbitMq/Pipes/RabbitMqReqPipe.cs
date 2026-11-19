@@ -68,7 +68,7 @@ internal class RabbitMqReqPipe : IMulticastReqPipe
         if (ctx.CorrelationId == null) ctx = ctx with { CorrelationId = Guid.NewGuid().ToString() };
         _resultHandlers.TryAdd(ctx.CorrelationId, Handle);
         var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
-        var message = new Message<MessageContext<TMessage>>(ctx, messageProperties);
+        var message = new Message<SerializableMessageContext<TMessage>>(ctx, messageProperties);
         await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, cancellationToken).ConfigureAwait(false);
         return await tcs.Task.ConfigureAwait(false);
     }
@@ -99,8 +99,8 @@ internal class RabbitMqReqPipe : IMulticastReqPipe
     private PipeConnection<IReqPipe> ConnectPipe<TMessage, TResult>(string connectionName, Route route, IReqPipe pipe,
         IQueue queue)
     {
-        var subscription =
-            _bus.Advanced.Consume<MessageContext<TMessage>>(queue, (m, _) => HandleAsync<TMessage, TResult>(pipe, m));
+        var subscription = _bus.Advanced.Consume<SerializableMessageContext<TMessage>>(queue,
+            (m, _) => HandleAsync<TMessage, TResult>(pipe, m));
         var pipeConnection = new PipeConnection<IReqPipe>(connectionName, route, pipe, DisconnectPipe);
         _pipeConnections.TryAdd(pipeConnection, subscription);
         return pipeConnection;
@@ -111,17 +111,19 @@ internal class RabbitMqReqPipe : IMulticastReqPipe
         if (_pipeConnections.TryRemove(pipeConnection, out var s)) s.Dispose();
     }
 
-    private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe, IMessage<MessageContext<TMessage>> message)
+    private async Task HandleAsync<TMessage, TResult>(IReqPipe pipe,
+        IMessage<SerializableMessageContext<TMessage>> message)
     {
         var exchange = await DeclareResultExchangeAsync();
-        var ctx = message.Body;
+        var body = message.Body;
+        await using var serviceScope = _serviceProvider.CreateAsyncScope();
+        var ctx = new MessageContext<TMessage>(body.Route, body.Message, body.ServiceProps, body.ExtraProps)
+            { DeliveredAt = DateTime.Now, ServiceProvider = serviceScope.ServiceProvider };
         TResult? result = default;
         Exception? exception = default;
 
         try
         {
-            await using var scope = _serviceProvider.CreateAsyncScope();
-            ctx = ctx with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
             result = await pipe.PassAsync<TMessage, TResult>(ctx);
         }
         catch (Exception e)

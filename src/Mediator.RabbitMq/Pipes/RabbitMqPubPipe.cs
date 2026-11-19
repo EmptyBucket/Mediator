@@ -50,7 +50,7 @@ internal class RabbitMqPubPipe : IMulticastPubPipe
     {
         var exchange = await DeclareExchangeAsync(ctx.Route, cancellationToken);
         var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
-        var message = new Message<MessageContext<TMessage>>(ctx, messageProperties);
+        var message = new Message<SerializableMessageContext<TMessage>>(ctx, messageProperties);
         await _bus.Advanced.PublishAsync(exchange, ctx.Route, false, message, cancellationToken).ConfigureAwait(false);
     }
 
@@ -80,7 +80,8 @@ internal class RabbitMqPubPipe : IMulticastPubPipe
     private PipeConnection<IPubPipe> ConnectPipe<TMessage>(string connectionName, Route route, IPubPipe pipe,
         IQueue queue)
     {
-        var subscription = _bus.Advanced.Consume<MessageContext<TMessage>>(queue, (m, _) => HandleAsync(pipe, m));
+        var subscription = _bus.Advanced.Consume<SerializableMessageContext<TMessage>>(queue,
+            (m, _) => HandleAsync(pipe, m));
         var pipeConnection = new PipeConnection<IPubPipe>(connectionName, route, pipe, DisconnectPipe);
         _pipeConnections.TryAdd(pipeConnection, subscription);
         return pipeConnection;
@@ -91,10 +92,12 @@ internal class RabbitMqPubPipe : IMulticastPubPipe
         if (_pipeConnections.TryRemove(p, out var s)) s.Dispose();
     }
 
-    private async Task HandleAsync<TMessage>(IPubPipe pipe, IMessage<MessageContext<TMessage>> message)
+    private async Task HandleAsync<TMessage>(IPubPipe pipe, IMessage<SerializableMessageContext<TMessage>> message)
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
-        var ctx = message.Body with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
+        var body = message.Body;
+        await using var serviceScope = _serviceProvider.CreateAsyncScope();
+        var ctx = new MessageContext<TMessage>(body.Route, body.Message, body.ServiceProps, body.ExtraProps)
+            { DeliveredAt = DateTime.Now, ServiceProvider = serviceScope.ServiceProvider };
         await pipe.PassAsync(ctx);
     }
 

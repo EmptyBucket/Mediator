@@ -65,8 +65,8 @@ public class NatsStreamPipe : IMulticastPubPipe
         var streamName = ctx.Route.ToStreamName();
         await EnsureStreamAsync(streamName, cancellationToken).ConfigureAwait(false);
         var natsJsPubOpts = new PropertyBinder<NatsJSPubOpts>().Bind(ctx.ServiceProps).Build();
-        await _jetStream.PublishAsync(streamName, ctx, null, natsJsPubOpts, cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
+        await _jetStream.PublishAsync<SerializableMessageContext<TMessage>>(streamName, ctx, opts: natsJsPubOpts,
+            cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -107,7 +107,8 @@ public class NatsStreamPipe : IMulticastPubPipe
         return pipeConnection;
     }
 
-    private void DisconnectPipe(PipeConnection<IPubPipe> c) => DisconnectPipeAsync(c).AsTask().GetAwaiter().GetResult();
+    private void DisconnectPipe(PipeConnection<IPubPipe> pipeConnection) =>
+        DisconnectPipeAsync(pipeConnection).AsTask().GetAwaiter().GetResult();
 
     private async ValueTask DisconnectPipeAsync(PipeConnection<IPubPipe> pipeConnection)
     {
@@ -134,14 +135,14 @@ public class NatsStreamPipe : IMulticastPubPipe
         var consumer = await _jetStream.GetConsumerAsync(streamName, consumerName, cancellationToken)
             .ConfigureAwait(false);
 
-        await foreach (var message in consumer.ConsumeAsync<MessageContext<TMessage>>(
+        await foreach (var message in consumer.ConsumeAsync<SerializableMessageContext<TMessage>>(
                            cancellationToken: cancellationToken))
         {
-            await using var scope = _serviceProvider.CreateAsyncScope();
-
-            if (message.Data != null)
+            if (message.Data is { } data)
             {
-                var ctx = message.Data with { DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider };
+                await using var serviceScope = _serviceProvider.CreateAsyncScope();
+                var ctx = new MessageContext<TMessage>(data.Route, data.Message, data.ServiceProps, data.ExtraProps)
+                    { DeliveredAt = DateTime.Now, ServiceProvider = serviceScope.ServiceProvider };
                 await pipe.PassAsync(ctx, cancellationToken).ConfigureAwait(false);
             }
 

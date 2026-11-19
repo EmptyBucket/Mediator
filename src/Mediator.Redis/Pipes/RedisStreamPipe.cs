@@ -58,11 +58,10 @@ public class RedisStreamPipe : IMulticastPubPipe
     /// <inheritdoc />
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
-        var message = JsonSerializer.Serialize(ctx, _jsonSerializerOptions);
+        var message = JsonSerializer.Serialize<SerializableMessageContext<TMessage>>(ctx, _jsonSerializerOptions);
         var messageProperties = new PropertyBinder<MessageProperties>().Bind(ctx.ServiceProps).Build();
-        await _database.StreamAddAsync(ctx.Route.ToString(), WellKnown.MessageKey, message,
-                messageProperties.MessageId, messageProperties.MaxLength, messageProperties.UseApproximateMaxLength,
-                messageProperties.Flags)
+        await _database.StreamAddAsync(ctx.Route.ToString(), WellKnown.MessageKey, message, messageProperties.MessageId,
+                messageProperties.MaxLength, messageProperties.UseApproximateMaxLength, messageProperties.Flags)
             .ConfigureAwait(false);
     }
 
@@ -145,12 +144,13 @@ public class RedisStreamPipe : IMulticastPubPipe
 
             foreach (var entry in entries)
             {
-                await using var scope = _serviceProvider.CreateAsyncScope();
-                var ctx = JsonSerializer.Deserialize<MessageContext<TMessage>>(entry[WellKnown.MessageKey],
-                    _jsonSerializerOptions)!;
-                ctx = ctx with
+                var message = JsonSerializer.Deserialize<SerializableMessageContext<TMessage>>(
+                    entry[WellKnown.MessageKey], _jsonSerializerOptions)!;
+                await using var serviceScope = _serviceProvider.CreateAsyncScope();
+                var ctx = new MessageContext<TMessage>(message.Route, message.Message, message.ServiceProps,
+                    message.ExtraProps)
                 {
-                    MessageId = entry.Id, DeliveredAt = DateTime.Now, ServiceProvider = scope.ServiceProvider
+                    MessageId = entry.Id, DeliveredAt = DateTime.Now, ServiceProvider = serviceScope.ServiceProvider
                 };
                 await pipe.PassAsync(ctx);
             }
