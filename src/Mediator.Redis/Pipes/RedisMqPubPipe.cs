@@ -46,8 +46,7 @@ internal class RedisMqPubPipe : IMulticastPubPipe
     {
         _subscriber = multiplexer.GetSubscriber();
         _serviceProvider = serviceProvider;
-        _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions
-            { Converters = { ObjectToInferredTypesConverter.Instance } };
+        _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions();
     }
 
     /// <inheritdoc />

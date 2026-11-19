@@ -48,8 +48,7 @@ internal class RedisMqReqPipe : IMulticastReqPipe
     {
         _subscriber = multiplexer.GetSubscriber();
         _serviceProvider = serviceProvider;
-        _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions
-            { Converters = { ObjectToInferredTypesConverter.Instance } };
+        _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions();
         _resultMq = new Lazy<Task<ChannelMessageQueue>>(CreateResultMqAsync);
     }
 
@@ -60,10 +59,10 @@ internal class RedisMqReqPipe : IMulticastReqPipe
         await _resultMq.Value;
         var tcs = new TaskCompletionSource<TResult>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        void Handle(ChannelMessage m)
+        void Handle(ChannelMessage channelMessage)
         {
-            // ReSharper disable once VariableHidesOuterVariable
-            var ctx = JsonSerializer.Deserialize<ResultContext<TResult>>(m.Message, _jsonSerializerOptions)!;
+            var ctx = JsonSerializer.Deserialize<ResultContext<TResult>>(channelMessage.Message,
+                _jsonSerializerOptions)!;
 
             if (ctx.ExceptionMessage == null && ctx.Result != null)
                 tcs.TrySetResult(ctx.Result);

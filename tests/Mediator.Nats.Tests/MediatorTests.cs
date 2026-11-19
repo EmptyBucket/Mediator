@@ -117,10 +117,8 @@ public class NatsStreamPipeTests
 
         await dispatch.ConnectOutAsync<SomeEvent>(pipe);
         await pipe.ConnectOutAsync<SomeEvent>(_fEndPipe.Object);
-
         await _mediator.PublishAsync(someEvent1);
         await _mediator.PublishAsync(someEvent2);
-
         await Task.Delay(500);
 
         await _fEndPipe.VerifyAsync(p => p.PassAsync(

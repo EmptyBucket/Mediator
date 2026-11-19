@@ -104,6 +104,7 @@ public class MediatorTests
         await dispatch.ConnectOutAsync<SomeEvent>(pipe);
         await pipe.ConnectOutAsync<SomeEvent>(_fEndPipe.Object);
         await _mediator.PublishAsync(someEvent);
+        await Task.Delay(500);
 
         await _fEndPipe.VerifyAsync(p => p.PassAsync(
                 It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()),
@@ -121,6 +122,7 @@ public class MediatorTests
         await pipe.ConnectOutAsync<SomeEvent>(_fEndPipe.Object, subscriptionId: "1");
         await pipe.ConnectOutAsync<SomeEvent>(_sEndPipe.Object, subscriptionId: "2");
         await _mediator.PublishAsync(someEvent);
+        await Task.Delay(500);
 
         await _fEndPipe.VerifyAsync(p => p.PassAsync(
                 It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()),
@@ -147,6 +149,7 @@ public class MediatorTests
         await pipe.ConnectOutAsync<SomeEvent>(_sEndPipe.Object, subscriptionId: "1");
         await _mediator.PublishAsync(someEvent);
         await _mediator.PublishAsync(someEvent);
+        await Task.Delay(500);
 
         await _fEndPipe.VerifyAsync(p => p.PassAsync(
                 It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()),
@@ -166,6 +169,7 @@ public class MediatorTests
         await dispatch.ConnectOutAsync<SomeEvent, SomeResult>(pipe);
         await pipe.ConnectOutAsync<SomeEvent, SomeResult>(_fEndPipe.Object);
         await _mediator.SendAsync<SomeEvent, SomeResult>(someEvent);
+        await Task.Delay(500);
 
         await _fEndPipe.VerifyAsync(p => p.PassAsync<SomeEvent, SomeResult>(
                 It.Is<MessageContext<SomeEvent>>(c => c.Message.Equals(someEvent)), It.IsAny<CancellationToken>()),

@@ -38,5 +38,5 @@ namespace Mediator.Handlers;
 public record SerializableMessageContext<TMessage>(
     Route Route,
     TMessage Message,
-    IImmutableDictionary<string, object?> ServiceProps,
-    IImmutableDictionary<string, object?> ExtraProps);
+    IImmutableDictionary<string, string?> ServiceProps,
+    IImmutableDictionary<string, string?> ExtraProps);

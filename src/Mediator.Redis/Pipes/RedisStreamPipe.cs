@@ -49,8 +49,7 @@ public class RedisStreamPipe : IMulticastPubPipe
     {
         _database = multiplexer.GetDatabase();
         _serviceProvider = serviceProvider;
-        _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions
-            { Converters = { ObjectToInferredTypesConverter.Instance } };
+        _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions();
         _batchSize = batchSize;
         _pollingInterval = pollingInterval ?? TimeSpan.FromMilliseconds(100);
     }

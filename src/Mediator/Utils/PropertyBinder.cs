@@ -31,18 +31,13 @@ internal class PropertyBinder<TMessageProperties> where TMessageProperties : new
         .GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.SetProperty)
         .ToDictionary(p => p.Name);
 
-    private readonly TMessageProperties _messageProperties;
+    private readonly TMessageProperties _messageProperties = new();
 
-    public PropertyBinder()
-    {
-        _messageProperties = new TMessageProperties();
-    }
-
-    public PropertyBinder<TMessageProperties> Bind(IEnumerable<KeyValuePair<string, object?>> pairs)
+    public PropertyBinder<TMessageProperties> Bind(IEnumerable<KeyValuePair<string, string?>> pairs)
     {
         foreach (var pair in pairs)
             if (Props.TryGetValue(pair.Key, out var prop))
-                prop.SetValue(_messageProperties, pair.Value?.CastTo(prop.PropertyType));
+                prop.SetValue(_messageProperties, Convert.ChangeType(pair.Value, prop.PropertyType));
 
         return this;
     }

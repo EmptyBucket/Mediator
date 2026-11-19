@@ -30,8 +30,8 @@ namespace Mediator.Handlers;
 public record MessageContext<TMessage>(
     Route Route,
     TMessage Message,
-    IImmutableDictionary<string, object?> ServiceProps,
-    IImmutableDictionary<string, object?> ExtraProps)
+    IImmutableDictionary<string, string?> ServiceProps,
+    IImmutableDictionary<string, string?> ExtraProps)
     : SerializableMessageContext<TMessage>(Route, Message, ServiceProps, ExtraProps)
 {
     /// <summary>
@@ -39,7 +39,7 @@ public record MessageContext<TMessage>(
     /// </summary>
     public string? MessageId
     {
-        get => (string?)ServiceProps.GetValueOrDefault(nameof(MessageId));
+        get => ServiceProps.GetValueOrDefault(nameof(MessageId));
         init => ServiceProps = ServiceProps.SetItem(nameof(MessageId), value);
     }
 
@@ -48,7 +48,7 @@ public record MessageContext<TMessage>(
     /// </summary>
     public string? CorrelationId
     {
-        get => (string?)ServiceProps.GetValueOrDefault(nameof(CorrelationId));
+        get => ServiceProps.GetValueOrDefault(nameof(CorrelationId));
         init => ServiceProps = ServiceProps.SetItem(nameof(CorrelationId), value);
     }
 
@@ -57,8 +57,8 @@ public record MessageContext<TMessage>(
     /// </summary>
     public DateTime? CreatedAt
     {
-        get => (DateTime?)ExtraProps.GetValueOrDefault(nameof(CreatedAt))!;
-        init => ExtraProps = ExtraProps.SetItem(nameof(CreatedAt), value);
+        get => ExtraProps.GetValueOrDefault(nameof(CreatedAt)) is { } value ? DateTime.Parse(value) : null;
+        init => ExtraProps = ExtraProps.SetItem(nameof(CreatedAt), value.ToString());
     }
 
     /// <summary>
@@ -66,8 +66,8 @@ public record MessageContext<TMessage>(
     /// </summary>
     public DateTime? DeliveredAt
     {
-        get => (DateTime?)ExtraProps.GetValueOrDefault(nameof(DeliveredAt));
-        init => ExtraProps = ExtraProps.SetItem(nameof(DeliveredAt), value);
+        get => ExtraProps.GetValueOrDefault(nameof(DeliveredAt)) is { } value ? DateTime.Parse(value) : null;
+        init => ExtraProps = ExtraProps.SetItem(nameof(DeliveredAt), value.ToString());
     }
 
     /// <summary>
