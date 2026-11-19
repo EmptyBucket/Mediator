@@ -26,7 +26,7 @@ using System.Text.Json.Serialization;
 
 namespace Mediator.Utils;
 
-internal class ObjectToInferredTypesConverter : JsonConverter<object>
+public class ObjectToInferredTypesConverter : JsonConverter<object>
 {
     public static readonly JsonConverter<object> Instance = new ObjectToInferredTypesConverter();
 

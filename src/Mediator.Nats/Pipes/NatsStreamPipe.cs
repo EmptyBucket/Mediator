@@ -31,9 +31,7 @@ using NATS.Client.Core;
 using NATS.Client.JetStream;
 using NATS.Client.JetStream.Models;
 using System.Collections.Concurrent;
-using System.Text.Json;
 using Mediator.Nats.Utils;
-using NATS.Client.Serializers.Json;
 
 namespace Mediator.Nats.Pipes;
 
@@ -42,39 +40,32 @@ public class NatsStreamPipe : IMulticastPubPipe
     private int _isDisposed;
     private readonly ConcurrentDictionary<string, byte> _knownStreams = new();
     private readonly ConcurrentDictionary<string, byte> _knownConsumers = new();
-    private readonly INatsConnection _natsConnection;
-    private readonly INatsJSContext _jetStream;
+    private readonly INatsConnection _connection;
     private readonly IServiceProvider _serviceProvider;
-    private readonly JsonSerializerOptions _jsonSerializerOptions;
+    private readonly INatsJSContext _jetStream;
     private readonly Func<StreamConfig> _streamConfigFactory;
-    private readonly Func<ConsumerConfig> _configureConfigFactory;
-    private readonly NatsJSConsumeOpts _consumeOpts;
+    private readonly Func<ConsumerConfig> _consumerConfigFactory;
     private readonly ConcurrentDictionary<PipeConnection<IPubPipe>, (CancellationTokenSource Cts, Task Task)>
         _pipeConnections = new();
 
-    public NatsStreamPipe(INatsConnection natsConnection, IServiceProvider serviceProvider,
-        JsonSerializerOptions? jsonSerializerOptions = null, Func<StreamConfig>? streamConfigFactory = null,
-        Func<ConsumerConfig>? consumerConfigFactory = null, NatsJSConsumeOpts? consumeOpts = null)
+    public NatsStreamPipe(INatsConnection connection, IServiceProvider serviceProvider, NatsJSOpts? jsOpts = null,
+        Func<StreamConfig>? streamConfigFactory = null, Func<ConsumerConfig>? consumerConfigFactory = null)
     {
-        _natsConnection = natsConnection;
-        _jetStream = _natsConnection.CreateJetStreamContext();
+        _connection = connection;
         _serviceProvider = serviceProvider;
-        _jsonSerializerOptions = jsonSerializerOptions ?? new JsonSerializerOptions
-            { Converters = { ObjectToInferredTypesConverter.Instance } };
+        _jetStream = _connection.CreateJetStreamContext(jsOpts ?? new NatsJSOpts(connection.Opts));
         _streamConfigFactory = streamConfigFactory ?? (() => new StreamConfig());
-        _configureConfigFactory = consumerConfigFactory ?? (() => new ConsumerConfig());
-        _consumeOpts = consumeOpts ?? new NatsJSConsumeOpts { MaxMsgs = 1_000 };
+        _consumerConfigFactory = consumerConfigFactory ?? (() => new ConsumerConfig());
     }
 
     /// <inheritdoc />
     public async Task PassAsync<TMessage>(MessageContext<TMessage> ctx, CancellationToken cancellationToken = default)
     {
-        await _natsConnection.ConnectAsync().ConfigureAwait(false);
+        await _connection.ConnectAsync().ConfigureAwait(false);
         var streamName = ctx.Route.ToStreamName();
         await EnsureStreamAsync(streamName, cancellationToken).ConfigureAwait(false);
-        var serializer = new NatsJsonSerializer<MessageContext<TMessage>>(_jsonSerializerOptions);
         var natsJsPubOpts = new PropertyBinder<NatsJSPubOpts>().Bind(ctx.ServiceProps).Build();
-        await _jetStream.PublishAsync(streamName, ctx, serializer, natsJsPubOpts, cancellationToken: cancellationToken)
+        await _jetStream.PublishAsync(streamName, ctx, null, natsJsPubOpts, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 
@@ -85,7 +76,7 @@ public class NatsStreamPipe : IMulticastPubPipe
     public PipeConnection<IPubPipe> ConnectOut<TMessage>(IPubPipe pipe, string routingKey = "",
         string connectionName = "", string subscriptionId = "default")
     {
-        _natsConnection.ConnectAsync().GetAwaiter().GetResult();
+        _connection.ConnectAsync().GetAwaiter().GetResult();
         var route = Route.For<TMessage>(routingKey);
         var streamName = route.ToStreamName();
         EnsureConsumerAsync(streamName, subscriptionId, CancellationToken.None).GetAwaiter().GetResult();
@@ -97,7 +88,7 @@ public class NatsStreamPipe : IMulticastPubPipe
     public async Task<PipeConnection<IPubPipe>> ConnectOutAsync<TMessage>(IPubPipe pipe, string routingKey = "",
         string connectionName = "", string subscriptionId = "default", CancellationToken cancellationToken = default)
     {
-        await _natsConnection.ConnectAsync().ConfigureAwait(false);
+        await _connection.ConnectAsync().ConfigureAwait(false);
         var route = Route.For<TMessage>(routingKey);
         var streamName = route.ToStreamName();
         await EnsureConsumerAsync(streamName, subscriptionId, cancellationToken).ConfigureAwait(false);
@@ -140,11 +131,11 @@ public class NatsStreamPipe : IMulticastPubPipe
     private async Task HandleAsync<TMessage>(IPubPipe pipe, string streamName, string consumerName,
         CancellationToken cancellationToken)
     {
-        var serializer = new NatsJsonSerializer<MessageContext<TMessage>>(_jsonSerializerOptions);
         var consumer = await _jetStream.GetConsumerAsync(streamName, consumerName, cancellationToken)
             .ConfigureAwait(false);
 
-        await foreach (var message in consumer.ConsumeAsync(serializer, _consumeOpts, cancellationToken))
+        await foreach (var message in consumer.ConsumeAsync<MessageContext<TMessage>>(
+                           cancellationToken: cancellationToken))
         {
             await using var scope = _serviceProvider.CreateAsyncScope();
 
@@ -171,7 +162,7 @@ public class NatsStreamPipe : IMulticastPubPipe
         if (!_knownConsumers.TryAdd(consumerName, 0)) return;
 
         await EnsureStreamAsync(streamName, cancellationToken);
-        var consumerConfig = _configureConfigFactory() with
+        var consumerConfig = _consumerConfigFactory() with
         {
             Name = consumerName,
             DurableName = consumerName,
